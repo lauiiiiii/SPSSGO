@@ -1,0 +1,11 @@
+Run the initial production schema migration with:
+
+  alembic upgrade head
+
+Create a new revision with:
+
+  alembic revision -m "describe change"
+
+The app still supports `DB_AUTO_CREATE=1` for local development compatibility,
+but this is now opt-in. Production and staging deployments should keep
+`DB_AUTO_CREATE=0` and rely on Alembic migrations.

@@ -1,0 +1,25 @@
+<svg width="420" height="120" viewBox="0 0 420 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="420" height="120" fill="transparent"/>
+  <g transform="translate(34 16) rotate(-6 170 42) skewX(-8)">
+    <text
+      x="62"
+      y="56"
+      fill="#1D4ED8"
+      font-size="58"
+      font-weight="400"
+      font-style="italic"
+      font-family="Zapfino, Snell Roundhand, Brush Script MT, Segoe Script, Lucida Handwriting, cursive"
+      letter-spacing="-1.2"
+    >Laurence</text>
+    <text
+      x="214"
+      y="92"
+      fill="#6E8FDC"
+      font-size="21"
+      font-style="italic"
+      font-family="Zapfino, Snell Roundhand, Brush Script MT, Segoe Script, Lucida Handwriting, cursive"
+      letter-spacing="-0.2"
+      transform="rotate(-5 214 92)"
+    >2026.04.05</text>
+  </g>
+</svg>

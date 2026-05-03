@@ -1,0 +1,229 @@
+<template>
+  <section class="analysis-panel">
+    <!-- No data uploaded yet -->
+    <AnalysisUploadPrompt v-if="!hasData" @upload="$emit('upload')" />
+
+    <!-- No method selected and no results to show -->
+    <AnalysisMethodPlaceholder v-else-if="!method && !(results && results.length)" />
+
+    <!-- Method selected OR has results from history -->
+    <div v-else class="ap-scroll-body">
+      <!-- 有结果且未选择「返回配置」时：独立报告页（类 SPSSPRO） -->
+      <AnalysisReportPage
+        v-if="results.length && !executing && !editingConfig"
+        :ai-loading="aiLoading"
+        :ai-result="aiResult"
+        :allow-ai-request="true"
+        :calc-box="calcBox"
+        :calc-hist="calcHist"
+        :cell-class="cellClass"
+        :chart-data-visible="chartDataVisible"
+        :display-results="displayResults"
+        :fmt-bin="fmtBin"
+        :report-meta-tags="reportMetaTags"
+        :report-title="reportTitle"
+        :results="results"
+        :set-chart-ref="setChartRef"
+        :show-share="true"
+        @edit-config="editConfig"
+        @export-pdf="exportPDF"
+        @export-word="exportWord"
+        @share="openShareDialog"
+        @copy-all="copyAllResults"
+        @copy-table="copyTable"
+        @request-ai="requestAiInterpret"
+        @hide-tip="hideTip"
+        @move-tip="moveTip"
+        @show-hist-tip="showHistTip"
+        @show-box-tip="showBoxTip"
+        @download-chart="downloadChart"
+        @copy-chart="copyChart"
+        @toggle-chart-data="toggleChartData"
+      />
+
+      <!-- 配置区：有方法且（无结果、执行中、或用户点击返回配置） -->
+      <AnalysisConfigPanel
+        v-else-if="method"
+        :active-factor-items="activeFactorItems"
+        :active-factor-key="activeFactorKey"
+        :active-factor-slot="activeFactorSlot"
+        :active-factor-title="activeFactorTitle"
+        :can-execute="canExecute"
+        :display-slots="displaySlots"
+        :drag-over-slot="dragOverSlot"
+        :dynamic-factor-count="dynamicFactorCount"
+        :editing-config="editingConfig"
+        :executing="executing"
+        :factor-menu-key="factorMenuKey"
+        :get-factor-short-label="getFactorShortLabel"
+        :get-var-type="getVarType"
+        :get-var-type-class="getVarTypeClass"
+        :is-cfa-method="isCfaMethod"
+        :max-dynamic-factors="maxDynamicFactors"
+        :method="method"
+        :option-values="optionValues"
+        :results="results"
+        :slot-values="slotValues"
+        @show-report="showReport"
+        @add-factor="addFactorSlot"
+        @select-factor="selectFactor"
+        @toggle-factor-menu="toggleFactorMenu"
+        @rename-factor="renameFactor"
+        @delete-factor="deleteFactor"
+        @close-factor-menu="factorMenuKey = null"
+        @drag-over="onDragOver"
+        @drag-leave="onDragLeave"
+        @drop-slot="onDrop"
+        @remove-var="removeVar"
+        @option-change="setOptionValue"
+        @reset="resetSlots"
+        @execute="$emit('execute')"
+      />
+
+      <!-- Executing indicator -->
+      <AnalysisExecutingOverlay :executing="executing" :method="method" />
+    </div>
+    <AnalysisShareDialog
+      v-if="shareDialogVisible"
+      :copied="copiedShareUrl"
+      :expiry-days="shareExpiryDays"
+      :error="shareError"
+      :loading="shareLoading"
+      :password="sharePassword"
+      :share-text="shareText"
+      :share-url="shareUrl"
+      @close="closeShareDialog"
+      @copy="copyShareUrl"
+      @fill-random-password="fillRandomSharePassword"
+      @generate="generateShareLink"
+      @update:expiry-days="shareExpiryDays = $event"
+      @update:password="sharePassword = $event"
+    />
+    <!-- chart tooltip -->
+    <AnalysisChartTooltip :tip="tip" />
+  </section>
+</template>
+
+<script setup>
+import { toRef } from 'vue'
+import AnalysisChartTooltip from './AnalysisChartTooltip.vue'
+import AnalysisConfigPanel from './AnalysisConfigPanel.vue'
+import AnalysisExecutingOverlay from './AnalysisExecutingOverlay.vue'
+import AnalysisMethodPlaceholder from './AnalysisMethodPlaceholder.vue'
+import AnalysisReportPage from './AnalysisReportPage.vue'
+import AnalysisShareDialog from './AnalysisShareDialog.vue'
+import AnalysisUploadPrompt from './AnalysisUploadPrompt.vue'
+import { useAnalysisConfig } from '../../composables/analysis/useAnalysisConfig.js'
+import { useAnalysisCharts } from '../../composables/analysis/useAnalysisCharts.js'
+import { useAiInterpretation } from '../../composables/analysis/useAiInterpretation.js'
+import { useAnalysisReport } from '../../composables/analysis/useAnalysisReport.js'
+import { useAnalysisShare } from '../../composables/analysis/useAnalysisShare.js'
+import { useAnalysisViewState } from '../../composables/analysis/useAnalysisViewState.js'
+
+const props = defineProps({
+  hasData: { type: Boolean, default: false },
+  method: { type: Object, default: null },
+  methodKey: { type: String, default: '' },
+  executing: { type: Boolean, default: false },
+  results: { type: Array, default: () => [] },
+  variables: { type: Array, default: () => [] },
+  sessionId: { type: String, default: '' },
+  currentDatasetVersionId: { type: Number, default: null },
+  currentDatasetVersionNo: { type: Number, default: null },
+})
+
+const emit = defineEmits(['upload', 'execute', 'update:slotValues', 'update:optionValues', 'report-view'])
+
+const {
+  activeFactorItems,
+  activeFactorKey,
+  activeFactorSlot,
+  activeFactorTitle,
+  addFactorSlot,
+  addVar,
+  canExecute,
+  deleteFactor,
+  displaySlots,
+  dragOverSlot,
+  dynamicFactorCount,
+  factorMenuKey,
+  getFactorShortLabel,
+  isCfaMethod,
+  maxDynamicFactors,
+  onDragLeave,
+  onDragOver,
+  onDrop,
+  optionValues,
+  removeVar,
+  renameFactor,
+  resetSlots,
+  selectFactor,
+  setOptionValue,
+  slotValues,
+  toggleFactorMenu,
+} = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
+const {
+  calcBox,
+  calcHist,
+  chartDataVisible,
+  copyChart,
+  downloadChart,
+  fmtBin,
+  hideTip,
+  moveTip,
+  resetCharts,
+  setChartRef,
+  showBoxTip,
+  showHistTip,
+  tip,
+  toggleChartData,
+} = useAnalysisCharts()
+const {
+  cellClass,
+  copyAllResults,
+  copyTable,
+  displayResults,
+  exportPDF,
+  exportWord,
+  getVarType,
+  getVarTypeClass,
+  reportMetaTags,
+  reportTitle,
+} = useAnalysisReport(props)
+
+const {
+  aiLoading,
+  aiResult,
+  requestAiInterpret,
+  resetAiInterpretation,
+} = useAiInterpretation(toRef(props, 'sessionId'))
+const {
+  closeShareDialog,
+  copiedShareUrl,
+  copyShareUrl,
+  fillRandomSharePassword,
+  generateShareLink,
+  openShareDialog,
+  shareDialogVisible,
+  shareError,
+  shareExpiryDays,
+  shareLoading,
+  sharePassword,
+  shareText,
+  shareUrl,
+} = useAnalysisShare({
+  aiResult,
+  displayResults,
+  reportMetaTags,
+  reportTitle,
+  results: toRef(props, 'results'),
+  sessionId: toRef(props, 'sessionId'),
+})
+const {
+  editConfig,
+  editingConfig,
+  showReport,
+} = useAnalysisViewState(props, emit, { resetAiInterpretation, resetCharts })
+
+defineExpose({ addVar, slotValues, optionValues, canExecute })
+</script>
