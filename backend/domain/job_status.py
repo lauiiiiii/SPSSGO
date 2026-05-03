@@ -1,0 +1,22 @@
+PENDING = "pending"
+QUEUED = "queued"
+RUNNING = "running"
+SUCCEEDED = "succeeded"
+FAILED = "failed"
+RETRYING = "retrying"
+CANCELED = "canceled"
+
+TERMINAL_JOB_STATUSES = (
+    SUCCEEDED,
+    FAILED,
+    CANCELED,
+)
+
+ACTIVE_JOB_STATUSES = (
+    PENDING,
+    QUEUED,
+    RUNNING,
+    RETRYING,
+)
+
+ALL_JOB_STATUSES = ACTIVE_JOB_STATUSES + TERMINAL_JOB_STATUSES
