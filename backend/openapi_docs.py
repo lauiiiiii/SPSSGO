@@ -20,6 +20,7 @@ SPSSGO 前后端分离 API 文档。
 OPENAPI_TAGS = [
     {"name": "Auth", "description": "登录、刷新令牌、当前用户和账号资料接口。"},
     {"name": "Session", "description": "分析会话管理。会话是数据、变量、分析结果的业务容器。"},
+    {"name": "Datasets", "description": "我的数据集、数据集文件夹和版本归档接口。"},
     {"name": "Files", "description": "数据文件上传、预览、变量读取和文件下载。"},
     {"name": "Processing", "description": "数据处理、变量重命名、变量类型和数据集版本管理。"},
     {"name": "Analysis", "description": "AI 分析计划、统计方法执行、结果管理和 Word 报告生成。"},
@@ -296,7 +297,76 @@ COMPONENT_SCHEMAS = {
             "label": {"type": "string", "description": "版本说明"},
             "is_current": {"type": "boolean", "description": "是否当前激活版本"},
             "created_at": {"type": "string", "nullable": True, "description": "创建时间"},
+            "source_job_id": {"type": "string", "nullable": True, "description": "生成该版本的任务 ID"},
+            "source_method": {"type": "string", "nullable": True, "description": "生成该版本的数据处理方法 ID"},
+            "source_job_status": {"type": "string", "nullable": True, "description": "来源任务状态"},
+            "source_job_type": {"type": "string", "nullable": True, "description": "来源任务类型"},
         },
+    },
+    "DatasetItem": {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer", "description": "数据集 ID"},
+            "session_id": {"type": "string", "description": "关联会话 ID"},
+            "name": {"type": "string", "description": "数据集显示名称"},
+            "original_filename": {"type": "string", "description": "原始文件名"},
+            "created_at": {"type": "number", "nullable": True, "description": "创建时间戳"},
+            "last_used_at": {"type": "number", "nullable": True, "description": "最近使用时间戳"},
+            "current_version_id": {"type": "integer", "nullable": True, "description": "当前版本 ID"},
+            "current_version_no": {"type": "integer", "nullable": True, "description": "当前版本号"},
+            "version_count": {"type": "integer", "description": "版本数量"},
+            "result_count": {"type": "integer", "description": "分析结果数量"},
+            "row_count": {"type": "integer", "description": "行数"},
+            "column_count": {"type": "integer", "description": "列数"},
+        },
+    },
+    "DatasetList": {
+        "type": "object",
+        "properties": {
+            "datasets": {"type": "array", "items": {"$ref": "#/components/schemas/DatasetItem"}},
+            "total": {"type": "integer", "description": "匹配条件下的数据集总数"},
+            "page": {"type": "integer", "description": "当前页码"},
+            "page_size": {"type": "integer", "description": "每页数量"},
+            "sort": {"type": "string", "description": "当前排序字段"},
+            "q": {"type": "string", "description": "当前搜索关键词"},
+        },
+    },
+    "RenameDatasetRequest": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "新的数据集名称，最多 120 个字符"},
+        },
+        "required": ["name"],
+    },
+    "DatasetFolder": {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer", "description": "文件夹 ID"},
+            "name": {"type": "string", "description": "文件夹名称"},
+            "created_at": {"type": "number", "nullable": True, "description": "创建时间戳"},
+            "sessionIds": {"type": "array", "items": {"type": "string"}, "description": "文件夹内数据集对应的 session_id"},
+        },
+    },
+    "DatasetFolderList": {
+        "type": "object",
+        "properties": {
+            "folders": {"type": "array", "items": {"$ref": "#/components/schemas/DatasetFolder"}},
+        },
+    },
+    "DatasetFolderRequest": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "文件夹名称，最多 80 个字符"},
+        },
+        "required": ["name"],
+    },
+    "MoveDatasetFolderRequest": {
+        "type": "object",
+        "properties": {
+            "session_id": {"type": "string", "description": "要移动的数据集会话 ID"},
+            "folder_id": {"type": "integer", "nullable": True, "description": "目标文件夹 ID，空值表示移出文件夹"},
+        },
+        "required": ["session_id"],
     },
     "DatasetVersions": {
         "type": "object",
@@ -419,6 +489,51 @@ OPERATION_DOCS: dict[tuple[str, str], dict[str, str]] = {
         "tag": "Session",
         "summary": "删除会话",
         "description": "删除当前用户自己的指定会话及相关业务数据。前端删除前应二次确认。",
+    },
+    ("get", "/api/datasets"): {
+        "tag": "Datasets",
+        "summary": "获取我的数据集列表",
+        "description": "返回当前用户可访问的数据集、当前版本、版本数量、分析数量和行列摘要。支持查询参数：`q` 搜索名称/文件名/session_id，`sort` 可选 recent/created/name/versions/results，`page` 和 `page_size` 控制分页。管理员可查看全量数据集。",
+    },
+    ("patch", "/api/datasets/{dataset_id}"): {
+        "tag": "Datasets",
+        "summary": "重命名数据集",
+        "description": "修改数据集显示名称。只能修改自己的数据集，管理员可修改任意数据集。",
+    },
+    ("post", "/api/datasets/{dataset_id}/touch"): {
+        "tag": "Datasets",
+        "summary": "更新数据集最近使用时间",
+        "description": "前端切换到某个数据集后可调用该接口记录最近使用时间。",
+    },
+    ("delete", "/api/datasets/{dataset_id}"): {
+        "tag": "Datasets",
+        "summary": "删除数据集",
+        "description": "删除数据集关联会话、版本、分析结果和存储文件。删除前必须由前端二次确认。",
+    },
+    ("get", "/api/dataset-folders"): {
+        "tag": "Datasets",
+        "summary": "获取数据集文件夹",
+        "description": "返回当前用户的数据集文件夹，以及每个文件夹内的数据集 session_id 列表。",
+    },
+    ("post", "/api/dataset-folders"): {
+        "tag": "Datasets",
+        "summary": "创建数据集文件夹",
+        "description": "为当前用户创建一个数据集文件夹。文件夹只保存归类关系，不移动实际文件。",
+    },
+    ("patch", "/api/dataset-folders/{folder_id}"): {
+        "tag": "Datasets",
+        "summary": "重命名数据集文件夹",
+        "description": "修改当前用户自己的数据集文件夹名称。",
+    },
+    ("delete", "/api/dataset-folders/{folder_id}"): {
+        "tag": "Datasets",
+        "summary": "删除数据集文件夹",
+        "description": "删除文件夹及归类关系，不删除文件夹内的数据集。",
+    },
+    ("put", "/api/dataset-folder-items"): {
+        "tag": "Datasets",
+        "summary": "移动数据集到文件夹",
+        "description": "把数据集移动到指定文件夹；`folder_id` 为空时表示移出文件夹。",
     },
     ("post", "/api/upload/{session_id}"): {
         "tag": "Files",
@@ -683,6 +798,34 @@ REQUEST_EXAMPLES: dict[tuple[str, str], dict] = {
             "value": {"version_id": 12},
         },
     },
+    ("patch", "/api/datasets/{dataset_id}"): {
+        "重命名数据集": {
+            "summary": "修改数据集显示名称",
+            "value": {"name": "用户满意度调研"},
+        },
+    },
+    ("post", "/api/dataset-folders"): {
+        "新建文件夹": {
+            "summary": "创建数据集归类文件夹",
+            "value": {"name": "问卷项目"},
+        },
+    },
+    ("patch", "/api/dataset-folders/{folder_id}"): {
+        "重命名文件夹": {
+            "summary": "修改文件夹名称",
+            "value": {"name": "2026 问卷项目"},
+        },
+    },
+    ("put", "/api/dataset-folder-items"): {
+        "移动数据集": {
+            "summary": "把数据集移动到文件夹",
+            "value": {"session_id": "sess_xxx", "folder_id": 3},
+        },
+        "移出文件夹": {
+            "summary": "把数据集移出文件夹",
+            "value": {"session_id": "sess_xxx", "folder_id": None},
+        },
+    },
     ("post", "/api/execute-method/{session_id}"): {
         "频数分析": {
             "summary": "提交单个分析方法任务",
@@ -787,6 +930,38 @@ RESPONSE_EXAMPLES: dict[tuple[str, str], dict] = {
             "value": {"headers": ["gender", "score"], "rows": [["男", 90], ["女", 86]], "total_rows": 2},
         },
     },
+    ("get", "/api/datasets"): {
+        "数据集列表": {
+            "summary": "我的数据集",
+            "value": {
+                "datasets": [
+                    {
+                        "id": 8,
+                        "session_id": "sess_xxx",
+                        "name": "用户满意度调研",
+                        "original_filename": "survey.xlsx",
+                        "current_version_id": 12,
+                        "current_version_no": 3,
+                        "version_count": 3,
+                        "result_count": 5,
+                        "row_count": 300,
+                        "column_count": 24,
+                    }
+                ],
+                "total": 1,
+                "page": 1,
+                "page_size": 200,
+                "sort": "recent",
+                "q": "",
+            },
+        },
+    },
+    ("get", "/api/dataset-folders"): {
+        "文件夹列表": {
+            "summary": "我的数据集文件夹",
+            "value": {"folders": [{"id": 3, "name": "问卷项目", "sessionIds": ["sess_xxx"]}]},
+        },
+    },
     ("get", "/api/variables/{session_id}"): {
         "变量列表": {
             "summary": "变量元数据",
@@ -803,6 +978,10 @@ REQUEST_SCHEMA_MAP = {
     ("post", "/api/process/{session_id}"): "ProcessRequest",
     ("patch", "/api/variables/{session_id}/{column_name}/rename"): "RenameVariableRequest",
     ("patch", "/api/variables/{session_id}/{column_name}/type"): "ChangeVariableTypeRequest",
+    ("patch", "/api/datasets/{dataset_id}"): "RenameDatasetRequest",
+    ("post", "/api/dataset-folders"): "DatasetFolderRequest",
+    ("patch", "/api/dataset-folders/{folder_id}"): "DatasetFolderRequest",
+    ("put", "/api/dataset-folder-items"): "MoveDatasetFolderRequest",
     ("post", "/api/dataset-versions/{session_id}/activate"): "ActivateDatasetVersionRequest",
     ("post", "/api/execute-method/{session_id}"): "ExecuteMethodRequest",
     ("patch", "/api/results/{session_id}/{result_id}"): "RenameResultRequest",
@@ -817,6 +996,8 @@ RESPONSE_SCHEMA_MAP = {
     ("post", "/api/session"): "SessionInfo",
     ("get", "/api/session/{session_id}"): "SessionInfo",
     ("get", "/api/sessions"): "SessionList",
+    ("get", "/api/datasets"): "DatasetList",
+    ("get", "/api/dataset-folders"): "DatasetFolderList",
     ("post", "/api/upload/{session_id}"): "JobAccepted",
     ("get", "/api/data-preview/{session_id}"): "DataPreview",
     ("get", "/api/variable-values/{session_id}/{column_name}"): "VariableValues",

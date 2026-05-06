@@ -118,16 +118,45 @@ def upgrade() -> None:
             id BIGINT PRIMARY KEY AUTO_INCREMENT,
             owner_id BIGINT NOT NULL,
             session_id VARCHAR(32) NOT NULL,
+            name VARCHAR(255) NULL,
             original_filename VARCHAR(500) NOT NULL,
             storage_key VARCHAR(1000) NOT NULL,
             content_type VARCHAR(255),
             size_bytes BIGINT DEFAULT 0,
             current_version_id BIGINT NULL,
             created_at DOUBLE NOT NULL,
+            last_used_at DOUBLE NULL,
             INDEX idx_dataset_owner (owner_id),
             UNIQUE KEY uniq_session_dataset (session_id),
             CONSTRAINT fk_dataset_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_dataset_session FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """
+    )
+    _safe_execute(
+        """
+        CREATE TABLE IF NOT EXISTS dataset_folders (
+            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+            owner_id BIGINT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            created_at DOUBLE NOT NULL,
+            UNIQUE KEY uniq_dataset_folder_owner_name (owner_id, name),
+            INDEX idx_dataset_folders_owner (owner_id),
+            CONSTRAINT fk_dataset_folders_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """
+    )
+    _safe_execute(
+        """
+        CREATE TABLE IF NOT EXISTS dataset_folder_items (
+            folder_id BIGINT NOT NULL,
+            dataset_id BIGINT NOT NULL,
+            created_at DOUBLE NOT NULL,
+            PRIMARY KEY (folder_id, dataset_id),
+            UNIQUE KEY uniq_dataset_folder_item (dataset_id),
+            INDEX idx_dataset_folder_items_folder (folder_id),
+            CONSTRAINT fk_dataset_folder_items_folder FOREIGN KEY (folder_id) REFERENCES dataset_folders(id) ON DELETE CASCADE,
+            CONSTRAINT fk_dataset_folder_items_dataset FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """
     )
@@ -190,10 +219,14 @@ def upgrade() -> None:
     _safe_execute("ALTER TABLE results ADD COLUMN job_id VARCHAR(32) NULL AFTER owner_id")
     _safe_execute("ALTER TABLE results ADD COLUMN dataset_version_id BIGINT NULL AFTER job_id")
     _safe_execute("ALTER TABLE results ADD COLUMN sections_json MEDIUMTEXT AFTER description")
+    _safe_execute("ALTER TABLE datasets ADD COLUMN name VARCHAR(255) NULL AFTER session_id")
+    _safe_execute("ALTER TABLE datasets ADD COLUMN last_used_at DOUBLE NULL AFTER created_at")
 
 
 def downgrade() -> None:
     _safe_execute("DROP TABLE IF EXISTS jobs")
+    _safe_execute("DROP TABLE IF EXISTS dataset_folder_items")
+    _safe_execute("DROP TABLE IF EXISTS dataset_folders")
     _safe_execute("DROP TABLE IF EXISTS dataset_versions")
     _safe_execute("DROP TABLE IF EXISTS datasets")
     _safe_execute("DROP TABLE IF EXISTS variable_metadata")

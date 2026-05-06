@@ -23,6 +23,7 @@ from backend.observability import (
 from backend.admin.routes import router as admin_router
 from backend.routes.analysis import router as analysis_router
 from backend.routes.auth import router as auth_router
+from backend.routes.datasets import router as datasets_router
 from backend.routes.files import router as files_router
 from backend.routes.frontend import mount_frontend_assets, router as frontend_router
 from backend.routes.health import router as health_router
@@ -94,6 +95,7 @@ secure_dependencies = [Depends(auth.access_token_required)]
 app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(session_router, dependencies=secure_dependencies)
+app.include_router(datasets_router, dependencies=secure_dependencies)
 app.include_router(files_router, dependencies=secure_dependencies)
 app.include_router(processing_router, dependencies=secure_dependencies)
 app.include_router(analysis_router, dependencies=secure_dependencies)

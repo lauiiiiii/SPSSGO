@@ -198,12 +198,14 @@ async def _bootstrap_schema(cur):
                 id BIGINT PRIMARY KEY AUTO_INCREMENT,
                 owner_id BIGINT NOT NULL,
                 session_id VARCHAR(32) NOT NULL,
+                name VARCHAR(255) NULL,
                 original_filename VARCHAR(500) NOT NULL,
                 storage_key VARCHAR(1000) NOT NULL,
                 content_type VARCHAR(255),
                 size_bytes BIGINT DEFAULT 0,
                 current_version_id BIGINT NULL,
                 created_at DOUBLE NOT NULL,
+                last_used_at DOUBLE NULL,
                 INDEX idx_dataset_owner (owner_id),
                 UNIQUE KEY uniq_session_dataset (session_id),
                 CONSTRAINT fk_dataset_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -229,6 +231,29 @@ async def _bootstrap_schema(cur):
                 UNIQUE KEY uniq_dataset_version (dataset_id, version_no),
                 CONSTRAINT fk_dataset_versions_dataset FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE,
                 CONSTRAINT fk_dataset_versions_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        await cur.execute("""
+            CREATE TABLE IF NOT EXISTS dataset_folders (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                owner_id BIGINT NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                created_at DOUBLE NOT NULL,
+                UNIQUE KEY uniq_dataset_folder_owner_name (owner_id, name),
+                INDEX idx_dataset_folders_owner (owner_id),
+                CONSTRAINT fk_dataset_folders_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        await cur.execute("""
+            CREATE TABLE IF NOT EXISTS dataset_folder_items (
+                folder_id BIGINT NOT NULL,
+                dataset_id BIGINT NOT NULL,
+                created_at DOUBLE NOT NULL,
+                PRIMARY KEY (folder_id, dataset_id),
+                UNIQUE KEY uniq_dataset_folder_item (dataset_id),
+                INDEX idx_dataset_folder_items_folder (folder_id),
+                CONSTRAINT fk_dataset_folder_items_folder FOREIGN KEY (folder_id) REFERENCES dataset_folders(id) ON DELETE CASCADE,
+                CONSTRAINT fk_dataset_folder_items_dataset FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         await cur.execute(f"""
@@ -290,6 +315,9 @@ async def _bootstrap_schema(cur):
         await _try_execute(cur, "ALTER TABLE sessions ADD COLUMN owner_id BIGINT NULL AFTER id")
         await _try_execute(cur, "ALTER TABLE sessions ADD COLUMN current_dataset_id BIGINT NULL AFTER owner_id")
         await _try_execute(cur, "ALTER TABLE sessions ADD COLUMN current_dataset_version_id BIGINT NULL AFTER current_dataset_id")
+        await _try_execute(cur, "ALTER TABLE datasets ADD COLUMN name VARCHAR(255) NULL AFTER session_id")
+        await _try_execute(cur, "ALTER TABLE datasets ADD COLUMN last_used_at DOUBLE NULL AFTER created_at")
+        await _try_execute(cur, "ALTER TABLE dataset_versions ADD COLUMN name VARCHAR(255) NULL AFTER version_no")
         await _try_execute(cur, "ALTER TABLE results ADD COLUMN owner_id BIGINT NULL AFTER session_id")
         await _try_execute(cur, "ALTER TABLE results ADD COLUMN job_id VARCHAR(32) NULL AFTER owner_id")
         await _try_execute(cur, "ALTER TABLE results ADD COLUMN dataset_version_id BIGINT NULL AFTER job_id")
@@ -380,13 +408,16 @@ from backend.repositories.variable_metadata_repository import (
     upsert_variable_metadata,
 )
 from backend.repositories.dataset_repository import (
+    count_datasets_for_owner,
     create_dataset_version,
     get_current_dataset_version_for_session,
     get_dataset,
     get_dataset_for_session,
     get_dataset_version,
+    list_datasets_for_owner,
     list_dataset_versions,
     update_dataset,
+    update_dataset_version,
     upsert_dataset_for_session,
 )
 from backend.repositories.job_repository import (
@@ -407,6 +438,7 @@ from backend.repositories.sandbox_execution_repository import (
 __all__ = [
     "close_db",
     "create_dataset_version",
+    "count_datasets_for_owner",
     "create_job",
     "create_sandbox_execution",
     "create_session",
@@ -419,6 +451,7 @@ __all__ = [
     "get_dataset",
     "get_dataset_for_session",
     "get_dataset_version",
+    "list_datasets_for_owner",
     "get_job",
     "get_job_for_user",
     "get_recent_sessions",
@@ -432,6 +465,7 @@ __all__ = [
     "get_variable_metadata_map",
     "init_db",
     "list_dataset_versions",
+    "update_dataset_version",
     "list_jobs_for_session",
     "list_sandbox_executions_for_job",
     "ping_db",
