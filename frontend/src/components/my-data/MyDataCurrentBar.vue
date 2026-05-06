@@ -4,8 +4,11 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3V3z" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1" opacity=".4"/></svg>
     </div>
     <div class="md-current-bar-info">
-      <span class="md-current-bar-name">{{ dataFileName }}</span>
-      <span class="md-current-bar-meta">{{ totalRows }} 行 &middot; {{ variableCount }} 个变量</span>
+      <div class="md-current-bar-title">
+        <span class="md-current-bar-name">{{ dataFileName }}</span>
+        <span v-if="currentVersionNo" class="md-current-bar-version">v{{ currentVersionNo }}</span>
+      </div>
+      <span class="md-current-bar-meta">{{ datasetMeta }}</span>
     </div>
     <div class="md-current-bar-actions">
       <button class="md-bar-btn md-bar-btn--teal" @click="$emit('go-processing', currentSessionId)">
@@ -21,12 +24,24 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   currentSessionId: { type: String, default: '' },
   dataFileName: { type: String, default: '' },
   totalRows: { type: Number, default: 0 },
   variableCount: { type: Number, default: 0 },
+  versionCount: { type: Number, default: 0 },
+  resultCount: { type: Number, default: 0 },
+  currentVersionNo: { type: [Number, String], default: null },
 })
 
 defineEmits(['go-analysis', 'go-processing'])
+
+const datasetMeta = computed(() => {
+  const parts = [`${props.totalRows} 行`, `${props.variableCount} 个变量`]
+  if (props.versionCount) parts.push(`${props.versionCount} 个版本`)
+  if (props.resultCount) parts.push(`${props.resultCount} 条分析`)
+  return parts.join(' · ')
+})
 </script>

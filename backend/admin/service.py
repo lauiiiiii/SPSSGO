@@ -10,7 +10,13 @@ from backend.config import (
     SESSION_EXPIRE_HOURS,
 )
 from backend.database import cleanup_expired, get_session
-from backend.admin.repository import delete_session_records, get_dashboard_stats, list_admin_sessions
+from backend.admin.repository import (
+    count_datasets_by_filename,
+    delete_session_records,
+    get_dashboard_stats,
+    list_admin_sessions,
+    list_session_ids_by_filename,
+)
 from backend.admin.repository import (
     get_admin_operations_summary,
     list_admin_jobs,
@@ -110,4 +116,25 @@ async def get_admin_system_info():
         "session_expire_hours": SESSION_EXPIRE_HOURS,
         "max_concurrent_tasks": MAX_CONCURRENT_TASKS,
     }
+
+
+async def cleanup_datasets_by_filename(filename: str, *, preview: bool = False) -> dict:
+    if not filename or len(filename) > 500:
+        raise HTTPException(400, "文件名不能为空或超过 500 字符")
+    count = await count_datasets_by_filename(filename)
+    if count == 0:
+        return {"count": 0, "deleted": 0, "filename": filename, "preview": preview}
+    if preview:
+        return {"count": count, "deleted": 0, "filename": filename, "preview": True}
+    session_ids = await list_session_ids_by_filename(filename)
+    deleted = 0
+    failed = 0
+    for sid in session_ids:
+        try:
+            storage_service.delete_session(sid)
+            await delete_session_records(sid)
+            deleted += 1
+        except Exception:
+            failed += 1
+    return {"count": count, "deleted": deleted, "failed": failed, "filename": filename, "preview": False}
 

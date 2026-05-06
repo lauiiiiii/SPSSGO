@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 import tempfile
 import uuid
 
@@ -101,7 +102,7 @@ async def activate_dataset_version(session_id: str, version_id: int):
     if not version or version.get("session_id") != session_id or version.get("dataset_id") != session.get("current_dataset_id"):
         raise RuntimeError("数据版本不存在")
 
-    await update_dataset(session["current_dataset_id"], current_version_id=version["id"])
+    await update_dataset(session["current_dataset_id"], current_version_id=version["id"], last_used_at=time.time())
     await update_session(
         session_id,
         current_dataset_id=session["current_dataset_id"],

@@ -26,19 +26,29 @@
     </template>
     <template v-else>
       <div class="md-card-label">{{ folder.name }}</div>
-      <div class="md-card-meta">{{ fileCount }} 个文件</div>
+      <div class="md-card-meta">{{ folderCountText }}</div>
     </template>
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   dropActive: { type: Boolean, default: false },
   fileCount: { type: Number, default: 0 },
   folder: { type: Object, required: true },
   modelValue: { type: String, default: '' },
   open: { type: Boolean, default: false },
   renaming: { type: Boolean, default: false },
+  totalFileCount: { type: Number, default: null },
+})
+
+const folderCountText = computed(() => {
+  if (props.totalFileCount !== null && props.totalFileCount !== props.fileCount) {
+    return `匹配 ${props.fileCount} / 共 ${props.totalFileCount}`
+  }
+  return `${props.fileCount} 个文件`
 })
 
 defineEmits([

@@ -7,7 +7,19 @@
     @contextmenu.prevent="$emit('open-menu', $event, dataSet, inFolder)"
     @dragstart="$emit('drag-start', $event, dataSet.sessionId)"
   >
-    <button class="md-card-more" @click.stop="$emit('open-menu-button', $event, dataSet, inFolder)" title="更多操作" aria-label="更多操作">
+    <label
+      v-if="selectable"
+      class="md-card-select"
+      :class="{ 'md-card-select--checked': selected }"
+      @click.stop
+    >
+      <input
+        type="checkbox"
+        :checked="selected"
+        @change="$emit('select', dataSet.sessionId)"
+      />
+    </label>
+    <button class="md-card-more md-tooltip" @click.stop="$emit('open-menu-button', $event, dataSet, inFolder)" aria-label="更多操作" data-tooltip="更多操作">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <circle cx="4" cy="8" r="1.1" fill="currentColor"/>
         <circle cx="8" cy="8" r="1.1" fill="currentColor"/>
@@ -30,19 +42,38 @@
     </template>
     <template v-else>
       <div class="md-card-label">{{ dataSet.topic || dataSet.fileName }}</div>
-      <div class="md-card-meta">{{ formatDate(dataSet.createdAt) }}</div>
+      <div class="md-card-meta">
+        <span>{{ datasetMeta }}</span>
+        <span>{{ formatDate(dataSet.createdAt) }}</span>
+      </div>
     </template>
+    <span v-if="dataSet.currentVersionNo" class="md-card-version">v{{ dataSet.currentVersionNo }}</span>
     <span v-if="dataSet.isCurrent" class="md-card-badge">当前</span>
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   dataSet: { type: Object, required: true },
   formatDate: { type: Function, required: true },
   inFolder: { type: Boolean, default: false },
   modelValue: { type: String, default: '' },
   renaming: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: false },
+  selected: { type: Boolean, default: false },
+})
+
+const datasetMeta = computed(() => {
+  const parts = []
+  if (props.dataSet.rowCount || props.dataSet.columnCount) {
+    parts.push(`${props.dataSet.rowCount || 0} 行 / ${props.dataSet.columnCount || 0} 列`)
+  }
+  if (props.dataSet.fileSize) parts.push(props.dataSet.fileSize)
+  if (props.dataSet.versionCount) parts.push(`${props.dataSet.versionCount} 个版本`)
+  if (props.dataSet.resultCount) parts.push(`${props.dataSet.resultCount} 条分析`)
+  return parts.join(' · ') || '数据集'
 })
 
 defineEmits([
@@ -51,6 +82,7 @@ defineEmits([
   'drag-start',
   'open-menu',
   'open-menu-button',
+  'select',
   'switch',
   'update:modelValue',
 ])

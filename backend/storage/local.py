@@ -115,6 +115,6 @@ class LocalStorage(BaseStorage):
         return os.path.join(self.root_dir, category, session_id)
 
     def _path(self, category: str, session_id: str, relative_path: str) -> str:
-        normalized = relative_path.replace("/", os.sep)
+        normalized = relative_path.replace("/", os.sep).replace("\\", os.sep)
         return os.path.join(self._session_dir(category, session_id), normalized)
 

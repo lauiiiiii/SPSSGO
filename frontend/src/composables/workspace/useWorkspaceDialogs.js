@@ -7,6 +7,7 @@ export function useWorkspaceDialogs() {
     message: '',
     type: '',
     targetId: '',
+    targetDatasetId: null,
     targetIndex: -1,
     suppressForHour: false,
   })
@@ -25,6 +26,7 @@ export function useWorkspaceDialogs() {
     confirmDialog.message = ''
     confirmDialog.type = ''
     confirmDialog.targetId = ''
+    confirmDialog.targetDatasetId = null
     confirmDialog.targetIndex = -1
     confirmDialog.suppressForHour = false
   }
@@ -37,12 +39,13 @@ export function useWorkspaceDialogs() {
     renameDialog.targetIndex = -1
   }
 
-  function openConfirmDialog({ message, targetId = '', targetIndex = -1, title, type }) {
+  function openConfirmDialog({ message, targetDatasetId = null, targetId = '', targetIndex = -1, title, type }) {
     confirmDialog.visible = true
     confirmDialog.title = title
     confirmDialog.message = message
     confirmDialog.type = type
     confirmDialog.targetId = targetId
+    confirmDialog.targetDatasetId = targetDatasetId
     confirmDialog.targetIndex = targetIndex
     confirmDialog.suppressForHour = false
   }

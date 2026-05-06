@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """会话仓储，只管 sessions 生命周期，别塞分析和文件处理逻辑。"""
+import logging
 import time
 import uuid
 
@@ -9,6 +10,8 @@ import backend.database as db
 from backend.config import SESSION_EXPIRE_HOURS
 from backend.domain import CREATED
 from backend.storage import storage_service
+
+logger = logging.getLogger(__name__)
 
 
 async def create_session(owner_id: int | None = None) -> str:
@@ -92,3 +95,8 @@ async def delete_session(session_id: str):
     async with db._pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute("DELETE FROM sessions WHERE id = %s", (session_id,))
+    # DB 外键只管业务记录，文件目录必须手动清，不然后面越删越脏。
+    try:
+        storage_service.delete_session(session_id)
+    except Exception:
+        logger.exception("failed to delete session storage", extra={"session_id": session_id})

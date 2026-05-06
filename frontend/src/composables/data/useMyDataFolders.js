@@ -1,6 +1,6 @@
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 
-export function useMyDataFolders(props, emit) {
+export function useMyDataFolders(props, emit, options = {}) {
   const openFolders = reactive({})
   const showNewFolder = ref(false)
   const newFolderName = ref('')
@@ -30,8 +30,10 @@ export function useMyDataFolders(props, emit) {
   })
 
   const ungroupedDataSets = computed(() => (
-    props.allDataSets.filter(dataSet => !allInFolders.value.has(dataSet.sessionId))
+    visibleDataSets.value.filter(dataSet => !allInFolders.value.has(dataSet.sessionId))
   ))
+
+  const visibleDataSets = computed(() => options.allDataSets?.value || props.allDataSets)
 
   watch(showNewFolder, (visible) => {
     if (visible) nextTick(() => { newFolderInput.value?.focus() })
@@ -39,11 +41,16 @@ export function useMyDataFolders(props, emit) {
 
   function folderDataSets(folder) {
     const sessionIds = new Set(folder.sessionIds)
-    return props.allDataSets.filter(dataSet => sessionIds.has(dataSet.sessionId))
+    return visibleDataSets.value.filter(dataSet => sessionIds.has(dataSet.sessionId))
   }
 
   function toggleFolder(id) {
-    openFolders[id] = !openFolders[id]
+    const wasOpen = openFolders[id]
+    // 手风琴效果：展开当前时关闭其他已打开的文件夹
+    for (const key in openFolders) {
+      openFolders[key] = false
+    }
+    openFolders[id] = !wasOpen
   }
 
   function scheduleFolderAutoOpen(folderId) {

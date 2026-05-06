@@ -380,6 +380,83 @@ export function getSessions() {
   return request('/api/sessions')
 }
 
+export function getDatasets(params = {}) {
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') search.set(key, String(value))
+  })
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+  return request(`/api/datasets${suffix}`)
+}
+
+export function renameDataset(datasetId, name) {
+  return request(`/api/datasets/${datasetId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function renameDatasetVersion(versionId, name) {
+  return request(`/api/dataset-versions/${versionId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function deleteDatasetVersion(versionId) {
+  return request(`/api/dataset-versions/${versionId}`, { method: 'DELETE' })
+}
+
+export function copyDatasetVersion(versionId, name) {
+  return request(`/api/dataset-versions/${versionId}/copy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function touchDataset(datasetId) {
+  return request(`/api/datasets/${datasetId}/touch`, { method: 'POST' })
+}
+
+export function deleteDataset(datasetId) {
+  return request(`/api/datasets/${datasetId}`, { method: 'DELETE' })
+}
+
+export function getDatasetFolders() {
+  return request('/api/dataset-folders')
+}
+
+export function createDatasetFolder(name) {
+  return request('/api/dataset-folders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function renameDatasetFolder(folderId, name) {
+  return request(`/api/dataset-folders/${folderId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function deleteDatasetFolder(folderId) {
+  return request(`/api/dataset-folders/${folderId}`, { method: 'DELETE' })
+}
+
+export function moveDatasetToFolder(sessionId, folderId) {
+  return request('/api/dataset-folder-items', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, folder_id: folderId || null }),
+  })
+}
+
 export function getSessionInfo(sessionId) {
   return request(`/api/session/${sessionId}`)
 }
@@ -406,8 +483,24 @@ export function getQuestionnaireContent(sessionId, filename) {
   return request(`/api/questionnaire/${sessionId}/${encodeURIComponent(filename)}`)
 }
 
-export function getDataPreview(sessionId) {
-  return request(`/api/data-preview/${sessionId}`)
+export function getDataPreview(sessionId, limit = 100) {
+  return request(`/api/data-preview/${sessionId}?limit=${encodeURIComponent(limit)}`)
+}
+
+export function batchDeleteDatasets(sessionIds) {
+  return request('/api/datasets/batch-delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_ids: sessionIds }),
+  })
+}
+
+export function batchMoveDatasetsToFolder(sessionIds, folderId) {
+  return request('/api/dataset-folder-items/batch-move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_ids: sessionIds, folder_id: folderId }),
+  })
 }
 
 export async function getDataFileBuffer(sessionId) {

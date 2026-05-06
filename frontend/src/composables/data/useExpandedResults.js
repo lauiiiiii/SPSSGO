@@ -1,12 +1,13 @@
 import { computed, ref, watch } from 'vue'
 import { buildVariableMetaMap, createResultDisplayFormatter } from '../../utils/resultDisplay.js'
 
-export function useExpandedResults(props) {
+export function useExpandedResults(props, historyItemsSource = null) {
   const expandedResultIdx = ref(-1)
+  const historyItems = computed(() => historyItemsSource?.value || props.historyItems)
 
   const expandedResult = computed(() => {
-    if (expandedResultIdx.value < 0 || expandedResultIdx.value >= props.historyItems.length) return null
-    return props.historyItems[expandedResultIdx.value]
+    if (expandedResultIdx.value < 0 || expandedResultIdx.value >= historyItems.value.length) return null
+    return historyItems.value[expandedResultIdx.value]
   })
 
   const variableMetaMap = computed(() => buildVariableMetaMap(props.variables))
@@ -17,6 +18,9 @@ export function useExpandedResults(props) {
   })
 
   watch(() => props.currentSessionId, () => {
+    expandedResultIdx.value = -1
+  })
+  watch(historyItems, () => {
     expandedResultIdx.value = -1
   })
 

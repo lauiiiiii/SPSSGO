@@ -3,6 +3,7 @@
     <div class="login-card">
       <!-- 左侧品牌区 -->
       <div class="card-brand">
+        <div class="diagonal-grid"></div>
         <div class="brand-inner">
           <img class="brand-logo" src="/logo.png" alt="SPSSGO" />
           <p class="brand-desc">从数据到洞察，快人一步</p>
@@ -21,7 +22,7 @@
             </div>
           </div>
         </div>
-        <p class="brand-copy">&copy; 2024 SPSSGO</p>
+        <p class="brand-copy">&copy; 2026 SPSSGO</p>
       </div>
 
       <!-- 右侧登录区 -->
@@ -146,6 +147,46 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
   justify-content: center;
   padding: 40px 32px;
   position: relative;
+  overflow: hidden;
+}
+
+/* 装饰花纹 */
+.card-brand::before,
+.card-brand::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+/* 大的半透明圆 */
+.card-brand::before {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
+  top: -80px;
+  right: -80px;
+}
+/* 小的装饰圆 */
+.card-brand::after {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 24px solid rgba(255,255,255,.08);
+  bottom: -40px;
+  left: -40px;
+}
+/* 斜纹网格 */
+.card-brand .diagonal-grid {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,.03) 0,
+    rgba(255,255,255,.03) 1px,
+    transparent 1px,
+    transparent 12px
+  );
+  pointer-events: none;
 }
 
 .brand-inner {

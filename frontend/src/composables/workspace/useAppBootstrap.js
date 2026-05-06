@@ -7,6 +7,7 @@ export function useAppBootstrap({
   dataFileName,
   historyItems,
   loadAllDataSets,
+  loadFolderDataSets,
   mapStoredResults,
   methodCategories,
   methodsMeta,
@@ -72,6 +73,7 @@ export function useAppBootstrap({
     await loadMethods()
     await restoreSavedSession()
     await loadAllDataSets()
+    if (loadFolderDataSets) await loadFolderDataSets()
     startTaskJobPolling()
   })
 

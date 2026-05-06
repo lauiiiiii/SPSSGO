@@ -7,6 +7,7 @@ from backend.admin_auth import current_user_required
 
 from backend.admin.service import (
     cleanup_admin_sessions,
+    cleanup_datasets_by_filename,
     create_admin_user,
     delete_admin_session,
     get_admin_ai_config,
@@ -51,6 +52,11 @@ class AdminUserResetPasswordPayload(BaseModel):
 
 class AdminUserToggleActivePayload(BaseModel):
     is_active: bool
+
+
+class DatasetCleanupPayload(BaseModel):
+    filename: str
+    preview: bool = True
 
 
 @router.get("/api/admin/dashboard")
@@ -115,6 +121,11 @@ async def admin_delete_session(session_id: str):
 @router.post("/api/admin/cleanup")
 async def admin_cleanup():
     return await cleanup_admin_sessions()
+
+
+@router.post("/api/admin/datasets/cleanup")
+async def admin_cleanup_datasets(payload: DatasetCleanupPayload):
+    return await cleanup_datasets_by_filename(payload.filename, preview=payload.preview)
 
 
 @router.get("/api/admin/system")

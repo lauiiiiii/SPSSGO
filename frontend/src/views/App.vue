@@ -100,9 +100,16 @@
         :history-items="historyItems"
         :all-data-sets="allDataSets"
         :current-session-id="sessionId"
+        :current-dataset-version-id="currentDatasetVersionId"
+        :current-dataset-version-no="currentDatasetVersionNo"
         :folders="folders"
+        :dataset-page="datasetPage"
+        :dataset-page-size="datasetPageSize"
+        :dataset-total="datasetTotal"
+        :folder-data-sets-all="folderDataSetsAll"
         @open-result="onOpenResultFromMyData"
         @switch-session="onSwitchSession"
+        @activate-version="onActivateDatasetVersion"
         @create-folder="onCreateFolder"
         @delete-folder="onDeleteFolder"
         @rename-folder="onRenameFolder"
@@ -114,6 +121,10 @@
         @export-dataset="onExportDataSet"
         @copy-dataset="onCopyDataSet"
         @upload="showUploadModal = true"
+        @version-copied="onDatasetVersionCopied"
+        @version-deleted="onDatasetVersionDeleted"
+        @refresh-datasets="() => { loadAllDataSets(); loadFolderDataSets() }"
+        @change-page="(p, s) => loadAllDataSets(p, s)"
       />
 
       <ProfilePanel v-else-if="currentTab === 'profile'" />
@@ -172,6 +183,7 @@ import { useWorkspaceNavigation } from '../composables/workspace/useWorkspaceNav
 import { useWorkspaceDialogs } from '../composables/workspace/useWorkspaceDialogs.js'
 import { useWorkspaceUiState } from '../composables/workspace/useWorkspaceUiState.js'
 import { createStoredResultMapper } from '../utils/historyResults.js'
+import * as api from '../api.js'
 
 const AnalysisPanel = defineAsyncComponent(() => import('../components/analysis/AnalysisPanel.vue'))
 const MyDataPanel = defineAsyncComponent(() => import('../components/my-data/MyDataPanel.vue'))
@@ -273,8 +285,13 @@ const aiContext = computed(() => {
 
 const {
   allDataSets,
+  datasetPage,
+  datasetPageSize,
+  datasetTotal,
+  folderDataSetsAll,
   folders,
   loadAllDataSets,
+  loadFolderDataSets,
   onCopyDataSet,
   onCreateFolder,
   onDeleteDataSet,
@@ -334,6 +351,7 @@ const {
   dataFileName,
   historyItems,
   loadAllDataSets,
+  loadFolderDataSets,
   mapStoredResults,
   methodCategories,
   methodsMeta,
@@ -348,6 +366,33 @@ function setCurrentDatasetVersion(result) {
   if (!result) return
   if (result.dataset_version_id) currentDatasetVersionId.value = result.dataset_version_id
   if (result.dataset_version_no) currentDatasetVersionNo.value = result.dataset_version_no
+}
+
+async function onActivateDatasetVersion(versionId) {
+  if (!sessionId.value || !versionId) return
+  if (currentResults.value.length) {
+    const ok = window.confirm('切换数据版本后，当前临时分析结果会被清空，后续预览和分析都会基于新版本。确认切换吗？')
+    if (!ok) return
+  }
+  try {
+    const result = await api.activateDatasetVersion(sessionId.value, versionId)
+    setCurrentDatasetVersion(result)
+    await loadVariables()
+    await loadAllDataSets()
+    clearCurrentAnalysis()
+  } catch (err) {
+    alert(`切换数据版本失败：${err.message || err}`)
+  }
+}
+
+async function onDatasetVersionDeleted() {
+  await Promise.all([loadAllDataSets(), loadFolderDataSets(), refreshTaskJobs({ forceResults: true })])
+}
+
+async function onDatasetVersionCopied(result) {
+  setCurrentDatasetVersion(result)
+  clearCurrentAnalysis()
+  await Promise.all([loadVariables(), loadAllDataSets(), loadFolderDataSets(), refreshTaskJobs({ forceResults: true })])
 }
 
 const variableActions = useVariableActions({

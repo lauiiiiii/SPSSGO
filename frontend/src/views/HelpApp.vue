@@ -3,13 +3,11 @@
     <header class="help-topbar">
       <a href="/" class="help-brand">
         <img src="/logo.png" alt="spssgo" />
-        <span>SPSSGO</span>
       </a>
 
       <nav class="help-topnav" aria-label="顶部导航">
         <a href="/about">产品介绍</a>
         <a href="/help" class="active">帮助中心</a>
-        <a href="/login?redirect=%2Fworkspace">客户端</a>
       </nav>
 
       <div class="help-topbar-actions">
@@ -28,10 +26,15 @@
             @click="activateGroup(group.id)"
           >
             <span>{{ group.title }}</span>
-            <span class="help-sidebar-arrow">{{ group.children?.length ? '⌄' : '›' }}</span>
+            <span
+              class="help-sidebar-arrow"
+              :class="{ 'help-sidebar-arrow--empty': !group.children?.length }"
+            >
+              {{ group.children?.length ? '⌄' : '' }}
+            </span>
           </button>
 
-          <div v-if="group.children?.length && currentGroupId === group.id" class="help-sidebar-children">
+          <div v-if="group.children?.length && expandedGroupId === group.id" class="help-sidebar-children">
             <button
               v-for="child in group.children"
               :key="child.id"
@@ -1197,73 +1200,6 @@ $$`,
 
 const helpGroups = [
   {
-    id: 'overview',
-    title: '产品简介',
-    pageTitle: '产品概述',
-    sections: [
-      {
-        id: 'who-we-are',
-        title: '一、我们是谁？',
-        intro: '帮助你快速理解 spssgo 是什么、适合谁，以及和传统统计软件有什么不同。',
-        paragraphs: [
-          'spssgo 是一个面向科研、教学、问卷研究与业务分析场景的在线数据分析平台。它把“数据处理、统计分析、结果解读、报告整理”串成一条连续工作流，让用户在浏览器里就能完成多数常见分析任务。',
-          '和传统桌面统计软件相比，spssgo 更强调低门槛、可视化和流程引导；和单纯依赖大模型生成分析结论的产品相比，spssgo 更强调真实计算、过程可核查与结果可复现。',
-          '平台适合论文写作、课程作业、问卷分析、业务复盘、基础科研训练等场景，也适合希望把分析流程标准化、沉淀化的团队用户。',
-        ],
-      },
-      {
-        id: 'advantages',
-        title: '二、我们的优势',
-        intro: '不是只把功能堆在一起，而是围绕“更容易开始、更稳定完成、更方便复核”来设计。',
-        points: [
-          {
-            title: '1、专业强大',
-            text: '覆盖数据处理、统计分析、机器学习与图表输出等核心能力，既能支持基础教学，也能支撑较完整的研究型分析流程。',
-          },
-          {
-            title: '2、安全可靠',
-            text: '分析流程尽量可见、可追踪，关键步骤有清晰说明，帮助用户减少误操作，也更方便复查和复现。',
-          },
-          {
-            title: '3、精准智能',
-            text: 'AI 更侧重理解需求、辅助规划与解释结果，不直接替代统计引擎计算，兼顾效率与可信度。',
-          },
-          {
-            title: '4、高效便捷',
-            text: '从数据上传到结果查看都在同一工作台完成，减少不同工具之间来回切换带来的时间损耗。',
-          },
-          {
-            title: '5、简单快捷',
-            text: '界面采用向导式思路组织，让用户先选任务、再配变量、再执行分析，初学者更容易上手。',
-          },
-          {
-            title: '6、一触即达',
-            text: '常见页面和功能入口都尽量前置，帮助中心、产品页、工作台之间可以快速跳转。',
-          },
-        ],
-      },
-      {
-        id: 'feature-summary',
-        title: '三、产品功能简介',
-        intro: '如果你是第一次使用，可以把平台理解成“数据准备 + 分析执行 + 结果整理”的组合。',
-        points: [
-          {
-            title: '（一）数据处理',
-            text: '支持缺失值处理、异常值处理、重编码、标准化、抽样、变量转换等操作，适合在正式分析前完成数据整理。',
-          },
-          {
-            title: '（二）数据分析',
-            text: '支持描述统计、差异检验、相关分析、回归分析等常见任务，并逐步扩展更多分析方法。',
-          },
-          {
-            title: '（三）结果展示',
-            text: '分析结果会以结构化页面呈现，便于复制、整理和继续写入论文、报告或汇报材料。',
-          },
-        ],
-      },
-    ],
-  },
-  {
     id: 'my-data',
     title: '我的数据',
     pageTitle: '我的数据',
@@ -1478,8 +1414,9 @@ const helpGroups = [
   },
 ]
 
-const activeDocId = ref('overview')
+const activeDocId = ref('my-data')
 const sidebarOpen = ref(false)
+const expandedGroupId = ref(null)
 
 const docIndex = helpGroups.reduce((acc, group) => {
   acc[group.id] = group
@@ -1501,7 +1438,15 @@ const activeChildId = computed(() => activeDoc.value.groupId ? activeDoc.value.i
 
 function activateGroup(groupId, shouldCloseMobile = false) {
   const group = helpGroups.find((item) => item.id === groupId)
-  activeDocId.value = group?.children?.[0]?.id || groupId
+
+  if (expandedGroupId.value === groupId) {
+    expandedGroupId.value = null
+    activeDocId.value = groupId
+  } else {
+    expandedGroupId.value = groupId
+    activeDocId.value = group?.children?.[0]?.id || groupId
+  }
+
   if (typeof window !== 'undefined') {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -1512,6 +1457,7 @@ function activateGroup(groupId, shouldCloseMobile = false) {
 
 function activateDoc(groupId, docId, shouldCloseMobile = false) {
   activeDocId.value = docId
+  expandedGroupId.value = groupId
   if (typeof window !== 'undefined') {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -1557,7 +1503,7 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  height: 60px;
+  height: 76px;
   padding: 0 22px;
   background: #fff;
   border-bottom: 1px solid #edf1f5;
@@ -1566,17 +1512,13 @@ html {
 .help-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
   color: #1d4ed8;
   text-decoration: none;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
 }
 
 .help-brand img {
-  width: 34px;
-  height: 34px;
+  width: auto;
+  height: 30px;
   object-fit: contain;
 }
 
@@ -1622,21 +1564,39 @@ html {
 .help-shell {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 76px);
 }
 
 .help-sidebar {
   position: sticky;
-  top: 60px;
+  top: 76px;
   align-self: start;
-  height: calc(100vh - 60px);
-  padding: 18px 18px 20px;
+  height: calc(100vh - 76px);
+  padding: 18px 12px 20px 18px;
   background: #fff;
   border-right: 1px solid #f0f2f5;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+:global(.help-sidebar::-webkit-scrollbar) {
+  width: 5px;
+}
+
+:global(.help-sidebar::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+:global(.help-sidebar::-webkit-scrollbar-thumb) {
+  background: #e2e5ea;
+  border-radius: 8px;
+}
+
+:global(.help-sidebar::-webkit-scrollbar-thumb:hover) {
+  background: #d1d5db;
 }
 
 .help-sidebar-title {
@@ -1658,9 +1618,9 @@ html {
 }
 
 .help-sidebar-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 12px 12px;
   border-radius: 12px;
@@ -1678,8 +1638,20 @@ html {
 }
 
 .help-sidebar-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   font-size: 16px;
   color: #a0aec0;
+  line-height: 1;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.help-sidebar-arrow--empty {
+  visibility: hidden;
 }
 
 .help-sidebar-children {
@@ -1933,7 +1905,7 @@ html {
 
 .help-outline {
   position: sticky;
-  top: 84px;
+  top: 100px;
 }
 
 .help-feedback-btn {

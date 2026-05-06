@@ -261,3 +261,25 @@ async def list_admin_sandbox_executions(
 
     return {"total": total, "page": page, "size": size, "executions": [dict(row) for row in rows]}
 
+
+async def count_datasets_by_filename(filename: str) -> int:
+    async with db._pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT COUNT(*) FROM datasets WHERE original_filename = %s",
+                (filename,),
+            )
+            row = await cur.fetchone()
+    return int(row[0] if row else 0)
+
+
+async def list_session_ids_by_filename(filename: str) -> list[str]:
+    async with db._pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT session_id FROM datasets WHERE original_filename = %s",
+                (filename,),
+            )
+            rows = await cur.fetchall()
+    return [row[0] for row in rows]
+

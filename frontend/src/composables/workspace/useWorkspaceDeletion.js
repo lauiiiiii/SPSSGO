@@ -31,21 +31,33 @@ export function useWorkspaceDeletion({
     currentResults.value = []
   }
 
-  function deleteFolder(folderId) {
-    folders.value = folders.value.filter(folder => folder.id !== folderId)
-    saveFolders()
+  async function deleteFolder(folderId) {
+    try {
+      await api.deleteDatasetFolder(folderId)
+    } catch (err) {
+      alert(`删除文件夹失败：${err.message || err}`)
+      return
+    }
+    folders.value = folders.value.filter(folder => String(folder.id) !== String(folderId))
   }
 
-  async function deleteDataset(targetId) {
+  async function deleteDataset(targetId, targetDatasetId = null) {
     try {
-      await api.deleteSession(targetId)
-    } catch (_) { /* backend may not support, still remove from UI */ }
+      if (targetDatasetId) {
+        await api.deleteDataset(targetDatasetId)
+      } else {
+        await api.deleteSession(targetId)
+      }
+    } catch (err) {
+      alert(`删除数据失败：${err.message || err}`)
+      return
+    }
 
     allDataSets.value = allDataSets.value.filter(dataSet => dataSet.sessionId !== targetId)
     for (const folder of folders.value) {
       folder.sessionIds = folder.sessionIds.filter(session => session !== targetId)
     }
-    saveFolders()
+    await saveFolders()
 
     if (sessionId.value === targetId) {
       clearCurrentSessionState()
@@ -55,17 +67,18 @@ export function useWorkspaceDeletion({
   async function confirmDeleteAction() {
     const type = confirmDialog.type
     const targetId = confirmDialog.targetId
+    const targetDatasetId = confirmDialog.targetDatasetId
     const targetIndex = confirmDialog.targetIndex
     const suppressForHour = confirmDialog.suppressForHour
     closeConfirmDialog()
 
     if (type === 'folder') {
-      deleteFolder(targetId)
+      await deleteFolder(targetId)
       return
     }
 
     if (type === 'dataset') {
-      await deleteDataset(targetId)
+      await deleteDataset(targetId, targetDatasetId)
       return
     }
 

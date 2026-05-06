@@ -1,233 +1,158 @@
 <template>
   <div class="about-page">
-    <nav class="about-nav">
-      <a href="/" class="about-nav-brand">
+    <header class="about-topbar">
+      <a href="/" class="about-logo">
         <img src="/logo.png" alt="spssgo" />
-        <div class="about-nav-brand-copy">
-          <strong>spssgo</strong>
-          <span>关于我们 / 产品介绍</span>
-        </div>
       </a>
-      <div class="about-nav-actions">
-        <a href="/">首页</a>
+      <nav class="about-topnav" aria-label="顶部导航">
+        <a href="/about" class="active">产品介绍</a>
         <a href="/help">帮助中心</a>
-        <a href="/legal#license">开源协议</a>
-        <a class="about-nav-btn" href="/login?redirect=%2Fworkspace">进入工作台</a>
+      </nav>
+      <div class="about-topbar-actions">
+        <a class="about-login-btn" href="/login?redirect=%2Fworkspace">进入工作台</a>
       </div>
-    </nav>
+    </header>
 
-    <main class="about-main">
+    <main>
       <section class="about-hero">
-        <div class="about-hero-copy">
-          <p class="about-kicker">关于产品</p>
-          <h1>
-            Smart Processing Statistical System Guided Operations
-            <span>智能统计处理系统・向导式操作平台</span>
-          </h1>
-          <p class="about-alias">简称 spssgo</p>
-          <p class="about-lead">
-            我们的产品名称是 <strong>Smart Processing Statistical System Guided Operations</strong>，
-            中文全称为 <strong>智能统计处理系统・向导式操作平台</strong>，
-            缩写为 <strong class="about-shortname">spssgo</strong>。
-            它是一款面向科研、教学、问卷调查与业务分析场景的在线数据分析平台，覆盖统计分析、机器学习与绘图等能力。
+        <div class="about-hero-bg" aria-hidden="true">
+          <div class="about-hero-glow about-hero-glow--1" />
+          <div class="about-hero-glow about-hero-glow--2" />
+        </div>
+        <div class="about-hero-body">
+          <div class="about-hero-badge">产品介绍</div>
+          <h1 class="about-hero-title">智能统计处理系统<br /><span class="about-hero-title-accent">向导式操作平台</span></h1>
+          <p class="about-hero-desc">
+            Smart Processing Statistical System Guided Operations（spssgo）是一款面向科研、教学与业务分析的在线数据分析平台，覆盖数据处理、统计分析、机器学习与可视化绘图等能力。
+            所有统计结果由专业运算流程完成，过程透明、结果可复现。
           </p>
-          <p class="about-text">
-            我们希望把传统统计软件的专业能力、现代 Web 产品的易用体验，以及 AI 在需求理解和方案规划上的效率结合起来，
-            让专业数据分析更容易上手，同时保持过程透明、结果可信和结论可复现。
-          </p>
-          <div class="about-actions">
+          <div class="about-hero-actions">
             <a class="about-btn-primary" href="/login?redirect=%2Fworkspace">开始使用</a>
-            <a class="about-btn-secondary" href="https://github.com/lauiiiiii/spssgo" target="_blank">查看源码</a>
-          </div>
-        </div>
-
-        <div class="about-meta">
-          <div v-for="item in metaItems" :key="item.label" class="about-meta-row">
-            <span class="about-meta-label">{{ item.label }}</span>
-            <div class="about-meta-value">{{ item.value }}</div>
+            <a class="about-btn-ghost" href="https://github.com/lauiiiiii/spssgo" target="_blank">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" fill="currentColor"/></svg>
+              查看源代码
+            </a>
           </div>
         </div>
       </section>
 
-      <section class="about-section">
-        <div class="about-tabbar">
-          <button
-            class="about-tab"
-            :class="{ active: activeIntroTab === 'product' }"
-            @click="activeIntroTab = 'product'"
-          >
-            产品简介
-          </button>
-          <button
-            class="about-tab"
-            :class="{ active: activeIntroTab === 'author' }"
-            @click="activeIntroTab = 'author'"
-          >
-            作者的话
-          </button>
-        </div>
-        <div v-if="activeIntroTab === 'product'" class="about-section-head">
-          <h2>产品简介</h2>
-          <p>
-            spssgo 不是单纯把传统统计软件搬到网页，也不是让大模型直接生成分析结论，
-            而是把 AI 与统计计算明确分工。AI 负责理解需求、辅助规划和结果解读，统计引擎负责真实运算，
-            让分析流程既更省力，也更稳妥。
-          </p>
-        </div>
-        <div v-else class="about-author-note">
-          <h2>作者的话</h2>
-          <p>
-            Hi，大家好，也谢谢你愿意看到这里。
-            这不是一家拥有庞大团队、充足预算和成熟分工的公司。更准确地说，我是从独立开发者一步步做起，
-            后来把它发展成了一家一人公司。
-            从最早的想法，到后来的设计、学习、开发、测试和修正，几乎都是我一个人一点点做出来的。
-          </p>
-          <p>
-            spssgo 的每一个功能背后，都不是简单地把界面拼起来，而是我先花大量时间去学习统计、
-            钻研方法原理，尽量把每一个分析背后的逻辑真正弄懂，再去写代码、做实现、反复验证结果。
-            很多时候，最耗时间的其实不是编程，而是为了让结果靠谱，先把原理吃透。
-          </p>
-          <p>
-            做这件事并不轻松，但我一直相信，专业的数据分析工具不应该被少数高门槛软件垄断。
-            如果一个人愿意花足够多的时间去学习、去打磨、去公开透明地建设，也可以把复杂的能力慢慢做成更多人用得起、学得会、信得过的工具。
-          </p>
-          <p>
-            我也想真诚地感谢每一位正在使用 spssgo 的用户，感谢你们愿意花时间去了解、去试用、去反馈问题、去提出建议。
-            也感谢所有愿意参与社区建设的贡献者，哪怕只是一条建议、一次测试、一个提交，都是推动这个项目继续往前走的重要力量。
-            我希望这个项目的代码始终公开透明，也真诚欢迎大家一起参与共建、一起完善。
-            如果你们发现它还有不足，也非常欢迎直接指出来，我们一起把它做得更好。
-          </p>
-          <p>
-            如果说更长远一点，我对这个工具的终极目标并不只是做一个统计分析网页，而是希望它能继续走向更完整的科研工作台。
-            未来我希望它不仅能服务常规统计分析，还能逐步覆盖生信分析、机器学习、数据挖掘以及更多真实科研场景，
-            让不同专业、不同阶段的用户，都能用更低门槛的方式调用原本复杂而昂贵的分析能力。
-            不管能力边界扩展到哪里，我都希望它始终保持三个原则：专业可靠、公开透明、人人可用。
-          </p>
-          <p class="about-author-emphasis">
-            我的愿景很简单，也很坚定：打破垄断，让技术平权。
-          </p>
-          <div class="about-author-signoff" aria-label="author-signature">
-            <img class="about-author-signature-image" :src="signatureImage" alt="Laurence 2026.04.05" />
+      <section class="about-section about-section--tinted">
+        <div class="about-container">
+          <div class="about-section-head">
+            <span class="about-section-tag">Capabilities</span>
+            <h2>核心能力</h2>
+            <p>围绕数据分析完整工作流提供端到端支持。</p>
+          </div>
+          <div class="about-cap-grid">
+            <div v-for="item in capabilities" :key="item.title" class="about-cap-card">
+              <div class="about-cap-icon" v-html="item.icon" />
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.text }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="about-section">
-        <div class="about-section-head">
-          <h2>核心能力</h2>
-          <p>从需求表达、方案规划到结果输出，围绕常见数据分析工作流提供完整支持。</p>
-        </div>
-        <div class="about-card-grid">
-          <article v-for="item in capabilities" :key="item.title" class="about-card">
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.text }}</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="about-section">
-        <div class="about-section-head">
-          <h2>我们希望解决的问题</h2>
-          <p>降低使用门槛，不牺牲专业性，让更多用户能够更高效地完成可信的数据分析工作。</p>
-        </div>
-        <div class="about-story-grid">
-          <article v-for="item in principles" :key="item.title" class="about-story-card">
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.text }}</p>
-          </article>
+        <div class="about-container">
+          <div class="about-section-head">
+            <span class="about-section-tag">Scenarios</span>
+            <h2>适用场景</h2>
+          </div>
+          <div class="about-chips">
+            <span v-for="item in scenarios" :key="item" class="about-chip">{{ item }}</span>
+          </div>
         </div>
       </section>
 
-      <section class="about-section">
-        <div class="about-section-head">
-          <h2>适用场景</h2>
-          <p>适合不同角色在不同阶段开展数据处理、统计分析与结果呈现工作。</p>
-        </div>
-        <div class="about-scenario-grid">
-          <div v-for="scenario in scenarios" :key="scenario" class="about-scenario-item">
-            {{ scenario }}
+      <section class="about-section about-section--tinted">
+        <div class="about-container">
+          <div class="about-section-head">
+            <span class="about-section-tag">Stack</span>
+            <h2>技术栈</h2>
+          </div>
+          <div class="about-stack-grid">
+            <div v-for="item in techStack" :key="item.label" class="about-stack-item">
+              <span class="about-stack-label">{{ item.label }}</span>
+              <span class="about-stack-value">{{ item.value }}</span>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="about-section">
-        <div class="about-section-head">
-          <h2>开源与联系</h2>
-          <p>
-            spssgo 社区版永久免费，基于 AGPL-3.0 开源协议发布。
-            如果你希望了解部署、授权或参与共建，可以通过以下方式继续联系。
-          </p>
-        </div>
-        <div class="about-link-grid">
-          <a href="https://github.com/lauiiiiii/spssgo" target="_blank">GitHub 仓库</a>
-          <a href="/legal#license">查看开源协议</a>
-          <a href="mailto:jahe@jahe.top">jahe@jahe.top</a>
+        <div class="about-container">
+          <div class="about-section-head">
+            <span class="about-section-tag">Contact</span>
+            <h2>开源与联系</h2>
+            <p>spssgo 基于 AGPL-3.0 开源协议发布。如需了解授权或参与共建，欢迎联系我们。</p>
+          </div>
+          <div class="about-links">
+            <a href="https://github.com/lauiiiiii/spssgo" target="_blank">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" fill="currentColor"/></svg>
+              GitHub 仓库
+            </a>
+            <a href="/legal#license">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 5a1 1 0 1 1 2 0 1 1 0 0 1-2 0zm1 2a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
+              查看开源协议
+            </a>
+            <a href="mailto:jahe@jahe.top">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.756zm3.436-.586L16 11.801V4.697l-5.803 3.546z" fill="currentColor"/></svg>
+              jahe@jahe.top
+            </a>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="about-footer">
-      <p>&copy; {{ new Date().getFullYear() }} 日照广泰佳和网络科技有限公司</p>
-      <span>Smart Processing Statistical System Guided Operations · spssgo</span>
+      <span>&copy; {{ new Date().getFullYear() }} 日照广泰佳和网络科技有限公司</span>
+      <span class="about-footer-dot">·</span>
+      <span>Smart Processing Statistical System Guided Operations</span>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import signatureImage from '../assets/signature-laurence.svg'
-
-const activeIntroTab = ref('product')
-
-const metaItems = [
-  { label: '产品全称', value: 'Smart Processing Statistical System Guided Operations' },
-  { label: '中文全称', value: '智能统计处理系统・向导式操作平台' },
-  { label: '产品简称', value: 'spssgo' },
-  { label: '产品定位', value: 'AI 驱动的在线数据分析工作台' },
-  { label: '持续维护', value: '日照广泰佳和网络科技有限公司' },
-]
-
 const capabilities = [
   {
-    title: '需求理解与分析规划',
-    text: '支持用户用自然语言描述研究目标、问卷背景和分析任务，辅助形成可查看、可确认的分析方案。',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>',
+    title: '数据处理与清洗',
+    text: '支持缺失值处理、异常值识别、重编码、标准化、变量转换等操作，完成正式分析前的数据整理工作。',
   },
   {
-    title: '统计引擎真实运算',
-    text: '所有统计结果由专业运算流程完成，避免将大模型输出直接当作统计数值结果使用。',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>',
+    title: '统计分析',
+    text: '覆盖描述统计、差异检验、相关分析、回归分析等常见统计方法，满足多数科研与业务场景的分析需求。',
   },
   {
-    title: '结果展示与报告输出',
-    text: '覆盖数据导入、分析执行、结果查看和报告整理，减少在多个工具之间反复切换。',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    title: '可视化绘图',
+    text: '将统计结果转为适合展示的图表，用于论文插图、答辩汇报、教学演示或业务复盘。',
   },
   {
-    title: '过程透明与结果可复现',
-    text: '分析步骤、参数配置和执行逻辑可见，相同输入在相同条件下能够得到一致结果。',
-  },
-]
-
-const principles = [
-  {
-    title: '降低门槛',
-    text: '让没有复杂统计软件使用经验的用户，也能更快进入分析流程，减少学习和配置成本。',
-  },
-  {
-    title: '保持专业性',
-    text: '我们关注的不只是“能不能跑出结果”，更关注结果是否经得起复核、审阅与重复验证。',
-  },
-  {
-    title: '持续开放建设',
-    text: 'spssgo 不是封闭黑盒工具，而是持续演进的开源产品，希望能被学习、扩展和共同建设。',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    title: 'AI 辅助分析',
+    text: 'AI 负责理解需求、辅助规划与结果解读，统计引擎负责真实运算，兼顾效率与可信度。',
   },
 ]
 
 const scenarios = [
-  '教学作业与课堂实验',
   '毕业论文与科研项目',
+  '课程作业与教学实验',
   '问卷调查与社会研究',
   '市场分析与业务复盘',
-  '多格式数据导入处理',
-  '分析结果整理与呈现',
+  '数据分析学习与实践',
+  '多格式数据导入与处理',
+]
+
+const techStack = [
+  { label: '前端', value: 'Vue 3 + AG Grid' },
+  { label: '后端', value: 'FastAPI (Python)' },
+  { label: '统计引擎', value: 'Pandas + R' },
+  { label: '开源协议', value: 'AGPL-3.0' },
 ]
 </script>
 
@@ -240,10 +165,11 @@ const scenarios = [
 
 :global(body) {
   margin: 0;
-  background: #f5f7fb;
+  background: #fafbfc;
   color: #0f172a;
   font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -252,422 +178,461 @@ const scenarios = [
 
 .about-page {
   min-height: 100vh;
+  background: #fff;
+  overflow-x: hidden;
 }
 
-.about-nav {
+/* ===== Top Bar ===== */
+.about-topbar {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 16px 32px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #e5e7eb;
-  backdrop-filter: blur(12px);
+  gap: 24px;
+  height: 76px;
+  padding: 0 22px;
+  background: #fff;
+  border-bottom: 1px solid #edf1f5;
 }
 
-.about-nav-brand {
+.about-logo {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  color: inherit;
+  color: #1d4ed8;
   text-decoration: none;
 }
 
-.about-nav-brand img {
-  width: 42px;
-  height: 42px;
+.about-logo img {
+  width: auto;
+  height: 30px;
   object-fit: contain;
 }
 
-.about-nav-brand-copy {
-  display: grid;
-  gap: 2px;
-}
-
-.about-nav-brand-copy strong {
-  font-size: 17px;
-  line-height: 1;
-  text-transform: lowercase;
-}
-
-.about-nav-brand-copy span {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.about-nav-actions {
+.about-topnav {
   display: flex;
   align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 14px;
+  margin-right: auto;
+  margin-left: 16px;
 }
 
-.about-nav-actions a {
-  color: #475569;
+.about-topnav a {
+  padding: 8px 12px;
+  color: #4b5563;
   text-decoration: none;
-  font-size: 14px;
-}
-
-.about-nav-actions a:hover {
-  color: #111827;
-}
-
-.about-nav-btn {
-  padding: 10px 18px;
-  border-radius: 999px;
-  background: #3b82f6;
-  color: #fff !important;
-}
-
-.about-main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 28px 20px 64px;
-}
-
-.about-hero,
-.about-section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-}
-
-.about-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, .9fr);
-  gap: 28px;
-  padding: 32px;
-}
-
-.about-kicker {
-  margin: 0 0 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.about-hero-copy h1 {
-  margin: 0 0 18px;
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 1.18;
-  letter-spacing: -0.02em;
-}
-
-.about-hero-copy h1 span {
-  display: block;
-  margin-top: 8px;
-  font-size: 20px;
-  font-weight: 500;
-  color: #475569;
-  letter-spacing: 0;
-}
-
-.about-alias {
-  margin: -4px 0 18px;
-  font-size: 16px;
-  color: #475569;
-  font-weight: 600;
-}
-
-.about-lead,
-.about-text,
-.about-section-head p {
-  margin: 0;
   font-size: 15px;
-  line-height: 1.9;
-  color: #475569;
+  border-radius: 10px;
+  transition: all 0.16s ease;
 }
 
-.about-text {
-  margin-top: 12px;
+.about-topnav a:hover,
+.about-topnav a.active {
+  color: #1d4ed8;
+  background: #f3f7ff;
 }
 
-.about-shortname {
-  text-transform: lowercase;
-}
-
-.about-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 24px;
-}
-
-.about-actions a {
+.about-login-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 124px;
-  padding: 11px 18px;
-  border-radius: 10px;
+  min-width: 112px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
+  box-shadow: none;
+}
+
+.about-login-btn:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+/* ===== Hero ===== */
+.about-hero {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 96px 24px 80px;
+  overflow: hidden;
+}
+
+.about-hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.about-hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+}
+
+.about-hero-glow--1 {
+  width: 480px;
+  height: 480px;
+  top: -160px;
+  left: -120px;
+  background: radial-gradient(circle, #3b82f6, transparent);
+}
+
+.about-hero-glow--2 {
+  width: 360px;
+  height: 360px;
+  bottom: -120px;
+  right: -80px;
+  background: radial-gradient(circle, #22c55e, transparent);
+}
+
+.about-hero-body {
+  position: relative;
+  max-width: 680px;
+  text-align: center;
+}
+
+.about-hero-badge {
+  display: inline-flex;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  margin-bottom: 24px;
+}
+
+.about-hero-title {
+  margin: 0 0 20px;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.about-hero-title-accent {
+  color: #2563eb;
+}
+
+.about-hero-desc {
+  margin: 0 auto 32px;
+  max-width: 560px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #6b7280;
+}
+
+.about-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-hero-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
 .about-btn-primary {
-  background: #2563eb;
+  background: #111827;
   color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.about-btn-secondary {
-  background: #fff;
-  color: #334155;
-  border: 1px solid #d1d5db;
+.about-btn-primary:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);
 }
 
-.about-meta {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #f8fafc;
-  padding: 4px 16px;
-}
-
-.about-meta-row {
-  display: grid;
-  grid-template-columns: 84px 1fr;
-  gap: 14px;
-  padding: 16px 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.about-meta-row:last-child {
-  border-bottom: none;
-}
-
-.about-meta-label {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.about-meta-value {
-  font-size: 14px;
-  line-height: 1.8;
-  color: #111827;
-  word-break: break-word;
-}
-
-.about-section {
-  margin-top: 18px;
-  padding: 28px 30px;
-}
-
-.about-tabbar {
-  display: inline-flex;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  margin-bottom: 18px;
-}
-
-.about-tab {
-  border: none;
+.about-btn-ghost {
   background: transparent;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
+  color: #374151;
+  padding: 12px 20px !important;
 }
 
-.about-tab.active {
-  background: #fff;
+.about-btn-ghost:hover {
   color: #111827;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  background: #f3f4f6;
+}
+
+/* ===== Sections ===== */
+.about-section {
+  padding: 80px 24px;
+}
+
+.about-section--tinted {
+  background: #f9fafb;
+}
+
+.about-container {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .about-section-head {
-  max-width: 760px;
+  margin-bottom: 32px;
+}
+
+.about-section-tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.1em;
 }
 
 .about-section-head h2 {
   margin: 0 0 10px;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: #111827;
+  letter-spacing: -0.02em;
 }
 
-.about-author-note {
-  max-width: 820px;
-}
-
-.about-author-note h2 {
-  margin: 0 0 14px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.about-author-note p {
-  margin: 0 0 12px;
+.about-section-head p {
+  margin: 0;
   font-size: 15px;
-  line-height: 1.95;
-  color: #475569;
+  line-height: 1.7;
+  color: #6b7280;
+  max-width: 520px;
 }
 
-.about-author-emphasis {
-  font-weight: 700;
-  color: #1e3a8a !important;
-}
-
-.about-author-signoff {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  width: 100%;
-}
-
-.about-author-signature-image {
-  width: min(320px, 100%);
-  height: auto;
-  display: block;
-}
-
-.about-card-grid {
+/* ===== Capabilities ===== */
+.about-cap-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
+  gap: 16px;
 }
 
-.about-card,
-.about-story-card {
-  padding: 18px 20px;
-  border: 1px solid #e5e7eb;
+.about-cap-card {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #f0f1f3;
   border-radius: 14px;
-  background: #fafbfc;
+  transition: all 0.2s ease;
 }
 
-.about-card h3,
-.about-story-card h3 {
-  margin: 0 0 10px;
-  font-size: 17px;
-  color: #111827;
+.about-cap-card:hover {
+  border-color: #e0e2e5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
 }
 
-.about-card p,
-.about-story-card p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.85;
-  color: #475569;
-}
-
-.about-story-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
-}
-
-.about-scenario-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.about-scenario-item {
-  padding: 15px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fafbfc;
-  font-size: 14px;
-  color: #334155;
-}
-
-.about-link-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.about-link-grid a {
+.about-cap-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid #dbe2ea;
-  background: #fff;
-  color: #334155;
-  text-decoration: none;
+  border-radius: 10px;
+  background: #f0f5ff;
+}
+
+.about-cap-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.about-cap-card p {
+  margin: 0;
   font-size: 14px;
+  line-height: 1.8;
+  color: #6b7280;
+}
+
+/* ===== Chips ===== */
+.about-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.about-chip {
+  display: inline-flex;
+  padding: 10px 20px;
+  border: 1px solid #f0f1f3;
+  border-radius: 999px;
+  font-size: 14px;
+  color: #374151;
+  background: #fff;
+  transition: all 0.15s ease;
+}
+
+.about-chip:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== Tech Stack ===== */
+.about-stack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.about-stack-item {
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #f0f1f3;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.about-stack-item:hover {
+  border-color: #e0e2e5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.about-stack-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.06em;
+}
+
+.about-stack-value {
+  font-size: 14px;
+  color: #111827;
   font-weight: 500;
 }
 
-.about-link-grid a:hover {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
+/* ===== Links ===== */
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
+.about-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid #f0f1f3;
+  border-radius: 10px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.about-links a:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== Footer ===== */
 .about-footer {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 0 20px 32px;
-  font-size: 12px;
-  color: #94a3b8;
+  padding: 40px 24px 48px;
+  font-size: 13px;
+  color: #9ca3af;
   text-align: center;
 }
 
-.about-footer p,
-.about-footer span {
-  margin: 0;
+.about-footer-dot {
+  color: #d1d5db;
 }
 
+/* ===== Responsive ===== */
 @media (max-width: 960px) {
-  .about-hero,
-  .about-story-grid,
-  .about-scenario-grid,
-  .about-link-grid {
+  .about-cap-grid {
     grid-template-columns: 1fr;
   }
 
-  .about-card-grid {
-    grid-template-columns: 1fr;
+  .about-stack-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .about-nav {
-    padding: 14px 18px;
+  .about-topbar {
+    padding: 0 16px;
+    height: 60px;
   }
 
-  .about-nav-actions a:not(.about-nav-btn) {
+  .about-topnav {
     display: none;
   }
 
-  .about-main {
-    padding: 18px 14px 48px;
+  .about-hero {
+    padding: 64px 20px 56px;
   }
 
-  .about-hero,
+  .about-hero-title {
+    font-size: 28px;
+  }
+
   .about-section {
-    padding: 22px 18px;
+    padding: 56px 20px;
   }
 
-  .about-meta {
-    padding: 2px 12px;
+  .about-section-head h2 {
+    font-size: 22px;
   }
 
-  .about-meta-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .about-actions a {
+  .about-hero-actions a {
     width: 100%;
+    justify-content: center;
+  }
+
+  .about-stack-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .about-links {
+    flex-direction: column;
+  }
+
+  .about-links a {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    padding: 48px 16px 40px;
+  }
+
+  .about-cap-card {
+    padding: 18px;
+  }
+
+  .about-chip {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
