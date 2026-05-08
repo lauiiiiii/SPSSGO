@@ -1,5 +1,5 @@
 <template>
-  <div class="ap-config">
+  <div ref="configRoot" class="ap-config">
     <div v-if="editingConfig && results.length" class="ap-report-banner">
       <span>已有本次分析结果，可随时查看完整报告页。</span>
       <button type="button" class="ap-btn ap-btn-primary ap-btn-sm" @click="$emit('show-report')">
@@ -118,6 +118,26 @@
             />
             <span>{{ option.label }}</span>
           </label>
+          <template v-else-if="option.type === 'multiple'">
+            <label>{{ option.label }}：</label>
+            <details class="ap-option-multi">
+              <summary>{{ multiOptionText(option) }}</summary>
+              <div class="ap-option-multi-menu">
+                <label
+                  v-for="choice in option.choices"
+                  :key="choice"
+                  class="ap-option-multi-item"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="multiOptionValues(option.key).includes(choice)"
+                    @change="toggleMultiOption(option, choice)"
+                  />
+                  <span>{{ choice }}</span>
+                </label>
+              </div>
+            </details>
+          </template>
           <template v-else>
             <label>{{ option.label }}：</label>
             <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
@@ -131,9 +151,12 @@
 </template>
 
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import AnalysisDropZone from './AnalysisDropZone.vue'
 
-defineProps({
+const configRoot = ref(null)
+
+const props = defineProps({
   activeFactorItems: { type: Array, default: () => [] },
   activeFactorKey: { type: String, default: '' },
   activeFactorSlot: { type: Object, default: null },
@@ -156,7 +179,7 @@ defineProps({
   slotValues: { type: Object, required: true },
 })
 
-defineEmits([
+const emit = defineEmits([
   'add-factor',
   'close-factor-menu',
   'delete-factor',
@@ -180,4 +203,43 @@ function getAcceptLabel(slot) {
   if (slot.accept === 'categorical') return '定类'
   return slot.accept
 }
+
+function multiOptionValues(key) {
+  const value = props.optionValues[key]
+  return Array.isArray(value) ? value : [value].filter(Boolean)
+}
+
+function multiOptionText(option) {
+  const values = multiOptionValues(option.key)
+  return values.length ? values.join('、') : '请选择'
+}
+
+function toggleMultiOption(option, choice) {
+  const values = multiOptionValues(option.key)
+  const next = values.includes(choice)
+    ? values.filter(item => item !== choice)
+    : [...values, choice]
+  emit('option-change', option.key, next.length ? next : [option.choices[0]])
+}
+
+function closeMultiOptions() {
+  configRoot.value
+    ?.querySelectorAll('.ap-option-multi[open]')
+    .forEach(el => {
+      el.open = false
+    })
+}
+
+function handleDocumentPointerDown(event) {
+  if (event.target?.closest?.('.ap-option-multi')) return
+  closeMultiOptions()
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
+})
 </script>

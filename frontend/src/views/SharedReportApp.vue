@@ -74,7 +74,11 @@
             :ai-result="aiResult"
             :allow-ai-request="false"
             :calc-box="calcBox"
+            :calc-category-bar="calcCategoryBar"
+            :calc-category-pie="calcCategoryPie"
+            :calc-crosstab="calcCrosstab"
             :calc-hist="calcHist"
+            :calc-metric-comparison="calcMetricComparison"
             :cell-class="cellClass"
             :chart-data-visible="chartDataVisible"
             :display-results="displayResults"
@@ -92,6 +96,9 @@
             @move-tip="moveTip"
             @show-hist-tip="showHistTip"
             @show-box-tip="showBoxTip"
+            @show-category-tip="showCategoryTip"
+            @show-crosstab-tip="showCrosstabTip"
+            @show-metric-tip="showMetricTip"
             @download-chart="downloadChart"
             @copy-chart="copyChart"
             @toggle-chart-data="toggleChartData"
@@ -140,7 +147,11 @@ function normalizeShareAccessMessage(message, fallback = '分享报告加载失�
 
 const {
   calcBox,
+  calcCategoryBar,
+  calcCategoryPie,
+  calcCrosstab,
   calcHist,
+  calcMetricComparison,
   chartDataVisible,
   copyChart,
   downloadChart,
@@ -149,7 +160,10 @@ const {
   moveTip,
   setChartRef,
   showBoxTip,
+  showCategoryTip,
+  showCrosstabTip,
   showHistTip,
+  showMetricTip,
   toggleChartData,
 } = useAnalysisCharts()
 

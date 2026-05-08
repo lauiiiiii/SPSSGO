@@ -232,23 +232,40 @@ function buildOfficeCellStyle(options = {}) {
   return style
 }
 
+function headerCellText(cell) {
+  return cell && typeof cell === 'object' ? cell.text : cell
+}
+
+function headerCellSpan(cell, key) {
+  const value = cell && typeof cell === 'object' ? Number(cell[key]) : 1
+  return Number.isFinite(value) && value > 1 ? value : 1
+}
+
 function buildOfficeTableHtml(section) {
   const headers = section.headers || []
   const rows = section.rows || []
   if (!headers.length) return ''
+  const headerRows = section.headerRows?.length ? section.headerRows : [headers]
   // Word/WPS 对 table 级边框不稳定，线要压到单元格上才不容易丢。
   let html = `<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;table-layout:fixed;width:100%;margin:8px 0;border:none;mso-table-lspace:0pt;mso-table-rspace:0pt;mso-border-alt:none;mso-border-insideh:none;mso-border-insidev:none;${HTML_TABLE_FONT}">`
-  html += '<thead><tr>'
-  headers.forEach(cell => {
-    const bottomBorder = rows.length ? '1px solid #000' : '2px solid #000'
-    html += `<th align="center" valign="middle" style="${buildOfficeCellStyle({ bold: true, topBorder: '2px solid #000', bottomBorder })}">${escapeHtml(cell)}</th>`
+  html += '<thead>'
+  headerRows.forEach((headerRow, rowIndex) => {
+    html += '<tr>'
+    headerRow.forEach(cell => {
+      const topBorder = rowIndex === 0 ? '2px solid #000' : 'none'
+      const isGroupedHeader = headerCellSpan(cell, 'colspan') > 1
+      const bottomBorder = (isGroupedHeader || rowIndex === headerRows.length - 1) && rows.length ? '1px solid #000' : 'none'
+      html += `<th align="center" valign="middle" colspan="${headerCellSpan(cell, 'colspan')}" rowspan="${headerCellSpan(cell, 'rowspan')}" style="${buildOfficeCellStyle({ bold: true, topBorder, bottomBorder })}">${escapeHtml(headerCellText(cell))}</th>`
+    })
+    html += '</tr>'
   })
-  html += '</tr></thead><tbody>'
+  html += '</thead><tbody>'
   rows.forEach((row, rowIndex) => {
     const bottomBorder = rowIndex === rows.length - 1 ? '2px solid #000' : 'none'
     html += '<tr>'
-    headers.forEach((_, index) => {
-      html += `<td align="center" valign="middle" style="${buildOfficeCellStyle({ bottomBorder })}">${escapeHtml(row?.[index] ?? '')}</td>`
+    const cells = section.bodyRowspanColumns ? (row || []) : headers.map((_, index) => row?.[index] ?? '')
+    cells.forEach(cell => {
+      html += `<td align="center" valign="middle" colspan="${headerCellSpan(cell, 'colspan')}" rowspan="${headerCellSpan(cell, 'rowspan')}" style="${buildOfficeCellStyle({ bottomBorder })}">${escapeHtml(headerCellText(cell))}</td>`
     })
     html += '</tr>'
   })
@@ -258,10 +275,11 @@ function buildOfficeTableHtml(section) {
 
 function appendTableSection(builder, section) {
   builder.html += buildOfficeTableHtml(section)
-  builder.rtf += buildRtfTable(section)
+  const exportRows = section.exportRows || section.rows || []
+  builder.rtf += buildRtfTable({ ...section, rows: exportRows })
   if (section.headers?.length) {
     builder.plain += section.headers.join('\t') + '\n'
-    section.rows.forEach(row => {
+    exportRows.forEach(row => {
       const normalizedRow = section.headers.map((_, index) => String(row?.[index] ?? ''))
       builder.plain += normalizedRow.join('\t') + '\n'
     })
@@ -340,6 +358,31 @@ function appendSection(builder, section) {
     }
     builder.html += '</ul>'
     appendPlainParagraph(builder, `${section.title}\n${section.items.join('\n')}`)
+    return
+  }
+
+  if (section.type === 'charts' && section.charts?.length) {
+    appendHtmlParagraph(builder, section.title, 'margin:10px 0 6px;font-size:12pt;font-weight:700;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
+    appendPlainParagraph(builder, section.title, '\n')
+    appendRtfParagraph(builder, section.title, { bold: true, size: RTF_SECTION_TITLE_SIZE, spacingBefore: 80, spacingAfter: 60 })
+    for (const chart of section.charts) {
+      const chartTitle = chart.title || chart.data?.displayTitle || '图表'
+      appendHtmlParagraph(builder, chartTitle, 'margin:6px 0 4px;font-size:11pt;font-weight:600;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
+      appendPlainParagraph(builder, chartTitle, '\n')
+      appendRtfParagraph(builder, chartTitle, { bold: true, size: RTF_BODY_FONT_SIZE, spacingBefore: 40, spacingAfter: 40 })
+      const dataTable = buildChartDataTable(chart)
+      if (dataTable) {
+        builder.html += dataTable.html
+        builder.plain += dataTable.plain
+        builder.rtf += dataTable.rtf
+      }
+    }
+    if (section.description) {
+      appendHtmlParagraph(builder, section.description, 'text-indent:2em;line-height:1.8;font-size:12pt;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif;margin:8px 0')
+      appendPlainParagraph(builder, section.description, '\n')
+      appendRtfParagraph(builder, section.description, { firstLineIndent: true, size: RTF_BODY_FONT_SIZE })
+    }
+    builder.plain += '\n'
   }
 }
 
@@ -382,7 +425,7 @@ export function buildReportExportHtml(title, results) {
 function buildExportSectionHtml(section) {
   if (section.type === 'table') {
     let html = `<h3>${section.title}</h3>`
-    html += buildExportTableHtml(section.headers, section.rows)
+    html += buildExportTableHtml(section.headers, section.rows, section.headerRows, section.bodyRowspanColumns)
     if (section.description) html += `<p>${section.description}</p>`
     if (section.note) html += `<p style="color:#666;font-size:9pt">${section.note}</p>`
     return html
@@ -396,17 +439,38 @@ function buildExportSectionHtml(section) {
     html += '</ul>'
     return html
   }
+  if (section.type === 'charts' && section.charts?.length) {
+    let html = `<h3>${section.title}</h3>`
+    for (const chart of section.charts) {
+      const chartTitle = chart.title || chart.data?.displayTitle || '图表'
+      html += `<h4>${chartTitle}</h4>`
+      const dataTable = buildChartDataTable(chart)
+      if (dataTable) html += dataTable.html
+    }
+    if (section.description) html += `<p>${section.description}</p>`
+    return html
+  }
   return ''
 }
 
-function buildExportTableHtml(headers, rows) {
+function buildExportTableHtml(headers, rows, headerRows = null, bodyRowspanColumns = 0) {
   if (!headers?.length) return ''
-  let html = '<table><thead><tr>'
-  for (const header of headers) html += `<th>${header}</th>`
-  html += '</tr></thead><tbody>'
+  const normalizedHeaderRows = headerRows?.length ? headerRows : [headers]
+  let html = '<table><thead>'
+  for (const headerRow of normalizedHeaderRows) {
+    html += '<tr>'
+    for (const header of headerRow) {
+      html += `<th colspan="${headerCellSpan(header, 'colspan')}" rowspan="${headerCellSpan(header, 'rowspan')}">${escapeHtml(headerCellText(header))}</th>`
+    }
+    html += '</tr>'
+  }
+  html += '</thead><tbody>'
   for (const row of (rows || [])) {
     html += '<tr>'
-    for (const cell of row) html += `<td>${cell}</td>`
+    const cells = bodyRowspanColumns ? (row || []) : row
+    for (const cell of cells) {
+      html += `<td colspan="${headerCellSpan(cell, 'colspan')}" rowspan="${headerCellSpan(cell, 'rowspan')}">${escapeHtml(headerCellText(cell))}</td>`
+    }
     html += '</tr>'
   }
   html += '</tbody></table>'
@@ -420,6 +484,49 @@ export function downloadWordHtml(title, html) {
   link.download = `${title || '分析报告'}.doc`
   link.click()
   URL.revokeObjectURL(link.href)
+}
+
+function buildChartDataTable(chart) {
+  const data = chart.data
+  if (!data) return null
+  const labels = data.labels || []
+  const values = data.values || []
+  const metric = data.metric || '值'
+  if (!labels.length || !values.length) return null
+
+  // HTML table
+  let html = `<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;table-layout:fixed;width:100%;margin:6px 0;border:none;mso-table-lspace:0pt;mso-table-rspace:0pt;${HTML_TABLE_FONT}">`
+  html += `<thead><tr><th style="${buildOfficeCellStyle({ bold: true, topBorder: '2px solid #000', bottomBorder: '1px solid #000' })}">类别</th><th style="${buildOfficeCellStyle({ bold: true, topBorder: '2px solid #000', bottomBorder: '1px solid #000' })}">${escapeHtml(metric)}</th></tr></thead><tbody>`
+  for (let i = 0; i < labels.length; i++) {
+    const bottomBorder = i === labels.length - 1 ? '2px solid #000' : 'none'
+    html += `<tr><td style="${buildOfficeCellStyle({ bottomBorder })}">${escapeHtml(String(labels[i]))}</td><td style="${buildOfficeCellStyle({ bottomBorder })}">${escapeHtml(String(values[i] ?? ''))}</td></tr>`
+  }
+  html += '</tbody></table>'
+
+  // Plain text
+  let plain = `类别\t${metric}\n`
+  for (let i = 0; i < labels.length; i++) {
+    plain += `${labels[i]}\t${values[i] ?? ''}\n`
+  }
+
+  // RTF table
+  const cellWidth = Math.floor(RTF_TABLE_WIDTH / 2)
+  let rtf = '\\trowd\\trgaph0\\trleft0\\trautofit1'
+  for (let i = 0; i < 2; i++) {
+    rtf += `\\clvertalc${buildRtfCellBorder('t', RTF_LINE_TOP)}${buildRtfCellBorder('b', RTF_LINE_MIDDLE)}${buildRtfCellBorder('l', 0)}${buildRtfCellBorder('r', 0)}\\cellx${(i + 1) * cellWidth}`
+  }
+  rtf += `\\pard\\intbl\\qc\\sl300\\slmult1\\sa0\\sb0${RTF_FONT_SWITCH}\\cf1\\fs${RTF_TABLE_FONT_SIZE}\\b 类别\\b0\\cell\\pard\\intbl\\qc\\sl300\\slmult1\\sa0\\sb0${RTF_FONT_SWITCH}\\cf1\\fs${RTF_TABLE_FONT_SIZE}\\b ${escapeRtfText(metric)}\\b0\\cell\\row`
+  for (let i = 0; i < labels.length; i++) {
+    const bottomBorder = i === labels.length - 1 ? RTF_LINE_BOTTOM : 0
+    rtf += '\\trowd\\trgaph0\\trleft0\\trautofit1'
+    for (let j = 0; j < 2; j++) {
+      rtf += `\\clvertalc${buildRtfCellBorder('t', 0)}${buildRtfCellBorder('b', bottomBorder)}${buildRtfCellBorder('l', 0)}${buildRtfCellBorder('r', 0)}\\cellx${(j + 1) * cellWidth}`
+    }
+    rtf += `\\pard\\intbl\\qc\\sl300\\slmult1\\sa0\\sb0${RTF_FONT_SWITCH}\\cf1\\fs${RTF_TABLE_FONT_SIZE} ${escapeRtfText(String(labels[i]))}\\cell\\pard\\intbl\\qc\\sl300\\slmult1\\sa0\\sb0${RTF_FONT_SWITCH}\\cf1\\fs${RTF_TABLE_FONT_SIZE} ${escapeRtfText(String(values[i] ?? ''))}\\cell\\row`
+  }
+  rtf += '\\pard\\sa40\\par'
+
+  return { html, plain, rtf }
 }
 
 export function printHtml(html) {

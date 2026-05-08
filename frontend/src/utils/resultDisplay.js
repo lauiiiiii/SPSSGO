@@ -32,6 +32,9 @@ export function createResultDisplayFormatter(variableMetaMap) {
   }
 
   function formatCell(cell) {
+    if (cell && typeof cell === 'object') {
+      return { ...cell, text: formatCell(cell.text) }
+    }
     if (typeof cell === 'string') return formatText(cell)
     if (cell == null) return ''
     return cell
@@ -42,7 +45,14 @@ export function createResultDisplayFormatter(variableMetaMap) {
     normalized.title = formatText(section?.title || '')
     if (section?.type === 'table') {
       normalized.headers = (section.headers || []).map(formatCell)
+      normalized.headerRows = (section.headerRows || []).map(row => (row || []).map(formatCell))
       normalized.rows = (section.rows || []).map(row => (row || []).map(formatCell))
+      normalized.exportRows = (section.exportRows || []).map(row => (row || []).map(formatCell))
+      normalized.displayModes = (section.displayModes || []).map(mode => ({
+        ...mode,
+        label: formatCell(mode.label),
+        rows: (mode.rows || []).map(row => (row || []).map(formatCell)),
+      }))
       normalized.note = formatText(section.note || '')
       normalized.description = formatText(section.description || '')
     } else if (section && (section.type === 'advice' || section.type === 'smart_analysis')) {

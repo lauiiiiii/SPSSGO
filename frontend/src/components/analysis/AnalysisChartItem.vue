@@ -1,7 +1,15 @@
 <template>
   <div class="ap-chart-item">
     <div class="ap-chart-caption">{{ displayTitle }}</div>
-    <div v-if="supportsDataLabels" class="ap-chart-label-toolbar">
+    <div v-if="supportsDataLabels || hasMetricSwitcher" class="ap-chart-label-toolbar">
+      <select
+        v-if="hasMetricSwitcher"
+        v-model="selectedMetric"
+        class="ap-chart-label-select"
+        title="切换统计量"
+      >
+        <option v-for="label in metricOptions" :key="label" :value="label">{{ label }}</option>
+      </select>
       <select
         v-if="supportsLabelMode"
         v-model="labelMode"
@@ -204,7 +212,7 @@
         </template>
       </template>
       <template v-else-if="isMetricComparisonChart">
-        <template v-for="metricData in [calcMetricComparison(chart.data, metricMode)]" :key="metricMode">
+        <template v-for="metricData in [calcMetricComparison(metricChartData, metricMode)]" :key="metricMode">
           <svg class="ap-chart-svg ap-chart-svg--metric" :viewBox="`0 0 ${metricData.W} ${metricData.H}`" :width="metricData.W" :height="metricData.H"
             @mouseleave="$emit('hide-tip')">
             <template v-if="metricMode === 'radar'">
@@ -230,6 +238,9 @@
                 @mouseenter="$emit('show-metric-tip', $event, chart, bar)"
                 @mousemove="$emit('move-tip', $event)"
                 @mouseleave="$emit('hide-tip')"/>
+              <text v-for="(bar, barIndex) in metricData.bars" :key="'mhv'+barIndex"
+                v-show="showDataLabels"
+                :x="bar.x + bar.w + 5" :y="bar.labelY + 4" text-anchor="start" font-size="11" fill="#333">{{ metricValueLabel(bar.value) }}</text>
               <line :x1="metricData.ml" :y1="metricData.mt+metricData.ph" :x2="metricData.ml+metricData.pw" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
               <line :x1="metricData.ml" :y1="metricData.mt" :x2="metricData.ml" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
               <text v-for="(bar, barIndex) in metricData.bars" :key="'mhy'+barIndex"
@@ -248,6 +259,9 @@
                   @mouseenter="$emit('show-metric-tip', $event, chart, bar)"
                   @mousemove="$emit('move-tip', $event)"
                   @mouseleave="$emit('hide-tip')"/>
+                <text v-for="(bar, barIndex) in metricData.bars" :key="'mbv'+barIndex"
+                  v-show="showDataLabels"
+                  :x="bar.x + bar.w / 2" :y="Math.max(bar.y - 6, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(bar.value) }}</text>
               </template>
               <template v-else>
                 <path :d="metricData.path" fill="none" stroke="#2389e8" stroke-width="2"/>
@@ -257,6 +271,9 @@
                   @mouseenter="$emit('show-metric-tip', $event, chart, point)"
                   @mousemove="$emit('move-tip', $event)"
                   @mouseleave="$emit('hide-tip')"/>
+                <text v-for="(point, pointIndex) in metricData.points" :key="'mpv'+pointIndex"
+                  v-show="showDataLabels"
+                  :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(point.value) }}</text>
               </template>
               <line :x1="metricData.ml" :y1="metricData.mt+metricData.ph" :x2="metricData.ml+metricData.pw" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
               <line :x1="metricData.ml" :y1="metricData.mt" :x2="metricData.ml" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
@@ -401,8 +418,9 @@ const categoryChartTypes = new Set(['category_distribution', 'category', 'catego
 const categoryMode = ref('bar')
 const crosstabMode = ref('stackedColumn')
 const labelMode = ref('percent')
-const metricMode = ref('line')
+const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(true)
+const selectedMetric = ref(props.chart.data?.metric || '')
 const categoryModeOptions = [
   { value: 'bar', label: '柱状图' },
   { value: 'horizontalBar', label: '条形图' },
@@ -414,23 +432,46 @@ const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distr
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
+  || isMetricComparisonChart.value
   || (isCategoryChart.value && ['bar', 'horizontalBar'].includes(categoryMode.value))
 ))
-const supportsLabelMode = computed(() => supportsDataLabels.value)
+const supportsLabelMode = computed(() => (
+  isCrosstabChart.value
+  || (isCategoryChart.value && ['bar', 'horizontalBar'].includes(categoryMode.value))
+))
+const hasMetricSwitcher = computed(() => (
+  isMetricComparisonChart.value
+  && props.chart.data?.metrics
+  && Object.keys(props.chart.data.metrics).length > 1
+))
+const metricOptions = computed(() => (
+  hasMetricSwitcher.value ? Object.keys(props.chart.data.metrics) : []
+))
 const categoryTitle = computed(() => {
   const option = categoryModeOptions.find(item => item.value === categoryMode.value)
   const label = option?.label || '柱状图'
   return `${props.chart.varName || props.chart.data?.variable || props.chart.title}${label}`
 })
 const metricModeOptions = [
-  { value: 'line', label: '折线图' },
   { value: 'bar', label: '柱形图' },
   { value: 'horizontalBar', label: '条形图' },
-  { value: 'radar', label: '雷达图' },
 ]
+const metricChartData = computed(() => {
+  const data = props.chart.data
+  if (!hasMetricSwitcher.value || !selectedMetric.value) return data
+  const values = data.metrics?.[selectedMetric.value]
+  if (!values) return data
+  return {
+    ...data,
+    metric: selectedMetric.value,
+    values,
+  }
+})
 const metricComparisonTitle = computed(() => {
   const option = metricModeOptions.find(item => item.value === metricMode.value)
-  return `${props.chart.data?.metric || props.chart.title}${option?.label || '折线图'}`
+  const data = metricChartData.value
+  if (data?.displayTitle) return data.displayTitle
+  return `${data?.metric || props.chart.title}${option?.label || '柱形图'}`
 })
 const crosstabModeOptions = [
   { value: 'stackedColumn', label: '堆积柱形图' },
@@ -460,6 +501,13 @@ function chartValueLabel(count, percent) {
 
 function crosstabMarkLabel(mark) {
   return chartValueLabel(mark.count, mark.percent)
+}
+
+function metricValueLabel(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return ''
+  if (Math.abs(num) >= 100) return String(Math.round(num))
+  return Number(num.toFixed(2)).toString()
 }
 
 function crosstabLabels(crossData) {

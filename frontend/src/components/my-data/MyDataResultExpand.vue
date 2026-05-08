@@ -13,7 +13,7 @@
               <div class="md-res-table-wrap">
                 <table class="tlt">
                   <thead><tr><th v-for="(h, hi) in sec.headers" :key="hi">{{ h }}</th></tr></thead>
-                  <tbody><tr v-for="(row, roi) in sec.rows" :key="roi"><td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td></tr></tbody>
+                  <tbody><tr v-for="(row, roi) in sec.rows" :key="roi"><td v-for="(cell, ci) in row" :key="ci">{{ cellText(cell) }}</td></tr></tbody>
                 </table>
               </div>
               <p v-if="sec.note" class="md-res-note">{{ sec.note }}</p>
@@ -31,6 +31,20 @@
               <strong>{{ sec.title }}</strong>
               <ul><li v-for="(item, ii) in sec.items" :key="ii">{{ item }}</li></ul>
             </div>
+            <AnalysisChartsSection
+              v-else-if="sec.type === 'charts'"
+              :calc-box="calcBox"
+              :calc-category-bar="calcCategoryBar"
+              :calc-category-pie="calcCategoryPie"
+              :calc-crosstab="calcCrosstab"
+              :calc-hist="calcHist"
+              :calc-metric-comparison="calcMetricComparison"
+              :chart-data-visible="chartDataVisible"
+              :fmt-bin="fmtBin"
+              :section="sec"
+              :section-index="si"
+              :set-chart-ref="setChartRef"
+            />
           </template>
         </template>
         <template v-else>
@@ -39,7 +53,7 @@
             <div class="md-res-table-wrap">
               <table class="tlt">
                 <thead><tr><th v-for="(h, hi) in r.headers" :key="hi">{{ h }}</th></tr></thead>
-                <tbody><tr v-for="(row, roi) in r.rows" :key="roi"><td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td></tr></tbody>
+                <tbody><tr v-for="(row, roi) in r.rows" :key="roi"><td v-for="(cell, ci) in row" :key="ci">{{ cellText(cell) }}</td></tr></tbody>
               </table>
             </div>
             <div v-if="r.description" class="md-res-desc">{{ r.description }}</div>
@@ -51,10 +65,61 @@
 </template>
 
 <script setup>
+import { reactive } from 'vue'
+import AnalysisChartsSection from '../analysis/AnalysisChartsSection.vue'
+import {
+  calcBoxplotLayout,
+  calcCategoryBarLayout,
+  calcCategoryPieLayout,
+  calcCrosstabLayout,
+  calcHistogramLayout,
+  calcMetricComparisonLayout,
+  formatBin,
+} from '../../utils/analysisCharts.js'
+
 defineProps({
   result: { type: Object, default: null },
   results: { type: Array, default: () => [] },
 })
+
+const chartDataVisible = reactive({})
+const chartRefs = {}
+
+function setChartRef(sectionIndex, chartIndex, el) {
+  chartRefs[sectionIndex + '_' + chartIndex] = el
+}
+
+function fmtBin(value) {
+  return formatBin(value)
+}
+
+function calcHist(data) {
+  return calcHistogramLayout(data)
+}
+
+function calcBox(data) {
+  return calcBoxplotLayout(data)
+}
+
+function calcCategoryBar(data, horizontal = false) {
+  return calcCategoryBarLayout(data, horizontal)
+}
+
+function calcCategoryPie(data, donut = false) {
+  return calcCategoryPieLayout(data, donut)
+}
+
+function calcMetricComparison(data, mode = 'line') {
+  return calcMetricComparisonLayout(data, mode)
+}
+
+function calcCrosstab(data, mode = 'stackedColumn') {
+  return calcCrosstabLayout(data, mode)
+}
+
+function cellText(cell) {
+  return cell && typeof cell === 'object' ? cell.text : cell
+}
 
 defineEmits(['close'])
 </script>

@@ -98,6 +98,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
     for (const option of (nextMethod.options || [])) {
       if (option.type === 'checkbox') {
         optionValues[option.key] = Boolean(option.default)
+      } else if (option.type === 'multiple') {
+        const defaultValues = Array.isArray(option.default)
+          ? option.default
+          : [option.default || option.choices?.[0]].filter(Boolean)
+        optionValues[option.key] = defaultValues
       } else {
         optionValues[option.key] = option.default || option.choices?.[0] || ''
       }
