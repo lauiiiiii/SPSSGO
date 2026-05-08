@@ -8,6 +8,7 @@ from contextlib import contextmanager
 
 from backend.ai_engine import generate_plan
 from backend.analysis import METHOD_REGISTRY, build_execute_params
+from backend.analysis.common import append_optional_missing_analysis
 from backend.database import (
     delete_results_for_job,
     get_current_dataset_version_for_session,
@@ -209,6 +210,7 @@ async def _run_execute_method_job(job: dict):
         df, _ = await parse_data_file_async(filepath)
     params = await inject_analysis_metadata(session_id, payload["method"], build_execute_params(payload["method"], payload.get("params") or {}))
     result = await asyncio.to_thread(METHOD_REGISTRY[payload["method"]], df, params)
+    result = append_optional_missing_analysis(result, df, params)
     items = normalize_analysis_items(result)
     await delete_results_for_job(job["id"])
     for item in items:

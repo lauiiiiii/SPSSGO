@@ -46,8 +46,28 @@ METHOD_REGISTRY = {
     for method_key, module in ANALYSIS_MODULES.items()
     if hasattr(module, "run")
 }
+MISSING_ANALYSIS_DEFAULT_METHODS = {"descriptive", "data_overview"}
+
+
+def _with_common_options(method_key, meta):
+    enriched = dict(meta)
+    options = list(enriched.get("options") or [])
+    if (
+        method_key not in MISSING_ANALYSIS_DEFAULT_METHODS
+        and not any(option.get("key") == "include_missing_analysis" for option in options)
+    ):
+        options.append({
+            "key": "include_missing_analysis",
+            "label": "输出缺失分析",
+            "type": "checkbox",
+            "default": False,
+        })
+    enriched["options"] = options
+    return enriched
+
+
 METHOD_META = {
-    method_key: module.METHOD_META
+    method_key: _with_common_options(method_key, module.METHOD_META)
     for method_key, module in ANALYSIS_MODULES.items()
     if hasattr(module, "METHOD_META")
 }

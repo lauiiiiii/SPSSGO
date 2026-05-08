@@ -87,6 +87,7 @@ async def rename_folder(folder_id: int, name: str) -> None:
 async def delete_folder(folder_id: int) -> None:
     async with db._pool.acquire() as conn:
         async with conn.cursor() as cur:
+            await cur.execute("DELETE FROM dataset_folder_items WHERE folder_id = %s", (folder_id,))
             await cur.execute("DELETE FROM dataset_folders WHERE id = %s", (folder_id,))
 
 

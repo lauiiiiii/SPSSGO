@@ -15,6 +15,9 @@ from backend.services.session_data_service import resolve_session_data_source
 from backend.services.upload_ingest_service import ingest_uploaded_file, load_questionnaire_content
 from backend.storage import storage_service
 
+DEFAULT_PREVIEW_LIMIT = 100
+MAX_PREVIEW_LIMIT = 1000
+
 async def upload_file_for_session(session_id: str, file):
     session = await get_session(session_id)
     if not session:
@@ -88,7 +91,7 @@ async def build_data_preview_for_session(session_id: str, limit: int = 100, *, a
                 "dataset_version_no": data_source["dataset_version_no"],
             }
 
-        sample = df.head(min(limit, 200))
+        sample = df.head(_normalize_preview_limit(limit))
         headers = [str(c) for c in sample.columns]
         rows = []
         for _, row in sample.iterrows():
@@ -173,3 +176,12 @@ async def get_variables_for_session(session_id: str, *, allow_legacy_fallback: b
     except Exception as exc:
         raise HTTPException(500, f"变量读取失败: {str(exc)}")
 
+
+def _normalize_preview_limit(limit: int) -> int:
+    try:
+        value = int(limit)
+    except (TypeError, ValueError):
+        return DEFAULT_PREVIEW_LIMIT
+    if value <= 0:
+        return DEFAULT_PREVIEW_LIMIT
+    return min(value, MAX_PREVIEW_LIMIT)

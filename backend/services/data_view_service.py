@@ -25,6 +25,9 @@ EXPORT_FORMATS = {
     "parquet": {"ext": ".parquet", "media_type": "application/octet-stream"},
 }
 
+DEFAULT_PREVIEW_LIMIT = 100
+MAX_PREVIEW_LIMIT = 1000
+
 
 async def build_data_preview(session_id: str, limit: int = 100, *, allow_legacy_fallback: bool = False):
     data_source = await resolve_session_data_source(
@@ -33,7 +36,7 @@ async def build_data_preview(session_id: str, limit: int = 100, *, allow_legacy_
     )
     with materialized_session_data(data_source) as data_file:
         df, _ = parse_data_file(data_file)
-        sample = df.head(min(limit, 200))
+        sample = df.head(_normalize_preview_limit(limit))
         headers = [str(c) for c in sample.columns]
         rows = []
         for _, row in sample.iterrows():
@@ -176,3 +179,13 @@ def _export_dataframe_content(df: pd.DataFrame, export_format: str):
                 os.remove(temp_path)
             except OSError:
                 pass
+
+
+def _normalize_preview_limit(limit: int) -> int:
+    try:
+        value = int(limit)
+    except (TypeError, ValueError):
+        return DEFAULT_PREVIEW_LIMIT
+    if value <= 0:
+        return DEFAULT_PREVIEW_LIMIT
+    return min(value, MAX_PREVIEW_LIMIT)
