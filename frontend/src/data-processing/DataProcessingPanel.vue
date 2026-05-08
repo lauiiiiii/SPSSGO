@@ -21,11 +21,23 @@
         @export-current="exportCurrent"
       />
 
+      <div v-if="hasData && previewDiffSummary" class="dp-diff-notice">
+        <span>{{ previewDiffSummary }}</span>
+        <button type="button" @click="clearPreviewDiff">清除</button>
+      </div>
+
       <DataPreviewGrid
         v-if="hasData && displayHeaders.length"
         :headers="previewHeaders"
         :display-headers="displayHeaders"
         :display-rows="displayRows"
+        :column-diff-map="columnDiffMap"
+        :preview-limit="previewLimit"
+        :preview-limit-options="previewLimitOptions"
+        :previewed-rows="previewedRowCount"
+        :total-rows="totalRows"
+        :column-width="previewColumnWidth"
+        @update:preview-limit="handlePreviewLimitChange"
       />
 
       <div v-else-if="!hasData" class="dp-empty">
@@ -98,7 +110,7 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import ExportDialog from './components/ExportDialog.vue'
 import MethodConfigDialog from './components/MethodConfigDialog.vue'
 import ProcessingSidebar from './components/ProcessingSidebar.vue'
@@ -106,7 +118,7 @@ import ProcessingTopbar from './components/ProcessingTopbar.vue'
 import VariableActionMenu from './components/VariableActionMenu.vue'
 import VersionDialog from './components/VersionDialog.vue'
 import { useDatasetExport } from './composables/useDatasetExport.js'
-import { useDatasetPreview } from './composables/useDatasetPreview.js'
+import { PREVIEW_LIMIT_OPTIONS, useDatasetPreview } from './composables/useDatasetPreview.js'
 import { useDatasetVersions } from './composables/useDatasetVersions.js'
 import { useProcessingMethodDialog } from './composables/useProcessingMethodDialog.js'
 import { useProcessingOverlayControls, useProcessingShellState } from './composables/useProcessingShellState.js'
@@ -124,6 +136,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['variables-updated', 'go-analysis'])
+const previewDiff = ref(null)
+const previewColumnWidth = 70
+const previewLimitOptions = computed(() => buildPreviewLimitOptions(props.totalRows))
 
 const {
   catVars,
@@ -133,13 +148,28 @@ const {
   viewMode,
 } = useProcessingShellState(props)
 const {
+  createPreviewSnapshot,
   displayHeaders,
   displayRows,
   loadPreview,
   previewHeaders,
+  previewLimit,
   previewLoading,
+  previewMeta,
+  previewRows,
+  previewedRowCount,
+  setPreviewLimit,
   variableMetaMap,
 } = useDatasetPreview(props, viewMode)
+const columnDiffMap = computed(() => previewDiff.value?.columnDiffMap || {})
+const previewDiffSummary = computed(() => {
+  const diff = previewDiff.value
+  if (!diff) return ''
+  const removedText = diff.removedColumns.length
+    ? `，删除：${formatRemovedColumns(diff.removedColumns)}`
+    : ''
+  return `已和切换前 v${diff.baseVersionNo || '-'} 对比：新增 ${diff.addedColumns.length} 列，变化 ${diff.changedColumns.length} 列，删除 ${diff.removedColumns.length} 列${removedText}`
+})
 const {
   exportCurrent,
   exportDialogVisible,
@@ -156,7 +186,13 @@ const {
   versionDialogVisible,
   versionLoading,
   versionSwitchingId,
-} = useDatasetVersions(props, { emit, loadPreview, notifySuccess })
+} = useDatasetVersions(props, {
+  createPreviewSnapshot,
+  emit,
+  loadPreview,
+  notifySuccess,
+  onVersionSwitched: applyVersionDiff,
+})
 const {
   activeMethod,
   activeMethodComponent,
@@ -184,6 +220,7 @@ const {
   loadPreview,
   loadVersions,
   notifySuccess,
+  onPreviewMutated: clearPreviewDiff,
   variableMetaMap,
 })
 const {
@@ -211,4 +248,105 @@ const {
   handleGlobalClick,
   openProcessingMethod,
 })
+
+async function handlePreviewLimitChange(limit) {
+  clearPreviewDiff()
+  await setPreviewLimit(limit)
+}
+
+function clearPreviewDiff() {
+  previewDiff.value = null
+}
+
+function applyVersionDiff(baseSnapshot) {
+  previewDiff.value = buildPreviewDiff(baseSnapshot, {
+    headers: previewHeaders.value,
+    rows: previewRows.value,
+    datasetVersionNo: previewMeta.value.datasetVersionNo,
+  })
+}
+
+function buildPreviewDiff(baseSnapshot, currentSnapshot) {
+  const baseHeaders = baseSnapshot?.headers || []
+  const currentHeaders = currentSnapshot?.headers || []
+  const baseRows = baseSnapshot?.rows || []
+  const currentRows = currentSnapshot?.rows || []
+  const baseIndexMap = buildHeaderIndexMap(baseHeaders)
+  const currentIndexMap = buildHeaderIndexMap(currentHeaders)
+
+  const addedColumns = currentHeaders.filter(header => !baseIndexMap.has(header))
+  const removedColumns = baseHeaders.filter(header => !currentIndexMap.has(header))
+  const changedColumns = currentHeaders.filter((header) => {
+    if (!baseIndexMap.has(header)) return false
+    return columnHasPreviewChange(
+      baseRows,
+      currentRows,
+      baseIndexMap.get(header),
+      currentIndexMap.get(header),
+    )
+  })
+
+  const columnDiffMap = {}
+  for (const header of addedColumns) columnDiffMap[header] = 'added'
+  for (const header of changedColumns) columnDiffMap[header] = 'changed'
+
+  if (!addedColumns.length && !removedColumns.length && !changedColumns.length) {
+    return null
+  }
+  return {
+    addedColumns,
+    baseVersionNo: baseSnapshot?.datasetVersionNo || '',
+    changedColumns,
+    columnDiffMap,
+    currentVersionNo: currentSnapshot?.datasetVersionNo || '',
+    removedColumns: removedColumns.map((header) => {
+      const index = baseIndexMap.get(header)
+      return baseSnapshot?.displayHeaders?.[index] || header
+    }),
+  }
+}
+
+function buildHeaderIndexMap(headers) {
+  const map = new Map()
+  headers.forEach((header, index) => {
+    if (!map.has(header)) map.set(header, index)
+  })
+  return map
+}
+
+function columnHasPreviewChange(baseRows, currentRows, baseIndex, currentIndex) {
+  const maxRows = Math.max(baseRows.length, currentRows.length)
+  for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
+    const baseValue = baseRows[rowIndex]?.[baseIndex] ?? ''
+    const currentValue = currentRows[rowIndex]?.[currentIndex] ?? ''
+    if (String(baseValue) !== String(currentValue)) return true
+  }
+  return false
+}
+
+function formatRemovedColumns(columns) {
+  const visible = columns.slice(0, 4).join('、')
+  if (columns.length <= 4) return visible
+  return `${visible} 等 ${columns.length} 个`
+}
+
+watch(() => props.sessionId, clearPreviewDiff)
+watch(() => props.hasData, (hasData) => {
+  if (!hasData) clearPreviewDiff()
+})
+
+watch(previewLimitOptions, async (options) => {
+  if (!options.length || options.includes(previewLimit.value)) return
+  await handlePreviewLimitChange(options[options.length - 1])
+})
+
+function buildPreviewLimitOptions(totalRows) {
+  const total = Number(totalRows || 0)
+  if (!total) return PREVIEW_LIMIT_OPTIONS
+  const maxPreviewRows = Math.min(total, PREVIEW_LIMIT_OPTIONS[PREVIEW_LIMIT_OPTIONS.length - 1])
+  return [...new Set([
+    ...PREVIEW_LIMIT_OPTIONS.filter(limit => limit < maxPreviewRows),
+    maxPreviewRows,
+  ])]
+}
 </script>

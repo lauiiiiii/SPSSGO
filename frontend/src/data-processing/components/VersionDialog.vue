@@ -1,12 +1,15 @@
 <template>
-  <div class="dp-dialog-overlay" @click.self="$emit('close')">
-    <div class="dp-export-dialog dp-version-dialog">
-      <div class="dp-dialog-head">
-        <span>数据版本</span>
-        <button class="dp-dialog-close" @click="$emit('close')">&times;</button>
+  <div class="dp-version-drawer-shell" @click.self="$emit('close')">
+    <aside class="dp-version-drawer">
+      <div class="dp-version-drawer-head">
+        <div>
+          <h3>版本记录</h3>
+          <p>当前版本 v{{ currentVersionNo || '-' }}</p>
+        </div>
+        <button class="dp-version-drawer-close" @click="$emit('close')">&times;</button>
       </div>
-      <div class="dp-export-body">
-        <div class="dp-export-title">当前版本 v{{ currentVersionNo || '-' }}</div>
+
+      <div class="dp-version-drawer-body">
         <div v-if="loading" class="dp-version-empty">正在加载版本记录...</div>
         <div v-else-if="!versions.length" class="dp-version-empty">当前还没有可切换的历史版本。</div>
         <div v-else class="dp-version-list">
@@ -22,16 +25,16 @@
               </div>
             </div>
             <button
-              class="dp-export-chip"
+              class="dp-version-switch"
               :disabled="version.is_current || switchingId === version.id"
               @click="$emit('switch-version', version)"
             >
-              <b>{{ switchingId === version.id ? '切换中...' : (version.is_current ? '当前使用中' : '切换到此版本') }}</b>
+              {{ switchingId === version.id ? '切换中' : (version.is_current ? '使用中' : '切换') }}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   </div>
 </template>
 

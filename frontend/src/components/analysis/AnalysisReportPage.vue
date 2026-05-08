@@ -15,7 +15,7 @@
     />
     <div class="ap-report-body">
       <div v-for="(result, resultIndex) in displayResults" :key="resultIndex" class="ap-report-card-wrap">
-        <div class="ap-report-result-title">
+        <div v-if="shouldShowResultTitle(result)" class="ap-report-result-title">
           <span class="ap-report-result-bar"></span>
           {{ result.name }}
         </div>
@@ -44,7 +44,11 @@
             <AnalysisChartsSection
               v-else-if="section.type === 'charts'"
               :calc-box="calcBox"
+              :calc-category-bar="calcCategoryBar"
+              :calc-category-pie="calcCategoryPie"
+              :calc-crosstab="calcCrosstab"
               :calc-hist="calcHist"
+              :calc-metric-comparison="calcMetricComparison"
               :chart-data-visible="chartDataVisible"
               :fmt-bin="fmtBin"
               :section="section"
@@ -54,6 +58,9 @@
               @move-tip="$emit('move-tip', $event)"
               @show-hist-tip="(eventArg, dataArg, indexArg) => $emit('show-hist-tip', eventArg, dataArg, indexArg)"
               @show-box-tip="(eventArg, chartArg) => $emit('show-box-tip', eventArg, chartArg)"
+              @show-category-tip="(eventArg, chartArg, dataPointArg) => $emit('show-category-tip', eventArg, chartArg, dataPointArg)"
+              @show-crosstab-tip="(eventArg, chartArg, dataPointArg) => $emit('show-crosstab-tip', eventArg, chartArg, dataPointArg)"
+              @show-metric-tip="(eventArg, chartArg, dataPointArg) => $emit('show-metric-tip', eventArg, chartArg, dataPointArg)"
               @download-chart="(sectionArg, chartArg, titleArg) => $emit('download-chart', sectionArg, chartArg, titleArg)"
               @copy-chart="(sectionArg, chartArg) => $emit('copy-chart', sectionArg, chartArg)"
               @toggle-chart-data="(sectionArg, chartArg) => $emit('toggle-chart-data', sectionArg, chartArg)"
@@ -81,12 +88,16 @@ import AnalysisReportToolbar from './AnalysisReportToolbar.vue'
 import AnalysisSmartSection from './AnalysisSmartSection.vue'
 import AnalysisTableSection from './AnalysisTableSection.vue'
 
-defineProps({
+const props = defineProps({
   aiLoading: { type: Boolean, default: false },
   aiResult: { type: String, default: '' },
   allowAiRequest: { type: Boolean, default: true },
   calcBox: { type: Function, required: true },
+  calcCategoryBar: { type: Function, required: true },
+  calcCategoryPie: { type: Function, required: true },
+  calcCrosstab: { type: Function, required: true },
   calcHist: { type: Function, required: true },
+  calcMetricComparison: { type: Function, required: true },
   cellClass: { type: Function, required: true },
   chartDataVisible: { type: Object, required: true },
   displayResults: { type: Array, default: () => [] },
@@ -101,6 +112,10 @@ defineProps({
   showShare: { type: Boolean, default: false },
 })
 
+function shouldShowResultTitle(result) {
+  return String(result?.name || '').trim() !== String(props.reportTitle || '').trim()
+}
+
 defineEmits([
   'copy-all',
   'copy-chart',
@@ -114,7 +129,10 @@ defineEmits([
   'request-ai',
   'share',
   'show-box-tip',
+  'show-category-tip',
+  'show-crosstab-tip',
   'show-hist-tip',
+  'show-metric-tip',
   'toggle-chart-data',
 ])
 </script>

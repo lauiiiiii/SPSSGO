@@ -1,7 +1,11 @@
 import { reactive } from 'vue'
 import {
   calcBoxplotLayout,
+  calcCategoryBarLayout,
+  calcCategoryPieLayout,
+  calcCrosstabLayout,
   calcHistogramLayout,
+  calcMetricComparisonLayout,
   copyChartPng,
   downloadChartPng,
   formatBin,
@@ -63,6 +67,28 @@ export function useAnalysisCharts() {
     tip.show = true
   }
 
+  function showCategoryTip(event, chart, dataPoint) {
+    tip.lines = [
+      { text: chart.varName || chart.data?.variable || chart.title, dot: null },
+      { text: `选项：${dataPoint.label}`, dot: '#2389e8' },
+      { text: `频数：${dataPoint.count}`, dot: '#2389e8' },
+      { text: `百分比：${Number(dataPoint.percent || 0).toFixed(1)}%`, dot: '#2389e8' },
+    ]
+    moveTip(event)
+    tip.show = true
+  }
+
+  function showMetricTip(event, chart, dataPoint) {
+    const metric = chart.data?.metric || '指标'
+    tip.lines = [
+      { text: chart.title || `${metric}对比图`, dot: null },
+      { text: `名称：${dataPoint.label}`, dot: '#2389e8' },
+      { text: `${metric}：${Number(dataPoint.value || 0).toFixed(3)}`, dot: '#2389e8' },
+    ]
+    moveTip(event)
+    tip.show = true
+  }
+
   async function downloadChart(sectionIndex, chartIndex, title) {
     const svg = getChartSvg(sectionIndex, chartIndex)
     if (!svg) return
@@ -90,6 +116,34 @@ export function useAnalysisCharts() {
     return calcBoxplotLayout(data)
   }
 
+  function calcCategoryBar(data, horizontal = false) {
+    return calcCategoryBarLayout(data, horizontal)
+  }
+
+  function calcCategoryPie(data, donut = false) {
+    return calcCategoryPieLayout(data, donut)
+  }
+
+  function calcMetricComparison(data, mode = 'line') {
+    return calcMetricComparisonLayout(data, mode)
+  }
+
+  function calcCrosstab(data, mode = 'stackedColumn') {
+    return calcCrosstabLayout(data, mode)
+  }
+
+  function showCrosstabTip(event, chart, dataPoint) {
+    tip.lines = [
+      { text: chart.title || '交叉图', dot: null },
+      { text: `分组：${dataPoint.groupLabel}`, dot: dataPoint.color },
+      { text: `名称：${dataPoint.seriesLabel}`, dot: dataPoint.color },
+      { text: `频数：${dataPoint.count}`, dot: dataPoint.color },
+      { text: `百分比：${Number(dataPoint.percent || 0).toFixed(2)}%`, dot: dataPoint.color },
+    ]
+    moveTip(event)
+    tip.show = true
+  }
+
   function resetCharts() {
     tip.show = false
     for (const key of Object.keys(chartDataVisible)) delete chartDataVisible[key]
@@ -97,7 +151,11 @@ export function useAnalysisCharts() {
 
   return {
     calcBox,
+    calcCategoryBar,
+    calcCategoryPie,
+    calcCrosstab,
     calcHist,
+    calcMetricComparison,
     chartDataVisible,
     copyChart,
     downloadChart,
@@ -107,7 +165,10 @@ export function useAnalysisCharts() {
     resetCharts,
     setChartRef,
     showBoxTip,
+    showCategoryTip,
+    showCrosstabTip,
     showHistTip,
+    showMetricTip,
     tip,
     toggleChartData,
   }

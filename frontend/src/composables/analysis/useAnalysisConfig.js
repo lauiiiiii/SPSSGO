@@ -96,7 +96,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
     }
 
     for (const option of (nextMethod.options || [])) {
-      optionValues[option.key] = option.default || option.choices?.[0] || ''
+      if (option.type === 'checkbox') {
+        optionValues[option.key] = Boolean(option.default)
+      } else {
+        optionValues[option.key] = option.default || option.choices?.[0] || ''
+      }
     }
   }
 

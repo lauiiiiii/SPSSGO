@@ -1,7 +1,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import * as api from '../../api.js'
 
-export function useDatasetVersions(props, { emit, loadPreview, notifySuccess }) {
+export function useDatasetVersions(props, {
+  createPreviewSnapshot,
+  emit,
+  loadPreview,
+  notifySuccess,
+  onVersionSwitched,
+}) {
   const versionDialogVisible = ref(false)
   const versionLoading = ref(false)
   const datasetVersions = ref([])
@@ -38,6 +44,7 @@ export function useDatasetVersions(props, { emit, loadPreview, notifySuccess }) 
 
   async function switchDatasetVersion(version) {
     if (!props.sessionId || !version || version.is_current) return
+    const baseSnapshot = createPreviewSnapshot ? createPreviewSnapshot(currentVersionNo.value) : null
     versionSwitchingId.value = version.id
     try {
       const data = await api.activateDatasetVersion(props.sessionId, version.id)
@@ -45,6 +52,9 @@ export function useDatasetVersions(props, { emit, loadPreview, notifySuccess }) 
       await loadVersions()
       emit('variables-updated')
       await loadPreview()
+      if (onVersionSwitched && baseSnapshot) {
+        onVersionSwitched(baseSnapshot)
+      }
     } catch (e) {
       alert('切换版本失败: ' + e.message)
     }

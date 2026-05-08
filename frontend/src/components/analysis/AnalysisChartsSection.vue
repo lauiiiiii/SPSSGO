@@ -8,7 +8,11 @@
         v-for="(chart, chartIndex) in section.charts"
         :key="chartIndex"
         :calc-box="calcBox"
+        :calc-category-bar="calcCategoryBar"
+        :calc-category-pie="calcCategoryPie"
+        :calc-crosstab="calcCrosstab"
         :calc-hist="calcHist"
+        :calc-metric-comparison="calcMetricComparison"
         :chart="chart"
         :chart-index="chartIndex"
         :data-visible="!!chartDataVisible[sectionIndex+'_'+chartIndex]"
@@ -19,6 +23,9 @@
         @move-tip="$emit('move-tip', $event)"
         @show-hist-tip="(eventArg, dataArg, indexArg) => $emit('show-hist-tip', eventArg, dataArg, indexArg)"
         @show-box-tip="(eventArg, chartArg) => $emit('show-box-tip', eventArg, chartArg)"
+        @show-category-tip="(eventArg, chartArg, dataPointArg) => $emit('show-category-tip', eventArg, chartArg, dataPointArg)"
+        @show-crosstab-tip="(eventArg, chartArg, dataPointArg) => $emit('show-crosstab-tip', eventArg, chartArg, dataPointArg)"
+        @show-metric-tip="(eventArg, chartArg, dataPointArg) => $emit('show-metric-tip', eventArg, chartArg, dataPointArg)"
         @download-chart="(sectionArg, chartArg, titleArg) => $emit('download-chart', sectionArg, chartArg, titleArg)"
         @copy-chart="(sectionArg, chartArg) => $emit('copy-chart', sectionArg, chartArg)"
         @toggle-chart-data="(sectionArg, chartArg) => $emit('toggle-chart-data', sectionArg, chartArg)"
@@ -35,7 +42,11 @@ import AnalysisChartItem from './AnalysisChartItem.vue'
 
 defineProps({
   calcBox: { type: Function, required: true },
+  calcCategoryBar: { type: Function, required: true },
+  calcCategoryPie: { type: Function, required: true },
+  calcCrosstab: { type: Function, required: true },
   calcHist: { type: Function, required: true },
+  calcMetricComparison: { type: Function, required: true },
   chartDataVisible: { type: Object, required: true },
   fmtBin: { type: Function, required: true },
   section: { type: Object, required: true },
@@ -49,7 +60,10 @@ defineEmits([
   'hide-tip',
   'move-tip',
   'show-box-tip',
+  'show-category-tip',
+  'show-crosstab-tip',
   'show-hist-tip',
+  'show-metric-tip',
   'toggle-chart-data',
 ])
 </script>

@@ -76,8 +76,9 @@
     <div v-else v-for="(slot, slotIndex) in displaySlots" :key="slot.key" class="ap-slot" :class="{ 'ap-slot-grow': slotIndex === displaySlots.length - 1 }">
       <div class="ap-slot-label">
         放入
-        <span v-if="slot.accept && slot.accept !== 'any'" class="ap-accept-tag" :class="'accept-' + slot.accept">
-          [{{ slot.accept === 'numeric' ? '定量' : slot.accept === 'categorical' ? '定类' : slot.accept }}]
+        <span v-if="slot.prefixLabel">{{ slot.prefixLabel }}</span>
+        <span v-if="getAcceptLabel(slot)" class="ap-accept-tag" :class="'accept-' + slot.accept">
+          [{{ getAcceptLabel(slot) }}]
         </span>
         {{ slot.label }}
         <span class="ap-slot-constraint">
@@ -100,15 +101,6 @@
       />
     </div>
 
-    <div v-if="method.options?.length" class="ap-options">
-      <div v-for="option in method.options" :key="option.key" class="ap-option-group">
-        <label>{{ option.label }}：</label>
-        <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
-          <option v-for="choice in option.choices" :key="choice" :value="choice">{{ choice }}</option>
-        </select>
-      </div>
-    </div>
-
     <div class="ap-actions">
       <button class="ap-btn ap-btn-ghost" @click="$emit('reset')">重置</button>
       <button class="ap-btn ap-btn-primary" :disabled="!canExecute || executing" @click="$emit('execute')">
@@ -116,6 +108,24 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
+      <div v-if="method.options?.length" class="ap-options ap-options--actions">
+        <div v-for="option in method.options" :key="option.key" class="ap-option-group">
+          <label v-if="option.type === 'checkbox'" class="ap-option-check">
+            <input
+              type="checkbox"
+              :checked="!!optionValues[option.key]"
+              @change="$emit('option-change', option.key, $event.target.checked)"
+            />
+            <span>{{ option.label }}</span>
+          </label>
+          <template v-else>
+            <label>{{ option.label }}：</label>
+            <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+            <option v-for="choice in option.choices" :key="choice" :value="choice">{{ choice }}</option>
+            </select>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -162,4 +172,12 @@ defineEmits([
   'show-report',
   'toggle-factor-menu',
 ])
+
+function getAcceptLabel(slot) {
+  if (slot.acceptLabel) return slot.acceptLabel
+  if (!slot.accept || slot.accept === 'any') return ''
+  if (slot.accept === 'numeric') return '定量'
+  if (slot.accept === 'categorical') return '定类'
+  return slot.accept
+}
 </script>

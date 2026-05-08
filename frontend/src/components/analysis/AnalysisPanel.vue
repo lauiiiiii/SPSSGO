@@ -15,7 +15,11 @@
         :ai-result="aiResult"
         :allow-ai-request="true"
         :calc-box="calcBox"
+        :calc-category-bar="calcCategoryBar"
+        :calc-category-pie="calcCategoryPie"
+        :calc-crosstab="calcCrosstab"
         :calc-hist="calcHist"
+        :calc-metric-comparison="calcMetricComparison"
         :cell-class="cellClass"
         :chart-data-visible="chartDataVisible"
         :display-results="displayResults"
@@ -36,7 +40,10 @@
         @move-tip="moveTip"
         @show-hist-tip="showHistTip"
         @show-box-tip="showBoxTip"
+        @show-category-tip="showCategoryTip"
+        @show-crosstab-tip="showCrosstabTip"
         @download-chart="downloadChart"
+        @show-metric-tip="showMetricTip"
         @copy-chart="copyChart"
         @toggle-chart-data="toggleChartData"
       />
@@ -164,7 +171,11 @@ const {
 } = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
 const {
   calcBox,
+  calcCategoryBar,
+  calcCategoryPie,
+  calcCrosstab,
   calcHist,
+  calcMetricComparison,
   chartDataVisible,
   copyChart,
   downloadChart,
@@ -174,7 +185,10 @@ const {
   resetCharts,
   setChartRef,
   showBoxTip,
+  showCategoryTip,
+  showCrosstabTip,
   showHistTip,
+  showMetricTip,
   tip,
   toggleChartData,
 } = useAnalysisCharts()

@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from backend.ai_engine import call_deepseek, generate_plan
 from backend.analysis import METHOD_REGISTRY, build_execute_params
+from backend.analysis.common import append_optional_missing_analysis
 from backend.app_runtime import download_response
 from backend.database import (
     delete_result,
@@ -153,7 +154,9 @@ async def execute_method_for_session(session_id: str, body: dict | None):
         raise HTTPException(400, f"未知的分析方法: {method_key}")
     try:
         params = await inject_analysis_metadata(session_id, method_key, build_execute_params(method_key, body.get("params", {})))
-        result = METHOD_REGISTRY[method_key](await load_session_dataframe(session_id, allow_legacy_fallback=True), params)
+        df = await load_session_dataframe(session_id, allow_legacy_fallback=True)
+        result = METHOD_REGISTRY[method_key](df, params)
+        result = append_optional_missing_analysis(result, df, params)
         items = normalize_analysis_items(result)
         await save_analysis_items(session_id, items, "[结构化执行]")
         return {"success": True, "results": items}

@@ -250,6 +250,12 @@
                     :headers="previewHeaders"
                     :display-headers="displayPreviewHeaders"
                     :display-rows="displayPreviewRows"
+                    :preview-limit="previewLimit"
+                    :preview-limit-options="previewLimitOptions"
+                    :previewed-rows="previewRows.length"
+                    :total-rows="previewTotalRows"
+                    :column-width="previewColumnWidth"
+                    @update:preview-limit="handlePreviewLimitChange"
                   />
                 </div>
                 <div v-else class="md-empty-hint"><span>暂无可预览数据</span></div>
@@ -612,6 +618,7 @@ import MyDataFolderCard from './MyDataFolderCard.vue'
 import MyDataResultExpand from './MyDataResultExpand.vue'
 import MyDataSetCard from './MyDataSetCard.vue'
 import DataPreviewGrid from '../../data-processing/components/DataPreviewGrid.vue'
+import { PREVIEW_LIMIT_OPTIONS } from '../../data-processing/composables/useDatasetPreview.js'
 import { processingMethodMap } from '../../data-processing/methodRegistry.js'
 import * as api from '../../api.js'
 import { useExpandedResults } from '../../composables/data/useExpandedResults.js'
@@ -648,9 +655,14 @@ const detailTab = ref('preview')
 const historyFilter = ref('current')
 const libraryExpanded = ref(false)
 const previewHeaders = ref([])
+const previewLimit = ref(PREVIEW_LIMIT_OPTIONS[0])
 const previewLoading = ref(false)
+const previewMeta = ref({
+  totalRows: 0,
+})
 const previewRows = ref([])
 const previewError = ref('')
+const previewColumnWidth = 70
 const showDatasetDetail = ref(false)
 const versionSourceJobs = ref({})
 const versionsLoading = ref(false)
@@ -709,6 +721,8 @@ const displayPreviewRows = computed(() => previewRows.value.map(row => row.map((
   const header = previewHeaders.value[index]
   return formatPreviewCell(variableMetaMap.value[header], cell)
 })))
+const previewTotalRows = computed(() => Number(previewMeta.value.totalRows || props.totalRows || currentDataSet.value?.rowCount || 0))
+const previewLimitOptions = computed(() => buildPreviewLimitOptions(previewTotalRows.value))
 
 const currentVersionHistoryCount = computed(() => props.historyItems.filter(isCurrentHistoryItem).length)
 const totalPages = computed(() => Math.max(1, Math.ceil(props.datasetTotal / props.datasetPageSize)))
@@ -1023,24 +1037,36 @@ async function loadDataPreview() {
   if (!props.currentSessionId) {
     previewHeaders.value = []
     previewRows.value = []
+    previewMeta.value = { totalRows: 0 }
     previewError.value = ''
     return
   }
   previewLoading.value = true
   previewError.value = ''
   try {
-    const data = await api.getDataPreview(props.currentSessionId, 200)
+    const data = await api.getDataPreview(props.currentSessionId, previewLimit.value)
     previewHeaders.value = data.headers || []
     previewRows.value = data.rows || []
+    previewMeta.value = {
+      totalRows: Number(data.total_rows || 0),
+    }
     previewError.value = ''
   } catch (err) {
     previewHeaders.value = []
     previewRows.value = []
+    previewMeta.value = { totalRows: 0 }
     previewError.value = err?.message || '数据预览加载失败，请稍后重试'
     console.warn('加载数据预览失败', err)
   } finally {
     previewLoading.value = false
   }
+}
+
+async function handlePreviewLimitChange(limit) {
+  const nextLimit = Number(limit)
+  if (!Number.isFinite(nextLimit) || previewLimit.value === nextLimit) return
+  previewLimit.value = nextLimit
+  await loadDataPreview()
 }
 
 function toggleSelect(sessionId) {
@@ -1163,6 +1189,10 @@ watch(() => props.currentDatasetVersionId, loadDatasetVersions)
 watch(datasetVersions, loadVersionSourceJobs)
 watch(() => props.currentSessionId, loadDataPreview, { immediate: true })
 watch(() => props.currentDatasetVersionId, loadDataPreview)
+watch(previewLimitOptions, async (options) => {
+  if (!options.length || options.includes(previewLimit.value)) return
+  await handlePreviewLimitChange(options[options.length - 1])
+})
 watch(() => props.currentDatasetVersionId, () => {
   historyFilter.value = 'current'
 })
@@ -1173,4 +1203,13 @@ watch(() => props.currentSessionId, () => {
   showDatasetDetail.value = false
 })
 
+function buildPreviewLimitOptions(totalRows) {
+  const total = Number(totalRows || 0)
+  if (!total) return PREVIEW_LIMIT_OPTIONS
+  const maxPreviewRows = Math.min(total, PREVIEW_LIMIT_OPTIONS[PREVIEW_LIMIT_OPTIONS.length - 1])
+  return [...new Set([
+    ...PREVIEW_LIMIT_OPTIONS.filter(limit => limit < maxPreviewRows),
+    maxPreviewRows,
+  ])]
+}
 </script>

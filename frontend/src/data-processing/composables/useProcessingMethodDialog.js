@@ -19,6 +19,7 @@ export function useProcessingMethodDialog(props, {
   loadPreview,
   loadVersions,
   notifySuccess,
+  onPreviewMutated,
   variableMetaMap,
 }) {
   const activeMethod = ref('')
@@ -104,6 +105,7 @@ export function useProcessingMethodDialog(props, {
           emit,
           loadPreview,
         })
+        if (onPreviewMutated) onPreviewMutated()
       } catch (_) {
         // Ignore autosave failures so the dialog remains usable.
       }
@@ -200,6 +202,7 @@ export function useProcessingMethodDialog(props, {
       if (data.success) {
         activeMethod.value = ''
         notifySuccess(data.message || '处理完成')
+        if (onPreviewMutated) onPreviewMutated()
         await loadVersions()
         await loadPreview()
         emit('variables-updated')
