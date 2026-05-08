@@ -60,6 +60,32 @@ docker compose up -d
 ### 报告导出
 分析结果导出 Word 报告，支持公开分享链接。
 
+## 界面预览
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191639_039.png" width="90%" alt="工作台概览" />
+</p>
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191654_742.png" width="90%" alt="数据面板" />
+</p>
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191713_283.png" width="90%" alt="分析配置" />
+</p>
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191726_931.png" width="90%" alt="分析结果" />
+</p>
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191738_445.png" width="90%" alt="可视化图表" />
+</p>
+
+<p align="center">
+  <img src="img/ScreenShot_2026-05-08_191753_973.png" width="90%" alt="报告导出" />
+</p>
+
 ## 项目结构
 
 ```text
