@@ -62,29 +62,17 @@ docker compose up -d
 
 ## 界面预览
 
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191639_039.png" width="90%" alt="工作台概览" />
-</p>
+| 工作台概览 | 数据面板 |
+|:---:|:---:|
+| <img src="img/ScreenShot_2026-05-08_191639_039.png" width="100%" /> | <img src="img/ScreenShot_2026-05-08_191654_742.png" width="100%" /> |
 
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191654_742.png" width="90%" alt="数据面板" />
-</p>
+| 分析配置 | 分析结果 |
+|:---:|:---:|
+| <img src="img/ScreenShot_2026-05-08_191713_283.png" width="100%" /> | <img src="img/ScreenShot_2026-05-08_191726_931.png" width="100%" /> |
 
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191713_283.png" width="90%" alt="分析配置" />
-</p>
-
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191726_931.png" width="90%" alt="分析结果" />
-</p>
-
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191738_445.png" width="90%" alt="可视化图表" />
-</p>
-
-<p align="center">
-  <img src="img/ScreenShot_2026-05-08_191753_973.png" width="90%" alt="报告导出" />
-</p>
+| 可视化图表 | 报告导出 |
+|:---:|:---:|
+| <img src="img/ScreenShot_2026-05-08_191738_445.png" width="100%" /> | <img src="img/ScreenShot_2026-05-08_191753_973.png" width="100%" /> |
 
 ## 项目结构
 
