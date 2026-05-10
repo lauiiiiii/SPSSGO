@@ -9,14 +9,14 @@ export function normalizeMethodMetaMap(rawMethods) {
   }
 
   ensureSlotMethod('data_overview', {
-    label: '数据概览',
-    category: '数据概览',
-    description: '快速查看数据集规模、变量类型、缺失情况和变量明细',
+    label: '数据探查',
+    category: '常用方法',
+    description: '全面检查数据集规模、变量类型、缺失与异常，评估数据可用度',
     order: 60,
     slots: Array.isArray(methods.data_overview?.slots) && methods.data_overview.slots.length
       ? methods.data_overview.slots
       : [
-          { key: 'variables', label: '变量', type: 'multiple', accept: 'any', min: 1, hint: '放入需要概览的一个或多个变量' },
+          { key: 'variables', label: '变量', type: 'multiple', accept: 'any', min: 1, hint: '放入需要探查的一个或多个变量' },
         ],
     options: methods.data_overview?.options || [],
     param_builder: methods.data_overview?.param_builder || 'direct',
@@ -24,7 +24,7 @@ export function normalizeMethodMetaMap(rawMethods) {
 
   ensureSlotMethod('frequency', {
     label: methods.frequency?.label || '频数分析',
-    category: methods.frequency?.category || '数据概览',
+    category: methods.frequency?.category || '常用方法',
     description: methods.frequency?.description || '统计各类别的频次和百分比分布',
     order: methods.frequency?.order ?? 10,
     slots: [
@@ -36,7 +36,7 @@ export function normalizeMethodMetaMap(rawMethods) {
 
   ensureSlotMethod('cross_tabulation', {
     label: methods.cross_tabulation?.label || '卡方（交叉）分析',
-    category: methods.cross_tabulation?.category || '数据概览',
+    category: methods.cross_tabulation?.category || '常用方法',
     description: methods.cross_tabulation?.description || '用于探索多组变量之间交叉列联分布和关联强度',
     order: methods.cross_tabulation?.order ?? 20,
     slots: [

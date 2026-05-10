@@ -352,8 +352,6 @@ def append_optional_missing_analysis(result, df, params):
 
 
 _REFS_GENERAL = [
-    "[1] 周俊,马世澎. SPSSAU科研数据分析方法与应用.第1版[M]. 电子工业出版社,2024.",
-    "[2] 周俊.问卷数据分析-破解SPSS的六类分析思路[M].电子工业出版社,2017.",
 ]
 _REFS_RELIABILITY = _REFS_GENERAL + [
     "[3] Eisinga R, Te Grotenhuis M, Pelzer B. The reliability of a two-item scale: Pearson, Cronbach, or Spearman-Brown?[J]. International Journal of Public Health, 2013, 58(4):637-642.",
@@ -432,7 +430,10 @@ def build_slot_param_example(meta):
 
 def build_params_reliability(slot_values):
     variables = slot_values.get("variables", [])
-    return {"items_groups": {"分析变量": variables}}
+    params = {"items_groups": {"分析变量": variables}}
+    if "type" in slot_values:
+        params["type"] = slot_values["type"]
+    return params
 
 
 def build_params_factor(slot_values):

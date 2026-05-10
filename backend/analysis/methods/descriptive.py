@@ -4,7 +4,7 @@ from backend.analysis.common import *
 
 METHOD_KEY = "descriptive"
 METHOD_META = {'label': '描述性统计',
- 'category': '数据概览',
+ 'category': '常用方法',
  'description': '计算各变量的均值、标准差、最小值、最大值等描述性指标',
  'order': 30,
  'slots': [{'key': 'variables',

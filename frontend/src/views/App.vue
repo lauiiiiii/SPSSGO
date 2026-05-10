@@ -156,11 +156,18 @@
     />
 
     <AiAssistant ref="aiRef" :context="aiContext" />
+
+    <div
+      v-if="tooltip.visible && tooltip.text"
+      class="g-tooltip"
+      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+    >{{ tooltip.text }}</div>
   </div>
 </template>
 
 <script setup>
 import { defineAsyncComponent, ref, computed } from 'vue'
+import { useGlobalTooltip } from '../composables/useGlobalTooltip.js'
 import TopBar from '../components/layout/TopBar.vue'
 import TaskCenter from '../components/layout/TaskCenter.vue'
 import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
@@ -193,6 +200,7 @@ const AiAssistant = defineAsyncComponent(() => import('../components/AiAssistant
 
 const dataInputRef = ref(null)
 const aiRef = ref(null)
+const { tooltip } = useGlobalTooltip()
 
 const currentTab = ref('analysis')
 const sessionId = ref('')

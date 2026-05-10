@@ -4,7 +4,7 @@ from backend.analysis.common import *
 
 METHOD_KEY = "frequency"
 METHOD_META = {'label': '频数分析',
- 'category': '数据概览',
+ 'category': '常用方法',
  'description': '统计各类别的频次和百分比分布',
  'order': 10,
  'slots': [{'key': 'variables',

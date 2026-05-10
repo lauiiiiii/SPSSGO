@@ -6,6 +6,8 @@ import {
   calcCrosstabLayout,
   calcHistogramLayout,
   calcMetricComparisonLayout,
+  calcNormalityHistogramLayout,
+  calcProbabilityPlotLayout,
   copyChartPng,
   downloadChartPng,
   formatBin,
@@ -89,6 +91,18 @@ export function useAnalysisCharts() {
     tip.show = true
   }
 
+  function showProbabilityTip(event, chart, dataPoint) {
+    const xLabel = chart.data?.xLabel || 'X'
+    const yLabel = chart.data?.yLabel || 'Y'
+    tip.lines = [
+      { text: chart.title || chart.varName || '概率图', dot: null },
+      { text: `${xLabel}：${Number(dataPoint.rawX || 0).toFixed(3)}`, dot: '#10b981' },
+      { text: `${yLabel}：${Number(dataPoint.rawY || 0).toFixed(3)}`, dot: '#7aa5ff' },
+    ]
+    moveTip(event)
+    tip.show = true
+  }
+
   async function downloadChart(sectionIndex, chartIndex, title) {
     const svg = getChartSvg(sectionIndex, chartIndex)
     if (!svg) return
@@ -112,6 +126,10 @@ export function useAnalysisCharts() {
     return calcHistogramLayout(data)
   }
 
+  function calcNormalityHist(data) {
+    return calcNormalityHistogramLayout(data)
+  }
+
   function calcBox(data) {
     return calcBoxplotLayout(data)
   }
@@ -130,6 +148,10 @@ export function useAnalysisCharts() {
 
   function calcCrosstab(data, mode = 'stackedColumn') {
     return calcCrosstabLayout(data, mode)
+  }
+
+  function calcProbabilityPlot(data) {
+    return calcProbabilityPlotLayout(data)
   }
 
   function showCrosstabTip(event, chart, dataPoint) {
@@ -156,6 +178,8 @@ export function useAnalysisCharts() {
     calcCrosstab,
     calcHist,
     calcMetricComparison,
+    calcNormalityHist,
+    calcProbabilityPlot,
     chartDataVisible,
     copyChart,
     downloadChart,
@@ -169,6 +193,7 @@ export function useAnalysisCharts() {
     showCrosstabTip,
     showHistTip,
     showMetricTip,
+    showProbabilityTip,
     tip,
     toggleChartData,
   }

@@ -1,23 +1,6 @@
 <template>
   <div class="mydata-panel" @click="closeMenu">
     <div class="md-content md-content--split">
-      <div class="md-page-toolbar">
-        <div class="md-page-toolbar-left">
-          <div class="md-page-title">我的数据集</div>
-          <div class="md-page-summary">共 {{ libraryTotalCount }} 个</div>
-        </div>
-        <div class="md-page-toolbar-actions">
-          <button class="md-page-btn" @click.stop="$emit('upload')">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 10.5V2.5M5 5.5l3-3 3 3M2.5 12.5v1h11v-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            上传数据
-          </button>
-          <button class="md-page-btn md-page-btn--ghost" @click.stop="showNewFolder = true">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M1 4h6l2-2h6v12H1V4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-            新建文件夹
-          </button>
-        </div>
-      </div>
-
       <div class="md-workspace-grid" :class="{ 'md-workspace-grid--library-expanded': libraryExpanded }">
         <aside class="md-library-pane" :class="{ 'md-library-pane--expanded': libraryExpanded }">
           <div class="md-library-head">
@@ -480,27 +463,6 @@
               </template>
             </div>
             <div v-else class="md-empty-hint">暂无处理链路</div>
-          </div>
-
-          <div class="md-detail-section">
-            <div class="md-detail-section-title">字段结构</div>
-            <div v-if="variables.length" class="md-detail-var-table">
-              <div class="md-detail-var-head">
-                <span>变量名</span>
-                <span>显示名</span>
-                <span>类型</span>
-                <span>测量</span>
-                <span>标签</span>
-              </div>
-              <div v-for="variable in variables" :key="variable.name" class="md-detail-var-row">
-                <span class="md-tooltip" :aria-label="variable.name" :data-tooltip="variable.name">{{ variable.name }}</span>
-                <span class="md-tooltip" :aria-label="variable.display_name || variable.name" :data-tooltip="variable.display_name || variable.name">{{ variable.display_name || variable.name }}</span>
-                <span>{{ variableTypeLabel(variable) }}</span>
-                <span>{{ measureLabel(variable) }}</span>
-                <span>{{ valueLabelCount(variable) }}</span>
-              </div>
-            </div>
-            <div v-else class="md-empty-hint">暂无字段结构信息</div>
           </div>
 
           <div class="md-detail-section">

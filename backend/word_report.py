@@ -53,35 +53,26 @@ def _add_body_paragraph(doc: Document, text: str, *, first_line_indent: bool = T
     return paragraph
 
 
-def _make_three_line_table(doc, headers, data_rows):
-    """创建标准 APA 三线表：顶线(粗) - 表头底线(细) - 底线(粗)，无竖线"""
-    n_cols = len(headers)
-    n_data = len(data_rows)
-    table = doc.add_table(rows=1 + n_data, cols=n_cols)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.autofit = True
+def _cell_text(cell):
+    if isinstance(cell, dict):
+        return str(cell.get('text', '') or '')
+    return str(cell) if cell is not None else ''
 
-    for j, h in enumerate(headers):
-        cell = table.rows[0].cells[j]
-        p = cell.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(str(h))
-        _style_run(run, east_asia_font="宋体", size=TABLE_FONT_SIZE, bold=True)
 
-    for i, row_data in enumerate(data_rows):
-        for j in range(min(len(row_data), n_cols)):
-            cell = table.rows[i + 1].cells[j]
-            p = cell.paragraphs[0]
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = p.add_run(str(row_data[j]))
-            _style_run(run, east_asia_font="宋体", size=TABLE_FONT_SIZE)
+def _cell_span(cell, key):
+    if isinstance(cell, dict):
+        try:
+            return max(1, int(cell.get(key, 1) or 1))
+        except (TypeError, ValueError):
+            return 1
+    return 1
 
-    # --- 表级边框：只保留顶线和底线（粗），去掉所有竖线和内部横线 ---
+
+def _apply_table_outer_borders(table):
     tbl = table._tbl
     tblPr = tbl.tblPr
     for old in tblPr.findall(qn("w:tblBorders")):
         tblPr.remove(old)
-
     tblPr.append(parse_xml(
         '<w:tblBorders %s>'
         '  <w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
@@ -93,17 +84,81 @@ def _make_three_line_table(doc, headers, data_rows):
         '</w:tblBorders>' % nsdecls("w")
     ))
 
-    # --- 表头行底部：细线 ---
+
+def _apply_cell_bottom_border(tc, weight=6):
+    tcPr = tc.get_or_add_tcPr()
+    for old in tcPr.findall(qn("w:tcBorders")):
+        tcPr.remove(old)
+    tcPr.append(parse_xml(
+        '<w:tcBorders %s>'
+        '  <w:bottom w:val="single" w:sz="%d" w:space="0" w:color="000000"/>'
+        '</w:tcBorders>' % (nsdecls("w"), weight)
+    ))
+
+
+def _make_three_line_table(doc, headers, data_rows):
+    """创建标准 APA 三线表：顶线(粗) - 表头底线(细) - 底线(粗)，无竖线"""
+    return _make_three_line_table_ex(doc, headers, data_rows, [])
+
+
+def _make_three_line_table_ex(doc, headers, data_rows, header_rows=None):
+    """创建支持 headerRows（含 colspan 合并）的标准三线表。"""
+    header_rows = header_rows or []
+    n_cols = len(headers) if headers else max(
+        (sum(_cell_span(c, 'colspan') for c in hr) for hr in header_rows if hr),
+        default=max((len(r) for r in data_rows if r), default=1)
+    )
+    if n_cols < 1:
+        return None
+
+    n_head = len(header_rows) if header_rows else 1
+    n_data = len(data_rows)
+    table = doc.add_table(rows=n_head + n_data, cols=n_cols)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = True
+
+    # --- 表头行 ---
+    if header_rows:
+        for ri, hr in enumerate(header_rows):
+            col_cursor = 0
+            for cell_def in hr:
+                if col_cursor >= n_cols:
+                    break
+                cs = _cell_span(cell_def, 'colspan')
+                rs = _cell_span(cell_def, 'rowspan')
+                cell = table.rows[ri].cells[col_cursor]
+                if cs > 1 and col_cursor + cs - 1 < n_cols:
+                    cell = cell.merge(table.rows[ri].cells[col_cursor + cs - 1])
+                if rs > 1 and ri + rs - 1 < n_head:
+                    cell = cell.merge(table.rows[ri + rs - 1].cells[col_cursor])
+                p = cell.paragraphs[0]
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = p.add_run(_cell_text(cell_def))
+                _style_run(run, east_asia_font="宋体", size=TABLE_FONT_SIZE, bold=True)
+                col_cursor += cs
+    else:
+        for j, h in enumerate(headers):
+            cell = table.rows[0].cells[j]
+            p = cell.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(str(h))
+            _style_run(run, east_asia_font="宋体", size=TABLE_FONT_SIZE, bold=True)
+
+    # --- 数据行 ---
+    for i, row_data in enumerate(data_rows):
+        for j in range(min(len(row_data), n_cols)):
+            cell = table.rows[n_head + i].cells[j]
+            p = cell.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(_cell_text(row_data[j]))
+            _style_run(run, east_asia_font="宋体", size=TABLE_FONT_SIZE)
+
+    _apply_table_outer_borders(table)
+
+    # --- 最后一个表头行底部细线 ---
+    last_head_row = table.rows[n_head - 1]
     for j in range(n_cols):
-        tc = table.rows[0].cells[j]._tc
-        tcPr = tc.get_or_add_tcPr()
-        for old in tcPr.findall(qn("w:tcBorders")):
-            tcPr.remove(old)
-        tcPr.append(parse_xml(
-            '<w:tcBorders %s>'
-            '  <w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
-            '</w:tcBorders>' % nsdecls("w")
-        ))
+        _apply_cell_bottom_border(last_head_row.cells[j]._tc)
 
     return table
 
@@ -131,12 +186,14 @@ def generate_report(results: list[dict], output_path: str, title: str = "数据�
                 sec_title = sec.get("title", "") or ""
 
                 if sec_type == "table":
-                    if sec_title:
+                    inline_title = sec.get("inlineTitle") or False
+                    if sec_title and not inline_title:
                         _add_heading(doc, sec_title, size=HEADING_2_FONT_SIZE)
                     headers = sec.get("headers") or []
-                    rows = sec.get("rows") or []
-                    if headers and rows:
-                        _make_three_line_table(doc, headers, rows)
+                    rows = sec.get("exportRows") or sec.get("rows") or []
+                    header_rows = sec.get("headerRows") or []
+                    if rows and (headers or header_rows):
+                        _make_three_line_table_ex(doc, headers, rows, header_rows)
                     note = sec.get("note", "") or ""
                     if note:
                         _add_body_paragraph(doc, note, first_line_indent=False, size=NOTE_FONT_SIZE)
@@ -149,6 +206,12 @@ def generate_report(results: list[dict], output_path: str, title: str = "数据�
                     content = sec.get("content", "") or ""
                     if content:
                         _add_body_paragraph(doc, content)
+                elif sec_type == "references":
+                    if sec_title:
+                        _add_heading(doc, sec_title, size=HEADING_2_FONT_SIZE)
+                    items = sec.get("items") or []
+                    for item in items:
+                        _add_body_paragraph(doc, f"{item}", first_line_indent=False, size=NOTE_FONT_SIZE)
         else:
             headers = r.get("headers") or r.get("table_headers") or []
             rows = r.get("rows") or r.get("table_rows") or []

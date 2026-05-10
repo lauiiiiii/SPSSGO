@@ -17,7 +17,13 @@
         <span class="ap-sec-copy-txt">复制</span>
       </button>
     </div>
-    <div class="ap-table-wrap" v-if="section.headers?.length">
+    <div v-if="hasInlineTitle && copyable" class="ap-sec-inline-copy-bar">
+      <button class="ap-sec-copy" @click="copyActiveTable($event)">
+        <CopyIcon />
+        <span class="ap-sec-copy-txt">复制</span>
+      </button>
+    </div>
+    <div class="ap-table-wrap" v-if="section.headers?.length || section.headerRows?.length">
       <div v-if="hasTableToolbar" class="ap-table-mode-toolbar">
         <div class="ap-table-mode-center">
           <span class="ap-table-mode-title">{{ displayModeTitle }}</span>
@@ -167,7 +173,8 @@ const selectedMode = ref(defaultMode.value)
 const selectedFilterValues = ref([])
 const bodyRowspanColumnCount = computed(() => Number(props.section.bodyRowspanColumns || 0))
 const hasTableToolbar = computed(() => displayModes.value.length > 0 || !!rowFilter.value)
-const showSectionHead = computed(() => !hasTableToolbar.value)
+const hasInlineTitle = computed(() => !!props.section.inlineTitle)
+const showSectionHead = computed(() => !hasTableToolbar.value && !hasInlineTitle.value)
 const isAllFilterSelected = computed(() => (
   rowFilterChoices.value.length > 0
   && selectedFilterValues.value.length === rowFilterChoices.value.length

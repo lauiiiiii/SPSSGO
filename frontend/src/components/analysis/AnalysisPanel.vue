@@ -20,6 +20,8 @@
         :calc-crosstab="calcCrosstab"
         :calc-hist="calcHist"
         :calc-metric-comparison="calcMetricComparison"
+        :calc-normality-hist="calcNormalityHist"
+        :calc-probability-plot="calcProbabilityPlot"
         :cell-class="cellClass"
         :chart-data-visible="chartDataVisible"
         :display-results="displayResults"
@@ -42,6 +44,7 @@
         @show-box-tip="showBoxTip"
         @show-category-tip="showCategoryTip"
         @show-crosstab-tip="showCrosstabTip"
+        @show-probability-tip="showProbabilityTip"
         @download-chart="downloadChart"
         @show-metric-tip="showMetricTip"
         @copy-chart="copyChart"
@@ -176,6 +179,8 @@ const {
   calcCrosstab,
   calcHist,
   calcMetricComparison,
+  calcNormalityHist,
+  calcProbabilityPlot,
   chartDataVisible,
   copyChart,
   downloadChart,
@@ -189,6 +194,7 @@ const {
   showCrosstabTip,
   showHistTip,
   showMetricTip,
+  showProbabilityTip,
   tip,
   toggleChartData,
 } = useAnalysisCharts()

@@ -36,6 +36,33 @@ export function calcHistogramLayout(data) {
   return { W, H, ml, mr, mt, mb, pw, ph, bars, xTicks, yTicks }
 }
 
+export function calcNormalityHistogramLayout(data) {
+  const layout = calcHistogramLayout(data)
+  const curveX = data?.curveX || []
+  const curveY = data?.curveY || []
+  const maxCurve = Math.max(...curveY, 0)
+  const maxCount = Math.max(...(data?.counts || []), 1)
+  const maxValue = Math.max(maxCurve, maxCount, 1)
+  const valueMin = curveX.length ? Math.min(...curveX) : (data?.binEdges?.[0] ?? 0)
+  const valueMax = curveX.length ? Math.max(...curveX) : (data?.binEdges?.[data.binEdges.length - 1] ?? 1)
+  const valueSpan = valueMax - valueMin || 1
+  const curvePath = curveX.map((value, index) => {
+    const x = layout.ml + ((value - valueMin) / valueSpan) * layout.pw
+    const y = layout.mt + layout.ph - ((curveY[index] || 0) / maxValue) * layout.ph
+    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+  }).join(' ')
+  const bars = (layout.bars || []).map((bar) => ({
+    ...bar,
+    y: layout.mt + layout.ph - ((bar.c || 0) / maxValue) * layout.ph,
+    h: ((bar.c || 0) / maxValue) * layout.ph,
+  }))
+  const yTicks = Array.from({ length: 6 }, (_, index) => ({
+    y: layout.mt + layout.ph - (index / 5) * layout.ph,
+    label: Math.round((index / 5) * maxValue),
+  }))
+  return { ...layout, bars, yTicks, curvePath }
+}
+
 export function calcBoxplotLayout(data) {
   const { whiskerLow, q1, median, q3, whiskerHigh, outliers } = data
   const W = 240, H = 300
@@ -442,6 +469,53 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
   })
   const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
   return { W, H, ml, mr, mt, mb, pw, ph, metric, points, bars, yTicks, shortLabel, path, mode }
+}
+
+export function calcProbabilityPlotLayout(data) {
+  const points = data?.points || []
+  const W = 520
+  const H = 340
+  const ml = 58
+  const mr = 28
+  const mt = 24
+  const mb = 56
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const xs = points.map(item => Number(item.x || 0))
+  const ys = points.map(item => Number(item.y || 0))
+  const lineXs = [Number(data?.lineStart?.x || 0), Number(data?.lineEnd?.x || 1)]
+  const lineYs = [Number(data?.lineStart?.y || 0), Number(data?.lineEnd?.y || 1)]
+  const xMin = Math.min(...xs, ...lineXs)
+  const xMax = Math.max(...xs, ...lineXs)
+  const yMin = Math.min(...ys, ...lineYs)
+  const yMax = Math.max(...ys, ...lineYs)
+  const xPad = Math.max((xMax - xMin) * 0.08, 0.1)
+  const yPad = Math.max((yMax - yMin) * 0.08, 0.1)
+  const plotXMin = xMin - xPad
+  const plotXMax = xMax + xPad
+  const plotYMin = yMin - yPad
+  const plotYMax = yMax + yPad
+  const toX = value => ml + ((value - plotXMin) / (plotXMax - plotXMin || 1)) * pw
+  const toY = value => mt + ph - ((value - plotYMin) / (plotYMax - plotYMin || 1)) * ph
+  const marks = points.map((point) => ({
+    x: toX(Number(point.x || 0)),
+    y: toY(Number(point.y || 0)),
+    rawX: Number(point.x || 0),
+    rawY: Number(point.y || 0),
+  }))
+  const linePath = [
+    `M ${toX(lineXs[0])} ${toY(lineYs[0])}`,
+    `L ${toX(lineXs[1])} ${toY(lineYs[1])}`,
+  ].join(' ')
+  const xTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = plotXMin + (index / 5) * (plotXMax - plotXMin)
+    return { x: toX(value), label: Number(value.toFixed(2)) }
+  })
+  const yTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = plotYMin + (index / 5) * (plotYMax - plotYMin)
+    return { y: toY(value), label: Number(value.toFixed(2)) }
+  })
+  return { W, H, ml, mr, mt, mb, pw, ph, marks, linePath, xTicks, yTicks, xLabel: data?.xLabel || '', yLabel: data?.yLabel || '' }
 }
 
 export function svgToCanvas(svgEl) {

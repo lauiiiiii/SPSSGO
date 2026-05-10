@@ -320,7 +320,7 @@ export function buildAllResultsCopyPayload(results) {
 
 function appendSection(builder, section) {
   if (section.type === 'table' && section.headers?.length) {
-    if (section.title) {
+    if (section.title && !section.inlineTitle) {
       appendPlainParagraph(builder, section.title, '\n')
       appendHtmlParagraph(builder, section.title, 'margin:10px 0 6px;font-size:12pt;font-weight:700;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
       appendRtfParagraph(builder, section.title, { bold: true, size: RTF_SECTION_TITLE_SIZE, spacingBefore: 80, spacingAfter: 60 })
@@ -424,8 +424,9 @@ export function buildReportExportHtml(title, results) {
 
 function buildExportSectionHtml(section) {
   if (section.type === 'table') {
-    let html = `<h3>${section.title}</h3>`
-    html += buildExportTableHtml(section.headers, section.rows, section.headerRows, section.bodyRowspanColumns)
+    const rows = section.exportRows || section.rows
+    let html = section.inlineTitle ? '' : `<h3>${section.title}</h3>`
+    html += buildExportTableHtml(section.headers, rows, section.headerRows, section.bodyRowspanColumns)
     if (section.description) html += `<p>${section.description}</p>`
     if (section.note) html += `<p style="color:#666;font-size:9pt">${section.note}</p>`
     return html

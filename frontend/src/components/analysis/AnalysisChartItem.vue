@@ -46,6 +46,35 @@
           </svg>
         </template>
       </template>
+      <template v-else-if="chart.chartType === 'normality_histogram'">
+        <template v-for="histogramData in [calcNormalityHist(chart.data)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--normality" :viewBox="`0 0 ${histogramData.W} ${histogramData.H}`" :width="histogramData.W" :height="histogramData.H"
+            @mouseleave="$emit('hide-tip')">
+            <rect :x="histogramData.ml" :y="histogramData.mt" :width="histogramData.pw" :height="histogramData.ph" fill="white"/>
+            <line v-for="(tick, tickIndex) in histogramData.yTicks" :key="'nyg'+tickIndex"
+              :x1="histogramData.ml" :y1="tick.y" :x2="histogramData.ml+histogramData.pw" :y2="tick.y"
+              stroke="#efefef" stroke-width="1"/>
+            <rect v-for="(bar, barIndex) in histogramData.bars" :key="barIndex"
+              :x="bar.x" :y="bar.y" :width="bar.w" :height="bar.h"
+              fill="#3b82f6" rx="1"
+              style="cursor:pointer"
+              @mouseenter="$emit('show-hist-tip', $event, chart.data, barIndex)"
+              @mousemove="$emit('move-tip', $event)"
+              @mouseleave="$emit('hide-tip')"/>
+            <text v-for="(bar, barIndex) in histogramData.bars" :key="'nhv'+barIndex"
+              :x="bar.x + bar.w / 2" :y="Math.max(bar.y - 6, 12)" text-anchor="middle" font-size="11" fill="#333">{{ bar.c }}</text>
+            <path :d="histogramData.curvePath" fill="none" stroke="#10b981" stroke-width="2"/>
+            <line :x1="histogramData.ml" :y1="histogramData.mt+histogramData.ph" :x2="histogramData.ml+histogramData.pw" :y2="histogramData.mt+histogramData.ph" stroke="#bbb" stroke-width="1"/>
+            <line :x1="histogramData.ml" :y1="histogramData.mt" :x2="histogramData.ml" :y2="histogramData.mt+histogramData.ph" stroke="#bbb" stroke-width="1"/>
+            <text v-for="(tick, tickIndex) in histogramData.xTicks" :key="'nxl'+tickIndex"
+              :x="tick.x" :y="histogramData.mt+histogramData.ph+16" text-anchor="middle" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text v-for="(tick, tickIndex) in histogramData.yTicks" :key="'nyl'+tickIndex"
+              :x="histogramData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text :x="13" :y="histogramData.mt+histogramData.ph/2" text-anchor="middle" font-size="11" fill="#aaa"
+              :transform="`rotate(-90,13,${histogramData.mt+histogramData.ph/2})`">频数</text>
+          </svg>
+        </template>
+      </template>
       <template v-else-if="chart.chartType === 'boxplot'">
         <template v-for="boxplotData in [calcBox(chart.data)]" :key="0">
           <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxplotData.W} ${boxplotData.H}`" :width="boxplotData.W" :height="boxplotData.H"
@@ -74,6 +103,39 @@
               :cx="boxplotData.cx" :cy="outlier.y" r="4" fill="#52c41a" stroke="white" stroke-width="1.2" pointer-events="none"/>
             <text v-for="(tick, tickIndex) in boxplotData.yTicks" :key="'yl'+tickIndex"
               :x="boxplotData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+          </svg>
+        </template>
+      </template>
+      <template v-else-if="chart.chartType === 'pp_plot' || chart.chartType === 'qq_plot'">
+        <template v-for="plotData in [calcProbabilityPlot(chart.data)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--normality" :viewBox="`0 0 ${plotData.W} ${plotData.H}`" :width="plotData.W" :height="plotData.H"
+            @mouseleave="$emit('hide-tip')">
+            <rect :x="plotData.ml" :y="plotData.mt" :width="plotData.pw" :height="plotData.ph" fill="white"/>
+            <line v-for="(tick, tickIndex) in plotData.yTicks" :key="'pyg'+tickIndex"
+              :x1="plotData.ml" :y1="tick.y" :x2="plotData.ml+plotData.pw" :y2="tick.y"
+              stroke="#efefef" stroke-width="1"/>
+            <line v-for="(tick, tickIndex) in plotData.xTicks" :key="'pxg'+tickIndex"
+              :x1="tick.x" :y1="plotData.mt" :x2="tick.x" :y2="plotData.mt+plotData.ph"
+              stroke="#f5f5f5" stroke-width="1"/>
+            <path :d="plotData.linePath" fill="none" stroke="#10b981" stroke-width="2"/>
+            <circle v-for="(point, pointIndex) in plotData.marks" :key="'pp'+pointIndex"
+              :cx="point.x" :cy="point.y" r="2.4" fill="#7aa5ff"
+              style="cursor:pointer"
+              @mouseenter="$emit('show-probability-tip', $event, chart, point)"
+              @mousemove="$emit('move-tip', $event)"
+              @mouseleave="$emit('hide-tip')"/>
+            <text v-for="(point, pointIndex) in plotData.marks" :key="'ppt'+pointIndex"
+              v-show="pointIndex === 0 || pointIndex === plotData.marks.length - 1 || pointIndex === Math.floor(plotData.marks.length / 2)"
+              :x="point.x + 5" :y="point.y - 4" text-anchor="start" font-size="10" fill="#666">{{ Number(point.rawY).toFixed(2) }}</text>
+            <line :x1="plotData.ml" :y1="plotData.mt+plotData.ph" :x2="plotData.ml+plotData.pw" :y2="plotData.mt+plotData.ph" stroke="#bbb" stroke-width="1"/>
+            <line :x1="plotData.ml" :y1="plotData.mt" :x2="plotData.ml" :y2="plotData.mt+plotData.ph" stroke="#bbb" stroke-width="1"/>
+            <text v-for="(tick, tickIndex) in plotData.xTicks" :key="'pxt'+tickIndex"
+              :x="tick.x" :y="plotData.mt+plotData.ph+18" text-anchor="middle" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text v-for="(tick, tickIndex) in plotData.yTicks" :key="'pyt'+tickIndex"
+              :x="plotData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text :x="plotData.ml+plotData.pw/2" :y="plotData.H-10" text-anchor="middle" font-size="11" fill="#777">{{ plotData.xLabel }}</text>
+            <text :x="13" :y="plotData.mt+plotData.ph/2" text-anchor="middle" font-size="11" fill="#aaa"
+              :transform="`rotate(-90,13,${plotData.mt+plotData.ph/2})`">{{ plotData.yLabel }}</text>
           </svg>
         </template>
       </template>
@@ -393,6 +455,29 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && chart.chartType === 'normality_histogram'" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>分段起始值</th><th>分段终止值</th><th>频数</th></tr></thead>
+        <tbody>
+          <tr v-for="(_, binIndex) in chart.data.counts" :key="binIndex">
+            <td>{{ fmtBin(chart.data.binEdges[binIndex]) }}</td>
+            <td>{{ fmtBin(chart.data.binEdges[binIndex+1]) }}</td>
+            <td>{{ chart.data.counts[binIndex] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="dataVisible && (chart.chartType === 'pp_plot' || chart.chartType === 'qq_plot')" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>{{ chart.data.xLabel }}</th><th>{{ chart.data.yLabel }}</th></tr></thead>
+        <tbody>
+          <tr v-for="(point, pointIndex) in chart.data.points" :key="pointIndex">
+            <td>{{ Number(point.x).toFixed(3) }}</td>
+            <td>{{ Number(point.y).toFixed(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -406,6 +491,8 @@ const props = defineProps({
   calcCrosstab: { type: Function, required: true },
   calcHist: { type: Function, required: true },
   calcMetricComparison: { type: Function, required: true },
+  calcNormalityHist: { type: Function, required: true },
+  calcProbabilityPlot: { type: Function, required: true },
   chart: { type: Object, required: true },
   chartIndex: { type: Number, required: true },
   dataVisible: { type: Boolean, default: false },
@@ -530,6 +617,7 @@ defineEmits([
   'show-crosstab-tip',
   'show-hist-tip',
   'show-metric-tip',
+  'show-probability-tip',
   'toggle-chart-data',
 ])
 </script>

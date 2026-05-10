@@ -3,12 +3,7 @@ def normalize_analysis_sections(sections):
         return None
     if not isinstance(sections, list):
         return sections
-    # 这里先全局下线，别再把占位参考文献漏到前台和导出里。
-    return [
-        section
-        for section in sections
-        if not (isinstance(section, dict) and section.get("type") == "references")
-    ]
+    return sections
 
 
 def normalize_analysis_item(item: dict | None) -> dict:
