@@ -38,8 +38,7 @@ class CategorySummaryAnalysisTests(unittest.TestCase):
         self.assertEqual(result["sections"][0]["type"], "charts")
         chart = result["sections"][0]["charts"][0]
         self.assertEqual(chart["chartType"], "metric_comparison")
-        self.assertEqual(chart["data"]["displayTitle"], "q1分类汇总计数")
-        self.assertEqual(chart["data"]["metric"], "计数")
+        self.assertEqual(chart["data"]["displayTitle"], "q1分类汇总")
         self.assertEqual(chart["data"]["defaultMode"], "bar")
 
     def test_category_summary_accepts_multiple_stat_types(self):
@@ -59,9 +58,9 @@ class CategorySummaryAnalysisTests(unittest.TestCase):
         self.assertEqual(base["displayModes"][1]["label"], "计数")
         self.assertEqual(base["displayModes"][1]["rows"], [["q1", "2", "2", "5"]])
         charts = result["sections"][0]["charts"]
-        self.assertEqual(len(charts), 2)
-        self.assertEqual(charts[0]["data"]["displayTitle"], "q1分类汇总均值")
-        self.assertEqual(charts[1]["data"]["displayTitle"], "q1分类汇总计数")
+        self.assertEqual(len(charts), 1)
+        self.assertEqual(charts[0]["data"]["displayTitle"], "q1分类汇总")
+        self.assertIn("均值", charts[0]["data"]["metrics"])
 
     def test_category_summary_outputs_filterable_detail_table(self):
         result = category_summary(self.df, {

@@ -2,7 +2,7 @@
 # spssgo
 
 METHOD_CATEGORIES = [
-    {"key": "数据概览", "label": "数据概览", "hot": True},
+    {"key": "常用方法", "label": "常用方法", "hot": True},
     {"key": "问卷分析包", "label": "问卷分析包", "hot": True},
     {"key": "差异对比分析包", "label": "差异对比分析包"},
     {"key": "回归&因果分析包", "label": "回归 & 因果分析包"},

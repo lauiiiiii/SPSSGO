@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # spssgo
+from scipy import stats
 from backend.analysis.common import *
 
 METHOD_KEY = "category_summary"
 METHOD_META = {'label': '分类汇总',
- 'category': '数据概览',
+ 'category': '常用方法',
  'description': '按分类变量分组汇总一个或多个定量变量的统计量',
  'order': 40,
  'slots': [{'key': 'group_var',
@@ -491,7 +492,11 @@ def category_summary(df, params):
 
     smart = "；".join(smart_parts) + "。" if smart_parts else "分类汇总结果如表所示。"
     sections.append(_sec_smart(smart))
-    sections.append(_sec_refs(_REFS_GENERAL))
+    sections.append(_sec_refs([
+        "[1] 盛骤，谢式千，潘承毅。概率论与数理统计 [M].5 版。北京：高等教育出版社，2019.",
+        "[2] Feller W.An Introduction to Probability Theory and Its Applications:Vol.1 [M].3rd ed.New York:Wiley,1968.",
+        "[3] 宗序平，姚玉兰。利用 Q-Q 图与 P-P 图快速检验数据的统计分布 [J]. 统计与决策，2010 (20):151-152.",
+    ]))
 
     return {
         "name": f"分类汇总：按{group_var}分组",

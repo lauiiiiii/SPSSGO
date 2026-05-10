@@ -5,7 +5,7 @@ from backend.analysis.common import *
 METHOD_KEY = "cross_tabulation"
 METHOD_META = {
     "label": "卡方（交叉）分析",
-    "category": "数据概览",
+    "category": "常用方法",
     "description": "用于探索多组变量之间交叉列联分布和关联强度",
     "order": 20,
     "slots": [

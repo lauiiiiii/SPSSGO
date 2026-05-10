@@ -35,11 +35,11 @@ Authorization: Bearer <access_token>
 
 当前共整理 80 个统计分析方法。
 
-## 数据概览
+## 数据探查
 
 ### `frequency` - 频数分析
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：统计各类别的频次和百分比分布
 - 参数构建器：`direct`
 
@@ -71,7 +71,7 @@ Authorization: Bearer <access_token>
 
 ### `cross_tabulation` - 列联（交叉）分析
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：查看两个分类变量的交叉分布，并给出卡方检验与关联强度
 - 参数构建器：`direct`
 
@@ -106,7 +106,7 @@ Authorization: Bearer <access_token>
 
 ### `descriptive` - 描述性统计
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：计算各变量的均值、标准差、最小值、最大值等描述性指标
 - 参数构建器：`direct`
 
@@ -142,7 +142,7 @@ Authorization: Bearer <access_token>
 
 ### `category_summary` - 分类汇总
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：按分类变量分组汇总一个或多个定量变量的样本量、均值和极值
 - 参数构建器：`direct`
 
@@ -181,7 +181,7 @@ Authorization: Bearer <access_token>
 
 ### `normality_test` - 正态性分析
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：使用 Shapiro-Wilk 检验判断变量是否服从正态分布
 - 参数构建器：`direct`
 
@@ -215,9 +215,9 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `data_overview` - 数据概览
+### `data_overview` - 数据探查
 
-- 分类：数据概览
+- 分类：数据探查
 - 说明：快速查看数据集规模、变量类型、缺失情况和变量明细
 - 参数构建器：`direct`
 

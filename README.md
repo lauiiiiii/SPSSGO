@@ -42,7 +42,7 @@ docker compose up -d
 
 | 类别 | 方法 |
 |------|------|
-| 描述与基础 | 频数、描述统计、数据概览、交叉表 |
+| 描述与基础 | 频数、描述统计、数据探查、交叉表 |
 | 差异检验 | t 检验、单/双/三/N 因素方差分析、MANOVA、ANCOVA、Mann-Whitney、Kruskal-Wallis、Wilcoxon、Friedman |
 | 相关与回归 | Pearson/Spearman 相关、多元回归、VIF、中介/调节/路径分析 |
 | 因子与结构方程 | EFA、CFA、SEM、信度分析 |

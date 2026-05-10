@@ -18,11 +18,11 @@ METHOD_META = {'label': '信度分析',
             'hint': '放入同一量表的所有题项'}],
  'options': [{'key': 'type',
               'label': '类型',
-              'choices': ["Cronbach's α"],
+              'choices': ["Cronbach's α", "折半系数", "McDonald Omega", "theta系数"],
               'default': "Cronbach's α"}],
  'param_builder': 'reliability'}
 
-def _build_r_payload(df, items_groups: dict[str, list[str]]):
+def _build_r_payload(df, items_groups: dict[str, list[str]], selected_type: str = "Cronbach's α"):
     scale_payload = {}
     selected_cols: list[str] = []
     for scale_name, item_cols in items_groups.items():
@@ -39,6 +39,7 @@ def _build_r_payload(df, items_groups: dict[str, list[str]]):
     payload = {
         "items_groups": scale_payload,
         "data_file": "reliability_input.csv",
+        "selected_type": selected_type,
     }
     return payload, csv_buffer.getvalue()
 
@@ -50,7 +51,8 @@ def reliability_analysis(df, params):
     if not is_r_runtime_available():
         return {"name": "信度分析", "headers": [], "rows": [], "description": "R 运行环境不可用，信度分析需要 R 引擎执行。"}
 
-    payload, csv_text = _build_r_payload(df, items_groups)
+    selected_type = params.get("type", "Cronbach's α")
+    payload, csv_text = _build_r_payload(df, items_groups, selected_type)
     if not payload or not csv_text:
         return {"name": "信度分析", "headers": [], "rows": [], "description": "请至少为一个量表放入 2 个有效题项。"}
 
