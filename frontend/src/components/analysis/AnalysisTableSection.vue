@@ -27,6 +27,15 @@
       <div v-if="hasTableToolbar" class="ap-table-mode-toolbar">
         <div class="ap-table-mode-center">
           <span class="ap-table-mode-title">{{ displayModeTitle }}</span>
+          <button
+            v-if="sortConfig"
+            type="button"
+            class="ap-table-mode-btn"
+            :class="{ 'is-active': sortEnabled }"
+            @click="sortEnabled = !sortEnabled"
+          >
+            ↕ 排序
+          </button>
           <select
             v-if="displayModes.length"
             v-model="selectedMode"
@@ -82,7 +91,7 @@
           <span class="ap-sec-copy-txt">复制</span>
         </button>
       </div>
-      <table class="tlt">
+      <table class="tlt" :class="tableDensityClass">
         <thead>
           <tr
             v-for="(headerRow, headerRowIndex) in tableHeaderRows"
@@ -104,7 +113,7 @@
             <td
               v-for="(cell, cellIndex) in row"
               :key="cellIndex"
-              :class="cellClass(cellText(cell))"
+              :class="[cellClass(cellText(cell)), cellExtraClass(cell)]"
               :colspan="cellColspan(cell)"
               :rowspan="cellRowspan(cell)"
             >
@@ -163,6 +172,7 @@ const displayModeTitle = computed(() => (
 const displayModes = computed(() => props.section.displayModes || [])
 const rowFilter = computed(() => props.section.rowFilter || null)
 const rowFilterChoices = computed(() => rowFilter.value?.choices || [])
+const sortConfig = computed(() => props.section.sortConfig || null)
 const tableHeaderRows = computed(() => (
   props.section.headerRows?.length ? props.section.headerRows : [props.section.headers || []]
 ))
@@ -171,8 +181,9 @@ const defaultMode = computed(() => (
 ))
 const selectedMode = ref(defaultMode.value)
 const selectedFilterValues = ref([])
+const sortEnabled = ref(false)
 const bodyRowspanColumnCount = computed(() => Number(props.section.bodyRowspanColumns || 0))
-const hasTableToolbar = computed(() => displayModes.value.length > 0 || !!rowFilter.value)
+const hasTableToolbar = computed(() => displayModes.value.length > 0 || !!rowFilter.value || !!sortConfig.value)
 const hasInlineTitle = computed(() => !!props.section.inlineTitle)
 const showSectionHead = computed(() => !hasTableToolbar.value && !hasInlineTitle.value)
 const isAllFilterSelected = computed(() => (
@@ -182,10 +193,18 @@ const isAllFilterSelected = computed(() => (
 
 const activeRows = computed(() => {
   const mode = displayModes.value.find((item) => item.key === selectedMode.value)
-  const rows = mode?.rows || props.section.rows || []
+  let rows = mode?.rows || props.section.rows || []
+  rows = sortedRows(rows)
   if (!rowFilter.value || isAllFilterSelected.value) return rows
   const columnIndex = rowFilter.value.columnIndex ?? 0
   return rows.filter(row => selectedFilterValues.value.includes(filterCellValue(row, columnIndex)))
+})
+const tableDensityClass = computed(() => {
+  const rowCount = activeRows.value.length
+  if (rowCount >= 40) return 'tlt--xs'
+  if (rowCount >= 24) return 'tlt--tight'
+  if (rowCount >= 14) return 'tlt--compact'
+  return ''
 })
 
 watch(defaultMode, (nextMode) => {
@@ -226,11 +245,54 @@ function cellRowspan(cell) {
   return headerRowspan(cell)
 }
 
+function cellExtraClass(cell) {
+  return typeof cell === 'object' && cell !== null ? cell.class || '' : ''
+}
+
 function filterCellValue(row, columnIndex) {
   const offset = row.length < (props.section.headers?.length || 0)
     ? bodyRowspanColumnCount.value
     : 0
   return cellText(row[columnIndex - offset])
+}
+
+function sortedRows(rows) {
+  if (!sortEnabled.value || !sortConfig.value) return rows
+  if (sortConfig.value.type !== 'factor_loading') return rows
+  const itemRowCount = Number(sortConfig.value.itemRowCount || 0)
+  const factorCount = Number(sortConfig.value.factorCount || 0)
+  const sortValues = sortConfig.value.values || []
+  if (!itemRowCount || !factorCount || !sortValues.length) return rows
+  const itemRows = rows.slice(0, itemRowCount)
+  const summaryRows = rows.slice(itemRowCount)
+  const sorted = itemRows.map((row, rowIndex) => {
+    const values = sortValues[rowIndex] || []
+    let maxFactorIndex = 0
+    let maxAbs = -Infinity
+    for (let index = 0; index < factorCount; index += 1) {
+      const absValue = Math.abs(sortFactorValue(values, index))
+      if (absValue > maxAbs) {
+        maxAbs = absValue
+        maxFactorIndex = index
+      }
+    }
+    return { row, rowIndex, maxFactorIndex, maxAbs }
+  }).sort((a, b) => (
+    a.maxFactorIndex - b.maxFactorIndex
+    || b.maxAbs - a.maxAbs
+    || a.rowIndex - b.rowIndex
+  )).map(item => item.row)
+  return [...sorted, ...summaryRows]
+}
+
+function sortFactorValue(values, index) {
+  if (Array.isArray(values)) return Number(values[index] || 0)
+  if (values && typeof values === 'object') {
+    const direct = values[index] ?? values[String(index)]
+    if (direct != null) return Number(direct || 0)
+    return Number(values[`因子${index + 1}`] || 0)
+  }
+  return 0
 }
 
 function toggleAllFilter(checked) {

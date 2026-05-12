@@ -77,8 +77,11 @@
             :calc-category-bar="calcCategoryBar"
             :calc-category-pie="calcCategoryPie"
             :calc-crosstab="calcCrosstab"
+            :calc-factor-heatmap="calcFactorHeatmap"
             :calc-hist="calcHist"
             :calc-metric-comparison="calcMetricComparison"
+            :calc-normality-hist="calcNormalityHist"
+            :calc-probability-plot="calcProbabilityPlot"
             :cell-class="cellClass"
             :chart-data-visible="chartDataVisible"
             :display-results="displayResults"
@@ -150,8 +153,11 @@ const {
   calcCategoryBar,
   calcCategoryPie,
   calcCrosstab,
+  calcFactorHeatmap,
   calcHist,
   calcMetricComparison,
+  calcNormalityHist,
+  calcProbabilityPlot,
   chartDataVisible,
   copyChart,
   downloadChart,

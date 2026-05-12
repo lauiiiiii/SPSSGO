@@ -141,7 +141,7 @@
           <template v-else>
             <label>{{ option.label }}：</label>
             <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
-            <option v-for="choice in option.choices" :key="choice" :value="choice">{{ choice }}</option>
+            <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
             </select>
           </template>
         </div>
@@ -177,6 +177,7 @@ const props = defineProps({
   optionValues: { type: Object, required: true },
   results: { type: Array, default: () => [] },
   slotValues: { type: Object, required: true },
+  variables: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([
@@ -212,6 +213,20 @@ function multiOptionValues(key) {
 function multiOptionText(option) {
   const values = multiOptionValues(option.key)
   return values.length ? values.join('、') : '请选择'
+}
+
+function optionChoices(option) {
+  if (option.type !== 'factor_count') {
+    return (option.choices || []).map(choice => ({ value: choice, label: choice }))
+  }
+  const selectedCount = Array.isArray(props.slotValues.variables) ? props.slotValues.variables.length : 0
+  const numericCount = props.variables.filter(variable => variable?.type === 'numeric').length
+  const max = Math.max(selectedCount, numericCount)
+  const choices = [{ value: 'auto', label: '自动抽取' }]
+  for (let index = 1; index <= max; index += 1) {
+    choices.push({ value: String(index), label: String(index) })
+  }
+  return choices
 }
 
 function toggleMultiOption(option, choice) {

@@ -4,6 +4,7 @@ import {
   calcCategoryBarLayout,
   calcCategoryPieLayout,
   calcCrosstabLayout,
+  calcFactorHeatmapLayout,
   calcHistogramLayout,
   calcMetricComparisonLayout,
   calcNormalityHistogramLayout,
@@ -146,6 +147,10 @@ export function useAnalysisCharts() {
     return calcMetricComparisonLayout(data, mode)
   }
 
+  function calcFactorHeatmap(data) {
+    return calcFactorHeatmapLayout(data)
+  }
+
   function calcCrosstab(data, mode = 'stackedColumn') {
     return calcCrosstabLayout(data, mode)
   }
@@ -176,6 +181,7 @@ export function useAnalysisCharts() {
     calcCategoryBar,
     calcCategoryPie,
     calcCrosstab,
+    calcFactorHeatmap,
     calcHist,
     calcMetricComparison,
     calcNormalityHist,

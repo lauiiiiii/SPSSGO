@@ -1472,10 +1472,17 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .tlt thead th.tlt-head-group { border-bottom: 1px solid #222; }
 .tlt tbody td { padding: 11px 16px; text-align: center; color: #333; font-size: 14px; }
+.tlt.tlt--compact thead th { padding: 9px 14px; }
+.tlt.tlt--compact tbody td { padding: 8px 14px; }
+.tlt.tlt--tight thead th { padding: 7px 12px; }
+.tlt.tlt--tight tbody td { padding: 6px 12px; }
+.tlt.tlt--xs thead th { padding: 6px 10px; font-size: 13px; }
+.tlt.tlt--xs tbody td { padding: 5px 10px; font-size: 13px; }
 .tlt tbody tr:last-child { border-bottom: 2px solid #222; }
 .tlt tbody tr:hover { background: #f5f8ff; }
-.tlt-cell--danger { color: #ff6d56; font-weight: 600; }
-.tlt-cell--success { color: #00bf6f; font-weight: 600; }
+.tlt tbody td.tlt-cell--danger { color: #ff6d56; font-weight: 600; }
+.tlt tbody td.tlt-cell--success { color: #00bf6f; font-weight: 600; }
+.tlt tbody td.tlt-cell--accent { color: #1677ff; }
 
 .ap-result-desc {
   font-size: 14px; line-height: 1.85; color: #555;
@@ -1704,6 +1711,23 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, .12);
 }
+.ap-table-mode-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d9dce3;
+  border-radius: 5px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ap-table-mode-btn:hover,
+.ap-table-mode-btn.is-active {
+  border-color: #3b82f6;
+  color: #1677ff;
+  background: #f0f7ff;
+}
 .ap-sec-copy {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 14px; border: 1px solid #e0e0e0; border-radius: 6px;
@@ -1928,8 +1952,20 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   margin-top: 6px;
+}
+.ap-chart-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 4px;
+  font-size: 12px;
+  color: #666;
+}
+.ap-chart-size-control input {
+  width: 110px;
+  accent-color: #1677ff;
 }
 .ap-chart-label-select {
   height: 28px;

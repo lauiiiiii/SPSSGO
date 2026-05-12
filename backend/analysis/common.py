@@ -438,7 +438,11 @@ def build_params_reliability(slot_values):
 
 def build_params_factor(slot_values):
     variables = slot_values.get("variables", [])
-    return {"items": variables, "scale_name": "量表"}
+    return {
+        "items": variables,
+        "scale_name": "量表",
+        "factor_count": slot_values.get("factor_count", "auto"),
+    }
 
 
 def build_params_t_test(slot_values):

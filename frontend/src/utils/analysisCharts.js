@@ -471,6 +471,48 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
   return { W, H, ml, mr, mt, mb, pw, ph, metric, points, bars, yTicks, shortLabel, path, mode }
 }
 
+export function calcFactorHeatmapLayout(data) {
+  const rowLabels = data?.rowLabels || []
+  const colLabels = data?.colLabels || []
+  const values = data?.values || []
+  const cellScale = Math.min(Math.max(Number(data?.cellScale || 1), 0.45), 1.8)
+  const cellW = Math.round(118 * cellScale)
+  const cellH = Math.round(30 * cellScale)
+  const ml = Math.max(96, Math.min(160, Math.max(...rowLabels.map(label => String(label).length), 2) * 10 + 24))
+  const mt = 36
+  const mr = 24
+  const mb = 50
+  const W = ml + colLabels.length * cellW + mr
+  const H = mt + rowLabels.length * cellH + mb
+  const flat = values.flat().map(value => Number(value)).filter(Number.isFinite)
+  const maxAbs = Math.max(...flat.map(value => Math.abs(value)), 1)
+  const cells = []
+  rowLabels.forEach((rowLabel, rowIndex) => {
+    colLabels.forEach((colLabel, colIndex) => {
+      const rawValue = values[rowIndex]?.[colIndex]
+      const value = Number(rawValue)
+      const empty = rawValue === null || rawValue === '' || !Number.isFinite(value)
+      const intensity = Math.min(Math.abs(value) / maxAbs, 1)
+      const hue = value < 0 ? 214 : 0
+      const saturation = Math.round(34 + intensity * 32)
+      const lightness = Math.round(96 - intensity * 42)
+      cells.push({
+        rowLabel,
+        colLabel,
+        value,
+        x: ml + colIndex * cellW,
+        y: mt + rowIndex * cellH,
+        w: cellW,
+        h: cellH,
+        empty,
+        fill: empty ? '#fff' : `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+        textFill: intensity > 0.58 ? '#fff' : '#222',
+      })
+    })
+  })
+  return { W, H, ml, mt, mb, cellW, cellH, rowLabels, colLabels, cells }
+}
+
 export function calcProbabilityPlotLayout(data) {
   const points = data?.points || []
   const W = 520

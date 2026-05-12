@@ -11,6 +11,7 @@
         :calc-category-bar="calcCategoryBar"
         :calc-category-pie="calcCategoryPie"
         :calc-crosstab="calcCrosstab"
+        :calc-factor-heatmap="calcFactorHeatmap"
         :calc-hist="calcHist"
         :calc-metric-comparison="calcMetricComparison"
         :calc-normality-hist="calcNormalityHist"
@@ -48,6 +49,7 @@ defineProps({
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
   calcCrosstab: { type: Function, required: true },
+  calcFactorHeatmap: { type: Function, required: true },
   calcHist: { type: Function, required: true },
   calcMetricComparison: { type: Function, required: true },
   calcNormalityHist: { type: Function, required: true },

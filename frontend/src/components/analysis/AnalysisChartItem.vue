@@ -347,6 +347,36 @@
           </svg>
         </template>
       </template>
+      <template v-else-if="isHeatmapChart">
+        <template v-for="heatmapData in [calcFactorHeatmap(activeHeatmapData)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--heatmap" :viewBox="`0 0 ${heatmapData.W} ${heatmapData.H}`" :width="heatmapData.W" :height="heatmapData.H">
+            <rect x="0" y="0" :width="heatmapData.W" :height="heatmapData.H" fill="white"/>
+            <text
+              v-for="(label, labelIndex) in heatmapData.colLabels"
+              :key="'hc'+labelIndex"
+              :x="heatmapData.ml + labelIndex * heatmapData.cellW + heatmapData.cellW / 2"
+              :y="22"
+              text-anchor="middle"
+              font-size="12"
+              fill="#555"
+            >{{ label }}</text>
+            <text
+              v-for="(label, labelIndex) in heatmapData.rowLabels"
+              :key="'hr'+labelIndex"
+              :x="heatmapData.ml - 10"
+              :y="heatmapData.mt + labelIndex * heatmapData.cellH + heatmapData.cellH / 2 + 4"
+              text-anchor="end"
+              font-size="12"
+              fill="#555"
+            >{{ label }}</text>
+            <g v-for="(cell, cellIndex) in heatmapData.cells" :key="'hm'+cellIndex">
+              <rect :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h" :fill="cell.fill" stroke="rgba(255,255,255,.55)" stroke-width="1"/>
+              <text v-if="!cell.empty" :x="cell.x + cell.w / 2" :y="cell.y + cell.h / 2 + 4" text-anchor="middle" font-size="12" :fill="cell.textFill">{{ Number(cell.value).toFixed(3) }}</text>
+            </g>
+            <text :x="heatmapData.ml + heatmapData.colLabels.length * heatmapData.cellW / 2" :y="heatmapData.H - 16" text-anchor="middle" font-size="11" fill="#777">颜色越深表示绝对值越大</text>
+          </svg>
+        </template>
+      </template>
     </div>
     <div v-if="isCategoryChart" class="ap-chart-mode-bar">
       <button
@@ -381,7 +411,28 @@
         {{ option.label }}
       </button>
     </div>
+    <div v-if="isHeatmapChart && heatmapModeOptions.length" class="ap-chart-mode-bar">
+      <button
+        v-for="option in heatmapModeOptions"
+        :key="option.value"
+        class="ap-chart-mode-btn"
+        :class="{ 'is-active': heatmapMode === option.value }"
+        @click="heatmapMode = option.value"
+      >
+        {{ option.label }}
+      </button>
+    </div>
     <div class="ap-chart-actions">
+      <label v-if="isHeatmapChart" class="ap-chart-size-control">
+        <span>尺寸：</span>
+        <input
+          v-model.number="heatmapSize"
+          type="range"
+          min="0.45"
+          max="1.6"
+          step="0.05"
+        />
+      </label>
       <button class="ap-chart-act-btn" @click="$emit('download-chart', sectionIndex, chartIndex, displayTitle)" title="保存图片">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         保存
@@ -455,6 +506,17 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && isHeatmapChart" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>名称</th><th v-for="label in chart.data.colLabels" :key="label">{{ label }}</th></tr></thead>
+        <tbody>
+          <tr v-for="(label, rowIndex) in chart.data.rowLabels" :key="label">
+            <td>{{ label }}</td>
+            <td v-for="(_, colIndex) in chart.data.colLabels" :key="colIndex">{{ Number(chart.data.values[rowIndex]?.[colIndex] || 0).toFixed(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div v-if="dataVisible && chart.chartType === 'normality_histogram'" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
         <thead><tr><th>分段起始值</th><th>分段终止值</th><th>频数</th></tr></thead>
@@ -489,6 +551,7 @@ const props = defineProps({
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
   calcCrosstab: { type: Function, required: true },
+  calcFactorHeatmap: { type: Function, required: true },
   calcHist: { type: Function, required: true },
   calcMetricComparison: { type: Function, required: true },
   calcNormalityHist: { type: Function, required: true },
@@ -504,6 +567,7 @@ const props = defineProps({
 const categoryChartTypes = new Set(['category_distribution', 'category', 'categorical', 'categorical_distribution', 'frequency'])
 const categoryMode = ref('bar')
 const crosstabMode = ref('stackedColumn')
+const heatmapSize = ref(1)
 const labelMode = ref('percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(true)
@@ -516,6 +580,7 @@ const categoryModeOptions = [
 ]
 const isCategoryChart = computed(() => categoryChartTypes.has(props.chart.chartType))
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
+const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
@@ -540,8 +605,10 @@ const categoryTitle = computed(() => {
   return `${props.chart.varName || props.chart.data?.variable || props.chart.title}${label}`
 })
 const metricModeOptions = [
+  { value: 'line', label: '折线图' },
   { value: 'bar', label: '柱形图' },
   { value: 'horizontalBar', label: '条形图' },
+  { value: 'radar', label: '雷达图' },
 ]
 const metricChartData = computed(() => {
   const data = props.chart.data
@@ -552,6 +619,22 @@ const metricChartData = computed(() => {
     ...data,
     metric: selectedMetric.value,
     values,
+  }
+})
+const heatmapModeOptions = computed(() => (
+  (props.chart.data?.displayModes || []).map(mode => ({ value: mode.key, label: mode.label || mode.key }))
+))
+const heatmapMode = ref(props.chart.data?.defaultDisplayMode || heatmapModeOptions.value[0]?.value || '')
+const activeHeatmapData = computed(() => {
+  const data = props.chart.data || {}
+  const mode = (data.displayModes || []).find(item => item.key === heatmapMode.value)
+  if (!mode) return { ...data, cellScale: heatmapSize.value }
+  return {
+    ...data,
+    ...mode,
+    cellScale: heatmapSize.value,
+    displayModes: data.displayModes,
+    defaultDisplayMode: data.defaultDisplayMode,
   }
 })
 const metricComparisonTitle = computed(() => {

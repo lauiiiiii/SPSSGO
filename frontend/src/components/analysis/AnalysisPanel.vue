@@ -18,6 +18,7 @@
         :calc-category-bar="calcCategoryBar"
         :calc-category-pie="calcCategoryPie"
         :calc-crosstab="calcCrosstab"
+        :calc-factor-heatmap="calcFactorHeatmap"
         :calc-hist="calcHist"
         :calc-metric-comparison="calcMetricComparison"
         :calc-normality-hist="calcNormalityHist"
@@ -74,6 +75,7 @@
         :option-values="optionValues"
         :results="results"
         :slot-values="slotValues"
+        :variables="variables"
         @show-report="showReport"
         @add-factor="addFactorSlot"
         @select-factor="selectFactor"
@@ -177,6 +179,7 @@ const {
   calcCategoryBar,
   calcCategoryPie,
   calcCrosstab,
+  calcFactorHeatmap,
   calcHist,
   calcMetricComparison,
   calcNormalityHist,
