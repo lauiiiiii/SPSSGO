@@ -16,11 +16,14 @@ METHOD_META = {'label': '效度分析',
             'accept': 'numeric',
             'min': 3,
             'hint': '放入同一量表的所有题项（至少3个）'}],
- 'options': [],
+ 'options': [{'key': 'factor_count',
+              'label': '维度个数设置',
+              'type': 'factor_count',
+              'default': 'auto'}],
  'param_builder': 'factor'}
 
 
-def _build_r_payload(df, items: list[str], scale_name: str):
+def _build_r_payload(df, items: list[str], scale_name: str, factor_count="auto"):
     cols = _resolve_cols(df, items)
     if len(cols) < 3:
         return None, None
@@ -29,6 +32,7 @@ def _build_r_payload(df, items: list[str], scale_name: str):
     payload = {
         "items": cols,
         "scale_name": scale_name,
+        "factor_count": factor_count,
         "data_file": "factor_analysis_input.csv",
     }
     return payload, csv_buffer.getvalue()
@@ -37,7 +41,8 @@ def _build_r_payload(df, items: list[str], scale_name: str):
 def factor_analysis_check(df, params):
     items = params.get("items", [])
     scale_name = params.get("scale_name", "量表")
-    payload, csv_text = _build_r_payload(df, items, scale_name)
+    factor_count = params.get("factor_count", "auto")
+    payload, csv_text = _build_r_payload(df, items, scale_name, factor_count)
     if not payload or not csv_text:
         return {"name": "效度检验", "headers": [], "rows": [], "description": "需要至少3个题目。"}
     if not is_r_runtime_available():
