@@ -167,6 +167,16 @@ def _selected_mask(series):
     )
 
 
+def _count_value_mask(series, count_value):
+    expected_text = str(count_value if count_value not in (None, "") else "1").strip()
+    raw_text = series.astype(str).str.strip()
+    numeric = pd.to_numeric(series, errors="coerce")
+    expected_numeric = _safe_float(expected_text, None)
+    if expected_numeric is None:
+        return raw_text == expected_text
+    return raw_text.eq(expected_text) | numeric.eq(expected_numeric)
+
+
 def _sec_table(title, headers, rows, note=None, description=None):
     section = {"type": "table", "title": title, "headers": headers, "rows": rows}
     if note:
@@ -429,8 +439,29 @@ def build_slot_param_example(meta):
 
 
 def build_params_reliability(slot_values):
-    variables = slot_values.get("variables", [])
-    params = {"items_groups": {"分析变量": variables}}
+    if slot_values.get("items_groups"):
+        params = {"items_groups": slot_values.get("items_groups", {})}
+    else:
+        dimension_pattern = re.compile(r"^dimension(\d+)_vars$")
+        dimension_labels = slot_values.get("dimension_labels", {}) or {}
+        dimension_items = []
+        for key, value in slot_values.items():
+            match = dimension_pattern.match(str(key))
+            if not match:
+                continue
+            items = value if isinstance(value, list) else []
+            if items:
+                dimension_items.append((int(match.group(1)), key, items))
+
+        if dimension_items:
+            groups = {}
+            for index, key, items in sorted(dimension_items, key=lambda item: item[0]):
+                label = str(dimension_labels.get(key) or f"维度{index}").strip() or f"维度{index}"
+                groups[label] = items
+            params = {"items_groups": groups}
+        else:
+            variables = slot_values.get("variables", [])
+            params = {"items_groups": {"分析变量": variables}}
     if "type" in slot_values:
         params["type"] = slot_values["type"]
     return params
@@ -570,6 +601,7 @@ __all__ = [
     "_resolve_cols",
     "_safe_float",
     "_score_top10_rows",
+    "_count_value_mask",
     "_sec_advice",
     "_sec_charts",
     "_sec_refs",

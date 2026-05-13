@@ -82,7 +82,7 @@ export function useAnalysisCharts() {
   }
 
   function showMetricTip(event, chart, dataPoint) {
-    const metric = chart.data?.metric || '指标'
+    const metric = dataPoint.metric || chart.data?.metric || '指标'
     tip.lines = [
       { text: chart.title || `${metric}对比图`, dot: null },
       { text: `名称：${dataPoint.label}`, dot: '#2389e8' },

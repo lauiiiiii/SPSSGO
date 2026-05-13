@@ -53,6 +53,19 @@ export function createResultDisplayFormatter(variableMetaMap) {
         label: formatCell(mode.label),
         rows: (mode.rows || []).map(row => (row || []).map(formatCell)),
       }))
+      normalized.tableViews = (section.tableViews || []).map(view => ({
+        ...view,
+        label: formatCell(view.label),
+        headers: (view.headers || []).map(formatCell),
+        headerRows: (view.headerRows || []).map(row => (row || []).map(formatCell)),
+        rows: (view.rows || []).map(row => (row || []).map(formatCell)),
+        rowsByMode: Object.fromEntries(
+          Object.entries(view.rowsByMode || {}).map(([key, rows]) => [
+            key,
+            (rows || []).map(row => (row || []).map(formatCell)),
+          ]),
+        ),
+      }))
       normalized.note = formatText(section.note || '')
       normalized.description = formatText(section.description || '')
     } else if (section && (section.type === 'advice' || section.type === 'smart_analysis')) {

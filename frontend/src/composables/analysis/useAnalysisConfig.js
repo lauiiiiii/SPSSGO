@@ -1,7 +1,35 @@
 import { computed, reactive, ref, watch } from 'vue'
 
 const CFA_METHOD_KEY = 'confirmatory_factor_analysis'
-const FACTOR_SLOT_PATTERN = /^factor(\d+)_vars$/
+const RELIABILITY_METHOD_KEY = 'reliability'
+const DYNAMIC_GROUP_CONFIGS = {
+  [CFA_METHOD_KEY]: {
+    addText: '+ 新建因子',
+    defaultLabel: '因子',
+    emptyTitle: '因子1',
+    hintTarget: '因子',
+    itemName: '题项',
+    labelParamKey: null,
+    moveExistingItems: true,
+    promptText: '请输入新的因子名称',
+    slotPattern: /^factor(\d+)_vars$/,
+    slotPrefix: 'factor',
+    tipText: '点击左侧切换因子，变量会加入当前选中的因子。',
+  },
+  [RELIABILITY_METHOD_KEY]: {
+    addText: '+ 新建维度',
+    defaultLabel: '维度',
+    emptyTitle: '维度1',
+    hintTarget: '维度',
+    itemName: '题项',
+    labelParamKey: 'dimension_labels',
+    moveExistingItems: false,
+    promptText: '请输入新的维度名称',
+    slotPattern: /^dimension(\d+)_vars$/,
+    slotPrefix: 'dimension',
+    tipText: '点击左侧切换维度，变量会加入当前选中的维度。',
+  },
+}
 
 export function useAnalysisConfig(method, methodKey, emit) {
   const slotValues = reactive({})
@@ -11,9 +39,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const maxDynamicFactors = 12
   const factorMenuKey = ref(null)
   const activeFactorKey = ref('factor1_vars')
+  const renameFocusToken = ref({ key: '', nonce: 0 })
   const factorLabels = reactive({})
 
-  const isCfaMethod = computed(() => methodKey.value === CFA_METHOD_KEY)
+  const dynamicGroupConfig = computed(() => DYNAMIC_GROUP_CONFIGS[methodKey.value] || null)
+  const isCfaMethod = computed(() => Boolean(dynamicGroupConfig.value))
   const methodSlots = computed(() => method.value?.slots || [])
 
   const displaySlots = computed(() => {
@@ -29,10 +59,17 @@ export function useAnalysisConfig(method, methodKey, emit) {
     const key = activeFactorKey.value
     return key ? (slotValues[key] || []) : []
   })
-  const activeFactorTitle = computed(() => activeFactorSlot.value?.label || '因子1')
+  const activeFactorTitle = computed(() => activeFactorSlot.value?.label || dynamicGroupConfig.value?.emptyTitle || '因子1')
+  const dynamicGroupAddText = computed(() => dynamicGroupConfig.value?.addText || '+ 新建因子')
+  const dynamicGroupItemName = computed(() => dynamicGroupConfig.value?.itemName || '题项')
+  const dynamicGroupTip = computed(() => dynamicGroupConfig.value?.tipText || '')
 
   const canExecute = computed(() => {
     if (!method.value) return false
+    if (isCfaMethod.value) {
+      const groupLengths = displaySlots.value.map(slot => (slotValues[slot.key] || []).length)
+      return groupLengths.some(length => length >= 2) && groupLengths.every(length => length === 0 || length >= 2)
+    }
     for (const slot of displaySlots.value) {
       const vals = slotValues[slot.key] || []
       const min = slot.min ?? (slot.type === 'single' ? 1 : 1)
@@ -41,40 +78,50 @@ export function useAnalysisConfig(method, methodKey, emit) {
     return true
   })
 
+  function slotKeyFor(index) {
+    const config = dynamicGroupConfig.value || DYNAMIC_GROUP_CONFIGS[CFA_METHOD_KEY]
+    return `${config.slotPrefix}${index}_vars`
+  }
+
+  function slotPattern() {
+    return dynamicGroupConfig.value?.slotPattern || DYNAMIC_GROUP_CONFIGS[CFA_METHOD_KEY].slotPattern
+  }
+
   function buildFactorSlot(index) {
-    const key = `factor${index}_vars`
+    const config = dynamicGroupConfig.value || DYNAMIC_GROUP_CONFIGS[CFA_METHOD_KEY]
+    const key = slotKeyFor(index)
     const firstSlot = methodSlots.value[0] || {}
     return {
       ...firstSlot,
       key,
-      label: factorLabels[key] || `因子${index}`,
+      label: factorLabels[key] || `${config.defaultLabel}${index}`,
       type: 'multiple',
       accept: firstSlot.accept || 'numeric',
-      min: index === 1 ? 2 : 0,
-      hint: index === 1 ? '放入因子1对应的题项' : `可选：放入因子${index}对应的题项`,
+      min: 0,
+      hint: `放入${config.hintTarget}${index}对应的题项`,
     }
   }
 
   function syncCfaSlotValues() {
     for (let index = 1; index <= dynamicFactorCount.value; index += 1) {
-      const key = `factor${index}_vars`
+      const key = slotKeyFor(index)
       if (!Array.isArray(slotValues[key])) slotValues[key] = []
-      if (!factorLabels[key]) factorLabels[key] = `因子${index}`
+      if (!factorLabels[key]) factorLabels[key] = `${dynamicGroupConfig.value?.defaultLabel || '因子'}${index}`
     }
     for (const key of Object.keys(slotValues)) {
-      const match = key.match(FACTOR_SLOT_PATTERN)
+      const match = key.match(slotPattern())
       if (match && Number(match[1]) > dynamicFactorCount.value) {
         delete slotValues[key]
       }
     }
     for (const key of Object.keys(factorLabels)) {
-      const match = key.match(FACTOR_SLOT_PATTERN)
+      const match = key.match(slotPattern())
       if (match && Number(match[1]) > dynamicFactorCount.value) {
         delete factorLabels[key]
       }
     }
     if (!slotValues[activeFactorKey.value]) {
-      activeFactorKey.value = 'factor1_vars'
+      activeFactorKey.value = slotKeyFor(1)
     }
   }
 
@@ -87,7 +134,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
     if (isCfaMethod.value) {
       dynamicFactorCount.value = 1
-      activeFactorKey.value = 'factor1_vars'
+      activeFactorKey.value = slotKeyFor(1)
       syncCfaSlotValues()
     } else {
       for (const slot of nextMethod.slots || []) {
@@ -130,6 +177,14 @@ export function useAnalysisConfig(method, methodKey, emit) {
   function addVar(slotKey, varName, slotType) {
     if (!slotValues[slotKey]) slotValues[slotKey] = []
     if (slotValues[slotKey].includes(varName)) return
+    if (isCfaMethod.value && slotType !== 'single') {
+      for (const key of Object.keys(slotValues)) {
+        if (key !== slotKey && key.match(slotPattern()) && Array.isArray(slotValues[key])) {
+          if (!dynamicGroupConfig.value?.moveExistingItems && slotValues[key].includes(varName)) return
+          slotValues[key] = slotValues[key].filter(item => item !== varName)
+        }
+      }
+    }
     if (slotType === 'single') {
       slotValues[slotKey] = [varName]
     } else {
@@ -147,17 +202,17 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (!isCfaMethod.value || dynamicFactorCount.value >= maxDynamicFactors) return
     dynamicFactorCount.value += 1
     syncCfaSlotValues()
-    activeFactorKey.value = `factor${dynamicFactorCount.value}_vars`
+    activeFactorKey.value = slotKeyFor(dynamicFactorCount.value)
     factorMenuKey.value = null
   }
 
   function removeFactorSlot() {
     if (!isCfaMethod.value || dynamicFactorCount.value <= 1) return
-    delete slotValues[`factor${dynamicFactorCount.value}_vars`]
-    delete factorLabels[`factor${dynamicFactorCount.value}_vars`]
+    delete slotValues[slotKeyFor(dynamicFactorCount.value)]
+    delete factorLabels[slotKeyFor(dynamicFactorCount.value)]
     dynamicFactorCount.value -= 1
     syncCfaSlotValues()
-    activeFactorKey.value = `factor${dynamicFactorCount.value}_vars`
+    activeFactorKey.value = slotKeyFor(dynamicFactorCount.value)
     factorMenuKey.value = null
   }
 
@@ -171,16 +226,21 @@ export function useAnalysisConfig(method, methodKey, emit) {
   }
 
   function getFactorShortLabel(slotKey) {
-    return factorLabels[slotKey] || displaySlots.value.find(slot => slot.key === slotKey)?.label || '因子'
+    return factorLabels[slotKey] || displaySlots.value.find(slot => slot.key === slotKey)?.label || dynamicGroupConfig.value?.defaultLabel || '因子'
   }
 
   function renameFactor(slotKey) {
-    const current = getFactorShortLabel(slotKey)
-    const next = window.prompt('请输入新的因子名称', current)
-    if (next && next.trim()) {
-      factorLabels[slotKey] = next.trim()
-    }
+    if (!slotKey || !factorLabels[slotKey]) return
+    activeFactorKey.value = slotKey
+    renameFocusToken.value = { key: slotKey, nonce: Date.now() }
     factorMenuKey.value = null
+  }
+
+  function renameFactorInline(slotKey, value) {
+    if (!slotKey || !factorLabels[slotKey]) return
+    const next = String(value || '').trim()
+    if (!next) return
+    factorLabels[slotKey] = next
   }
 
   function deleteFactor(slotKey) {
@@ -188,23 +248,23 @@ export function useAnalysisConfig(method, methodKey, emit) {
       factorMenuKey.value = null
       return
     }
-    const match = slotKey.match(FACTOR_SLOT_PATTERN)
+    const match = slotKey.match(slotPattern())
     if (!match) {
       factorMenuKey.value = null
       return
     }
     const deletedIndex = Number(match[1])
     for (let index = deletedIndex; index < dynamicFactorCount.value; index += 1) {
-      const nextKey = `factor${index + 1}_vars`
-      const currentKey = `factor${index}_vars`
+      const nextKey = slotKeyFor(index + 1)
+      const currentKey = slotKeyFor(index)
       slotValues[currentKey] = [...(slotValues[nextKey] || [])]
-      factorLabels[currentKey] = factorLabels[nextKey] || `因子${index}`
+      factorLabels[currentKey] = factorLabels[nextKey] || `${dynamicGroupConfig.value?.defaultLabel || '因子'}${index}`
     }
-    delete slotValues[`factor${dynamicFactorCount.value}_vars`]
-    delete factorLabels[`factor${dynamicFactorCount.value}_vars`]
+    delete slotValues[slotKeyFor(dynamicFactorCount.value)]
+    delete factorLabels[slotKeyFor(dynamicFactorCount.value)]
     dynamicFactorCount.value -= 1
     syncCfaSlotValues()
-    activeFactorKey.value = `factor${Math.min(deletedIndex, dynamicFactorCount.value)}_vars`
+    activeFactorKey.value = slotKeyFor(Math.min(deletedIndex, dynamicFactorCount.value))
     factorMenuKey.value = null
   }
 
@@ -213,7 +273,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
       dynamicFactorCount.value = 1
       for (const key of Object.keys(slotValues)) delete slotValues[key]
       for (const key of Object.keys(factorLabels)) delete factorLabels[key]
-      activeFactorKey.value = 'factor1_vars'
+      activeFactorKey.value = slotKeyFor(1)
       factorMenuKey.value = null
       syncCfaSlotValues()
       return
@@ -231,7 +291,17 @@ export function useAnalysisConfig(method, methodKey, emit) {
     resetConfigState(nextMethod)
   }, { immediate: true })
 
-  watch(slotValues, () => emit('update:slotValues', { ...slotValues }), { deep: true })
+  function emitSlotValues() {
+    const payload = { ...slotValues }
+    const labelParamKey = dynamicGroupConfig.value?.labelParamKey
+    if (labelParamKey) {
+      payload[labelParamKey] = { ...factorLabels }
+    }
+    emit('update:slotValues', payload)
+  }
+
+  watch(slotValues, emitSlotValues, { deep: true })
+  watch(factorLabels, emitSlotValues, { deep: true })
   watch(optionValues, () => emit('update:optionValues', { ...optionValues }), { deep: true })
 
   return {
@@ -246,6 +316,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
     displaySlots,
     dragOverSlot,
     dynamicFactorCount,
+    dynamicGroupAddText,
+    dynamicGroupItemName,
+    dynamicGroupTip,
     factorMenuKey,
     getFactorShortLabel,
     isCfaMethod,
@@ -257,6 +330,8 @@ export function useAnalysisConfig(method, methodKey, emit) {
     removeFactorSlot,
     removeVar,
     renameFactor,
+    renameFactorInline,
+    renameFocusToken,
     resetSlots,
     selectFactor,
     setOptionValue,

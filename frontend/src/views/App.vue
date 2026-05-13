@@ -75,6 +75,7 @@
                 @update:slotValues="sv => currentSlotValues = sv"
                 @update:optionValues="ov => currentOptionValues = ov"
                 @report-view="v => analysisReportVisible = v"
+                @reset-variable-selection="selectedVars = []"
               />
             </div>
           </div>

@@ -468,6 +468,44 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
     }
   })
   const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+  if (data?.isPareto && mode === 'bar') {
+    const cumulative = (data?.metrics?.['累计百分比'] || []).map(value => Number(value || 0))
+    const toParetoY = value => mt + ph * (1 - Math.min(Math.max(value, 0), 100) / 100)
+    const paretoPoints = labels.map((label, index) => ({
+      label,
+      metric: '累计百分比',
+      value: cumulative[index] || 0,
+      x: ml + index * bw + bw / 2,
+      y: toParetoY(cumulative[index] || 0),
+    }))
+    const paretoPath = paretoPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+    const rightTicks = Array.from({ length: 6 }, (_, index) => ({
+      y: toParetoY(index * 20),
+      label: `${index * 20}%`,
+    }))
+    return {
+      W,
+      H,
+      ml,
+      mr,
+      mt,
+      mb,
+      pw,
+      ph,
+      metric,
+      points,
+      bars,
+      yTicks,
+      rightTicks,
+      shortLabel,
+      path,
+      paretoPath,
+      paretoPoints,
+      barFill: '#10b981',
+      lineFill: '#3b78ff',
+      mode,
+    }
+  }
   return { W, H, ml, mr, mt, mb, pw, ph, metric, points, bars, yTicks, shortLabel, path, mode }
 }
 

@@ -23,7 +23,7 @@
         <span class="ap-sec-copy-txt">复制</span>
       </button>
     </div>
-    <div class="ap-table-wrap" v-if="section.headers?.length || section.headerRows?.length">
+    <div class="ap-table-wrap" v-if="activeHeaders.length || activeHeaderRows.length">
       <div v-if="hasTableToolbar" class="ap-table-mode-toolbar">
         <div class="ap-table-mode-center">
           <span class="ap-table-mode-title">{{ displayModeTitle }}</span>
@@ -47,6 +47,19 @@
               :value="mode.key"
             >
               {{ mode.label }}
+            </option>
+          </select>
+          <select
+            v-if="tableViews.length"
+            v-model="selectedTableView"
+            class="ap-table-mode-select"
+          >
+            <option
+              v-for="view in tableViews"
+              :key="view.key"
+              :value="view.key"
+            >
+              {{ view.label }}
             </option>
           </select>
           <div v-if="rowFilter" class="ap-table-filter" :class="{ 'filter-active': filterMenuOpen }" ref="filterRef">
@@ -173,27 +186,38 @@ const displayModes = computed(() => props.section.displayModes || [])
 const rowFilter = computed(() => props.section.rowFilter || null)
 const rowFilterChoices = computed(() => rowFilter.value?.choices || [])
 const sortConfig = computed(() => props.section.sortConfig || null)
-const tableHeaderRows = computed(() => (
-  props.section.headerRows?.length ? props.section.headerRows : [props.section.headers || []]
-))
+const tableViews = computed(() => props.section.tableViews || [])
 const defaultMode = computed(() => (
   props.section.defaultDisplayMode || displayModes.value[0]?.key || ''
 ))
+const defaultTableView = computed(() => (
+  props.section.defaultTableView || tableViews.value[0]?.key || ''
+))
 const selectedMode = ref(defaultMode.value)
+const selectedTableView = ref(defaultTableView.value)
 const selectedFilterValues = ref([])
 const sortEnabled = ref(false)
 const bodyRowspanColumnCount = computed(() => Number(props.section.bodyRowspanColumns || 0))
-const hasTableToolbar = computed(() => displayModes.value.length > 0 || !!rowFilter.value || !!sortConfig.value)
+const hasTableToolbar = computed(() => displayModes.value.length > 0 || tableViews.value.length > 0 || !!rowFilter.value || !!sortConfig.value)
 const hasInlineTitle = computed(() => !!props.section.inlineTitle)
 const showSectionHead = computed(() => !hasTableToolbar.value && !hasInlineTitle.value)
 const isAllFilterSelected = computed(() => (
   rowFilterChoices.value.length > 0
   && selectedFilterValues.value.length === rowFilterChoices.value.length
 ))
+const activeTableView = computed(() => (
+  tableViews.value.find(item => item.key === selectedTableView.value) || null
+))
+const activeHeaders = computed(() => activeTableView.value?.headers || props.section.headers || [])
+const activeHeaderRows = computed(() => activeTableView.value?.headerRows || props.section.headerRows || [])
+const tableHeaderRows = computed(() => (
+  activeHeaderRows.value?.length ? activeHeaderRows.value : [activeHeaders.value]
+))
 
 const activeRows = computed(() => {
   const mode = displayModes.value.find((item) => item.key === selectedMode.value)
-  let rows = mode?.rows || props.section.rows || []
+  const viewRows = activeTableView.value?.rowsByMode?.[selectedMode.value] || activeTableView.value?.rows
+  let rows = viewRows || mode?.rows || props.section.rows || []
   rows = sortedRows(rows)
   if (!rowFilter.value || isAllFilterSelected.value) return rows
   const columnIndex = rowFilter.value.columnIndex ?? 0
@@ -211,12 +235,21 @@ watch(defaultMode, (nextMode) => {
   selectedMode.value = nextMode
 })
 
+watch(defaultTableView, (nextView) => {
+  selectedTableView.value = nextView
+})
+
 watch(rowFilter, (nextFilter) => {
   selectedFilterValues.value = [...(nextFilter?.default || nextFilter?.choices || [])]
 }, { immediate: true })
 
 function copyActiveTable(event) {
-  emit('copy-table', { ...props.section, rows: activeRows.value }, event)
+  emit('copy-table', {
+    ...props.section,
+    headers: activeHeaders.value,
+    headerRows: activeHeaderRows.value,
+    rows: activeRows.value,
+  }, event)
 }
 
 function headerText(header) {
@@ -250,7 +283,7 @@ function cellExtraClass(cell) {
 }
 
 function filterCellValue(row, columnIndex) {
-  const offset = row.length < (props.section.headers?.length || 0)
+  const offset = row.length < (activeHeaders.value?.length || 0)
     ? bodyRowspanColumnCount.value
     : 0
   return cellText(row[columnIndex - offset])

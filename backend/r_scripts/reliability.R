@@ -86,12 +86,100 @@ smart_parts <- c()
 main_headers <- c()
 main_rows <- list()
 
+reliability_summary_value <- function(data, cols, selected_type) {
+  cols <- cols[cols %in% names(data)]
+  if (length(cols) < 2) {
+    return(NA)
+  }
+  scale_data <- data[, cols, drop = FALSE]
+  for (col in cols) {
+    scale_data[[col]] <- suppressWarnings(as.numeric(scale_data[[col]]))
+  }
+  scale_data <- stats::na.omit(scale_data)
+  if (nrow(scale_data) < 2 || ncol(scale_data) < 2) {
+    return(NA)
+  }
+  k <- ncol(scale_data)
+
+  if (selected_type == "折半系数") {
+    odd_cols <- cols[seq(1, length(cols), by = 2)]
+    even_cols <- cols[seq(2, length(cols), by = 2)]
+    if (length(odd_cols) < 1 || length(even_cols) < 1) {
+      return(NA)
+    }
+    half1_sum <- rowSums(scale_data[, odd_cols, drop = FALSE])
+    half2_sum <- rowSums(scale_data[, even_cols, drop = FALSE])
+    r_half <- suppressWarnings(stats::cor(half1_sum, half2_sum))
+    if (is.na(r_half) || (1 + r_half) == 0) {
+      return(NA)
+    }
+    return((2 * r_half) / (1 + r_half))
+  }
+
+  if (selected_type == "McDonald Omega") {
+    omega <- NA
+    tryCatch({
+      fa_result <- stats::factanal(scale_data, factors = 1, scores = "none", rotation = "none")
+      loadings <- as.vector(fa_result$loadings[, 1])
+      uniqueness <- fa_result$uniquenesses
+      sum_load_sq <- sum(loadings)^2
+      omega <- sum_load_sq / (sum_load_sq + sum(uniqueness))
+    }, error = function(e) {})
+    return(omega)
+  }
+
+  if (selected_type == "theta系数") {
+    theta <- NA
+    tryCatch({
+      eigen_values <- eigen(stats::cor(scale_data), symmetric = TRUE, only.values = TRUE)$values
+      theta <- (k / (k - 1)) * (1 - 1 / eigen_values[1])
+    }, error = function(e) {})
+    return(theta)
+  }
+
+  cronbach_alpha(scale_data)
+}
+
+summary_metric_name <- function(selected_type) {
+  if (selected_type == "折半系数") return("折半系数")
+  if (selected_type == "McDonald Omega") return("McDonald's \u03c9")
+  if (selected_type == "theta系数") return("theta系数")
+  "Cronbach's \u03b1"
+}
+
+summary_group_cols <- list()
+for (scale_name in names(input$items_groups)) {
+  cols <- unlist(input$items_groups[[scale_name]])
+  cols <- cols[cols %in% names(raw_df)]
+  if (length(cols) >= 2) {
+    summary_group_cols[[scale_name]] <- cols
+  }
+}
+summary_rows <- list()
+for (scale_name in names(summary_group_cols)) {
+  cols <- summary_group_cols[[scale_name]]
+  summary_rows[[length(summary_rows) + 1]] <- list(
+    scale_name,
+    as.character(length(cols)),
+    fmt_num(reliability_summary_value(raw_df, cols, selected_type))
+  )
+}
+if (length(summary_group_cols) >= 2) {
+  total_cols <- unique(unlist(summary_group_cols, use.names = FALSE))
+  summary_rows[[length(summary_rows) + 1]] <- list(
+    "总量表",
+    as.character(length(total_cols)),
+    fmt_num(reliability_summary_value(raw_df, total_cols, selected_type))
+  )
+}
+
 for (scale_name in names(input$items_groups)) {
   cols <- unlist(input$items_groups[[scale_name]])
   cols <- cols[cols %in% names(raw_df)]
   if (length(cols) < 2) {
     next
   }
+  section_title <- function(title) paste0(scale_name, " - ", title)
   data <- raw_df[, cols, drop = FALSE]
   original_n <- nrow(data)
   for (col in cols) {
@@ -148,7 +236,7 @@ for (scale_name in names(input$items_groups)) {
 
     t1_headers <- c("Cronbach's α系数", "标准化Cronbach's α系数", "项数", "样本数")
     t1_rows <- list(list(fmt_num(alpha), fmt_num(std_alpha), as.character(k), as.character(n)))
-    sections[[length(sections) + 1]] <- sec_table("Cronbach信度分析", t1_headers, t1_rows, "用于衡量量表题项的内部一致性。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("Cronbach信度分析"), t1_headers, t1_rows, "用于衡量量表题项的内部一致性。")
 
     assess_alpha <- function(a) {
       if (is.na(a)) return("无法判断")
@@ -201,8 +289,8 @@ for (scale_name in names(input$items_groups)) {
       idx <- idx + 1
     }
 
-    sections[[length(sections) + 1]] <- sec_table("输出结果2：删除分析项统计汇总", t2_headers, t2_rows, "可结合删除项后的相关性与 α 系数变化，辅助判断题项保留情况。")
-    sections[[length(sections) + 1]] <- sec_table("输出结果3：信度分析总结图", c("序号", "分析项名", "校正项总计相关性(CITC)", "删除项后的Cronbach's α系数", "参考结论"), t3_rows, "若题项删除后整体表现改善明显，可考虑复核题项设计。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("输出结果2：删除分析项统计汇总"), t2_headers, t2_rows, "可结合删除项后的相关性与 α 系数变化，辅助判断题项保留情况。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("输出结果3：信度分析总结图"), c("序号", "分析项名", "校正项总计相关性(CITC)", "删除项后的Cronbach's α系数", "参考结论"), t3_rows, "若题项删除后整体表现改善明显，可考虑复核题项设计。")
 
     advice_parts <- c(
       "信度标准参考：通常 Cronbach's α ≥ 0.7 表示量表信度可接受，α ≥ 0.8 表示信度较好，α ≥ 0.9 表示信度非常理想。α 低于 0.6 时需考虑修订量表或增删题项。",
@@ -222,9 +310,9 @@ for (scale_name in names(input$items_groups)) {
         "如希望进一步提升信度，可在后续研究中增加高质量题项或优化题项表述。"
       )
     }
-    sections[[length(sections) + 1]] <- sec_advice(paste(advice_parts, collapse = "\n"))
+    sections[[length(sections) + 1]] <- sec_advice(paste(advice_parts, collapse = "\n"), section_title("分析建议"))
 
-    sections[[length(sections) + 1]] <- sec_table("样本缺失情况汇总", c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("样本缺失情况汇总"), c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
 
     smart_parts <- c(smart_parts, smart1)
     main_headers <- t1_headers
@@ -280,8 +368,8 @@ for (scale_name in names(input$items_groups)) {
       list("", "不等长", "", fmt_num(spearman_brown_unequal)),
       list("Guttman Split-Half 系数", "", "", fmt_num(guttman))
     )
-    split_sec <- sec_table("折半信度分析", t1_headers, t1_rows, "将题项按奇偶分为两半，计算两半的Cronbach's α系数及折半信度。")
-    split_sec$headerRows <- list(list(list(text = "折半信度分析", colspan = 4L)))
+    split_sec <- sec_table(section_title("折半信度分析"), t1_headers, t1_rows, "将题项按奇偶分为两半，计算两半的Cronbach's α系数及折半信度。")
+    split_sec$headerRows <- list(list(list(text = section_title("折半信度分析"), colspan = 4L)))
     split_sec$inlineTitle <- TRUE
     split_sec$bodyRowspanColumns <- 1L
     split_sec$exportRows <- t1_rows_flat
@@ -310,9 +398,9 @@ for (scale_name in names(input$items_groups)) {
       "Cronbach's α 系数参考标准：α ≥ 0.7 表示信度可接受。\n",
       "注意折半系数高度依赖拆分方式（此处采用奇偶拆分），不同拆分方式结果会有差异。\n",
       "建议同时参考 Cronbach's α 系数综合评估量表信度。"
-    ))
+    ), section_title("分析建议"))
 
-    sections[[length(sections) + 1]] <- sec_table("样本缺失情况汇总", c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("样本缺失情况汇总"), c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
 
     smart_parts <- c(smart_parts, smart1)
     main_headers <- t1_headers
@@ -338,7 +426,7 @@ for (scale_name in names(input$items_groups)) {
     omega_display <- if (is.na(omega)) "\u2014" else fmt_num(omega)
     t1_rows <- list(list(as.character(k), as.character(n), omega_display))
     sections[[length(sections) + 1]] <- sec_table(
-      "McDonald's \u03c9信度分析结果", t1_headers, t1_rows,
+      section_title("McDonald's \u03c9信度分析结果"), t1_headers, t1_rows,
       "基于单因子模型的内部一致性系数，反映题项共享的共同方差比例。")
 
     if (!is.na(omega)) {
@@ -374,7 +462,7 @@ for (scale_name in names(input$items_groups)) {
         )
       }
       sections[[length(sections) + 1]] <- sec_table(
-        "McDonald's \u03c9信度分析-详细格式", t2_headers, t2_rows,
+        section_title("McDonald's \u03c9信度分析-详细格式"), t2_headers, t2_rows,
         "显示删除各题项后McDonald's ω系数的变化情况。")
 
       # 判断是否有题项删除后系数明显上升
@@ -400,9 +488,9 @@ for (scale_name in names(input$items_groups)) {
       "第二：如果\u201c项已剔除的McDonald's \u03c9系数\u201d值明显高于McDonald's \u03c9信度系数，此时可考虑对该项进行删除后重新分析；\n",
       "第三：如果分析项数量大于20，则不应使用\u201c项已剔除的McDonald's \u03c9系数\u201d指标；\n",
       "第四：对分析进行总结。"
-    ))
+    ), section_title("分析建议"))
 
-    sections[[length(sections) + 1]] <- sec_table("样本缺失情况汇总", c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("样本缺失情况汇总"), c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
 
     smart_parts <- c(smart_parts, smart1)
     main_headers <- t1_headers
@@ -427,7 +515,7 @@ for (scale_name in names(input$items_groups)) {
     theta_display <- if (is.na(theta)) "\u2014" else fmt_num(theta)
     t1_rows <- list(list(as.character(k), as.character(n), theta_display))
     sections[[length(sections) + 1]] <- sec_table(
-      "theta系数信度分析结果", t1_headers, t1_rows,
+      section_title("theta系数信度分析结果"), t1_headers, t1_rows,
       "基于主成分分析第一特征值的内部一致性系数。")
 
     if (!is.na(theta)) {
@@ -462,7 +550,7 @@ for (scale_name in names(input$items_groups)) {
         )
       }
       sections[[length(sections) + 1]] <- sec_table(
-        "theta系数信度分析-详细格式", t2_headers, t2_rows,
+        section_title("theta系数信度分析-详细格式"), t2_headers, t2_rows,
         "显示删除各题项后theta系数的变化情况。")
 
       # 判断是否有题项删除后系数明显上升
@@ -488,14 +576,25 @@ for (scale_name in names(input$items_groups)) {
       "第二：如果\u201c项已剔除的theta系数\u201d值明显高于theta信度系数，此时可考虑对该项进行删除后重新分析；\n",
       "第三：如果分析项数量大于20，则不应使用\u201c项已剔除的theta系数\u201d指标；\n",
       "第四：对分析进行总结。"
-    ))
+    ), section_title("分析建议"))
 
-    sections[[length(sections) + 1]] <- sec_table("样本缺失情况汇总", c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
+    sections[[length(sections) + 1]] <- sec_table(section_title("样本缺失情况汇总"), c("有效样本", "排除无效样本", "总计"), list(list(as.character(n), as.character(excluded_n), as.character(original_n))), "在计算过程中自动排除存在缺失值的样本。")
 
     smart_parts <- c(smart_parts, smart1)
     main_headers <- t1_headers
     main_rows <- t1_rows
   }
+}
+
+if (length(summary_rows) > 0) {
+  summary_section <- sec_table(
+    "信度分析汇总",
+    c("维度", "题项个数", summary_metric_name(selected_type)),
+    summary_rows,
+    "各维度独立计算信度；当存在两个及以上有效维度时，自动追加总量表。"
+  )
+  summary_section$tableStyle <- "three_line"
+  sections <- c(list(summary_section), sections)
 }
 
 sections[[length(sections) + 1]] <- sec_refs(c(

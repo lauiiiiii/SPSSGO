@@ -63,6 +63,9 @@
         :display-slots="displaySlots"
         :drag-over-slot="dragOverSlot"
         :dynamic-factor-count="dynamicFactorCount"
+        :dynamic-group-add-text="dynamicGroupAddText"
+        :dynamic-group-item-name="dynamicGroupItemName"
+        :dynamic-group-tip="dynamicGroupTip"
         :editing-config="editingConfig"
         :executing="executing"
         :factor-menu-key="factorMenuKey"
@@ -73,6 +76,7 @@
         :max-dynamic-factors="maxDynamicFactors"
         :method="method"
         :option-values="optionValues"
+        :rename-focus-token="renameFocusToken"
         :results="results"
         :slot-values="slotValues"
         :variables="variables"
@@ -81,6 +85,7 @@
         @select-factor="selectFactor"
         @toggle-factor-menu="toggleFactorMenu"
         @rename-factor="renameFactor"
+        @rename-factor-inline="renameFactorInline"
         @delete-factor="deleteFactor"
         @close-factor-menu="factorMenuKey = null"
         @drag-over="onDragOver"
@@ -88,7 +93,7 @@
         @drop-slot="onDrop"
         @remove-var="removeVar"
         @option-change="setOptionValue"
-        @reset="resetSlots"
+        @reset="handleReset"
         @execute="$emit('execute')"
       />
 
@@ -144,7 +149,7 @@ const props = defineProps({
   currentDatasetVersionNo: { type: Number, default: null },
 })
 
-const emit = defineEmits(['upload', 'execute', 'update:slotValues', 'update:optionValues', 'report-view'])
+const emit = defineEmits(['upload', 'execute', 'update:slotValues', 'update:optionValues', 'report-view', 'reset-variable-selection'])
 
 const {
   activeFactorItems,
@@ -158,6 +163,9 @@ const {
   displaySlots,
   dragOverSlot,
   dynamicFactorCount,
+  dynamicGroupAddText,
+  dynamicGroupItemName,
+  dynamicGroupTip,
   factorMenuKey,
   getFactorShortLabel,
   isCfaMethod,
@@ -168,6 +176,8 @@ const {
   optionValues,
   removeVar,
   renameFactor,
+  renameFactorInline,
+  renameFocusToken,
   resetSlots,
   selectFactor,
   setOptionValue,
@@ -247,6 +257,11 @@ const {
   editingConfig,
   showReport,
 } = useAnalysisViewState(props, emit, { resetAiInterpretation, resetCharts })
+
+function handleReset() {
+  resetSlots()
+  emit('reset-variable-selection')
+}
 
 defineExpose({ addVar, slotValues, optionValues, canExecute })
 </script>

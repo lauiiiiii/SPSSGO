@@ -1033,7 +1033,8 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-cfa-board {
   display: flex;
-  min-height: 420px;
+  flex: 1;
+  min-height: 620px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #fff;
@@ -1175,6 +1176,60 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   font-weight: 700;
   color: #111827;
 }
+.ap-cfa-title-edit {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ap-cfa-title-input {
+  width: auto;
+  min-width: 76px;
+  max-width: min(420px, 100%);
+  height: 34px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: inherit;
+  outline: none;
+}
+.ap-cfa-title-input:hover {
+  border-color: transparent;
+  background: #f8fafc;
+}
+.ap-cfa-title-input:focus {
+  border-color: #bfdbfe;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, .08);
+}
+.ap-cfa-title-edit-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #94a3b8;
+  background: transparent;
+  cursor: text;
+  opacity: .72;
+  transition: color .15s ease, background-color .15s ease, opacity .15s ease;
+  flex-shrink: 0;
+}
+.ap-cfa-title-edit:hover .ap-cfa-title-edit-btn,
+.ap-cfa-title-edit:focus-within .ap-cfa-title-edit-btn {
+  color: #2563eb;
+  background: #eff6ff;
+  opacity: 1;
+}
+.ap-cfa-title-edit:focus-within .ap-cfa-title-edit-btn {
+  display: none;
+}
 .ap-cfa-main-sub {
   font-size: 12px;
   color: #6b7280;
@@ -1184,8 +1239,9 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   border: 1px solid #e5e7eb;
 }
 .ap-cfa-drop-zone {
+  flex: 1;
   margin: 0;
-  min-height: 340px;
+  min-height: 0;
   border-radius: 12px;
   border: 1.5px dashed #d1d5db;
   background: #fcfcfd;
@@ -1299,6 +1355,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-slot { margin-bottom: 20px; display: flex; flex-direction: column; min-height: 0; }
 .ap-slot-grow { flex: 1; margin-bottom: 0; min-height: 0; }
+.ap-slot-equal { flex: 1; min-height: 0; }
 .ap-slot-label {
   font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px;
 }
@@ -1377,6 +1434,32 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   font-size: 13px; font-family: inherit; outline: none; background: #fff;
 }
 .ap-option-group select:focus { border-color: #93c5fd; }
+.ap-option-help {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; margin-left: 4px; border: 1px solid #cbd5e1; border-radius: 50%;
+  color: #64748b; font-size: 11px; line-height: 1; cursor: help; background: #fff;
+}
+.ap-option-help::after {
+  content: attr(data-hint);
+  position: absolute; left: 50%; bottom: calc(100% + 9px); z-index: 60;
+  width: 260px; padding: 9px 10px; border-radius: 6px;
+  background: rgba(55, 65, 81, .95); color: #fff; font-size: 12px; line-height: 1.55;
+  text-align: left; white-space: normal; transform: translateX(-50%);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .18);
+}
+.ap-option-help::before {
+  content: "";
+  position: absolute; left: 50%; bottom: calc(100% + 3px); z-index: 61;
+  width: 10px; height: 10px; background: rgba(55, 65, 81, .95);
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0; pointer-events: none; transition: opacity .12s ease;
+}
+.ap-option-help:hover::after,
+.ap-option-help:hover::before {
+  opacity: 1;
+}
 .ap-option-multi {
   position: relative;
 }

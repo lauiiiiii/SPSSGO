@@ -20,7 +20,7 @@
       <div class="ap-cfa-board">
         <div class="ap-cfa-sidebar">
           <button type="button" class="ap-factor-btn ap-factor-btn--wide" @click="$emit('add-factor')" :disabled="dynamicFactorCount >= maxDynamicFactors">
-            + 新建因子
+            {{ dynamicGroupAddText }}
           </button>
           <div class="ap-cfa-factor-list">
             <button
@@ -46,12 +46,25 @@
               </span>
             </button>
           </div>
-          <div class="ap-factor-tip">点击左侧切换因子，变量会加入当前选中的因子。</div>
+          <div class="ap-factor-tip">{{ dynamicGroupTip }}</div>
         </div>
         <div class="ap-cfa-main">
           <div class="ap-cfa-main-head">
-            <span class="ap-cfa-main-title">{{ activeFactorTitle }}</span>
-            <span class="ap-cfa-main-sub">{{ activeFactorItems.length }} 个题项</span>
+            <label class="ap-cfa-title-edit">
+              <input
+                ref="titleInputRef"
+                class="ap-cfa-title-input"
+                :value="activeFactorTitle"
+                @change="$emit('rename-factor-inline', activeFactorKey, $event.target.value)"
+              />
+              <span class="ap-cfa-title-edit-btn" title="重命名">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </label>
+            <span class="ap-cfa-main-sub">{{ activeFactorItems.length }} 个{{ dynamicGroupItemName }}</span>
           </div>
           <AnalysisDropZone
             v-if="activeFactorSlot"
@@ -73,7 +86,16 @@
       </div>
     </template>
 
-    <div v-else v-for="(slot, slotIndex) in displaySlots" :key="slot.key" class="ap-slot" :class="{ 'ap-slot-grow': slotIndex === displaySlots.length - 1 }">
+    <div
+      v-else
+      v-for="(slot, slotIndex) in displaySlots"
+      :key="slot.key"
+      class="ap-slot"
+      :class="{
+        'ap-slot-grow': !usesEqualSlotHeights && slotIndex === displaySlots.length - 1,
+        'ap-slot-equal': usesEqualSlotHeights,
+      }"
+    >
       <div class="ap-slot-label">
         放入
         <span v-if="slot.prefixLabel">{{ slot.prefixLabel }}</span>
@@ -139,7 +161,10 @@
             </details>
           </template>
           <template v-else>
-            <label>{{ option.label }}：</label>
+            <label>
+              {{ option.label }}：
+              <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
+            </label>
             <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
             <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
             </select>
@@ -151,10 +176,11 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AnalysisDropZone from './AnalysisDropZone.vue'
 
 const configRoot = ref(null)
+const titleInputRef = ref(null)
 
 const props = defineProps({
   activeFactorItems: { type: Array, default: () => [] },
@@ -165,6 +191,9 @@ const props = defineProps({
   displaySlots: { type: Array, default: () => [] },
   dragOverSlot: { type: String, default: null },
   dynamicFactorCount: { type: Number, default: 1 },
+  dynamicGroupAddText: { type: String, default: '+ 新建因子' },
+  dynamicGroupItemName: { type: String, default: '题项' },
+  dynamicGroupTip: { type: String, default: '' },
   editingConfig: { type: Boolean, default: false },
   executing: { type: Boolean, default: false },
   factorMenuKey: { type: String, default: null },
@@ -175,6 +204,7 @@ const props = defineProps({
   maxDynamicFactors: { type: Number, default: 12 },
   method: { type: Object, required: true },
   optionValues: { type: Object, required: true },
+  renameFocusToken: { type: Object, default: () => ({ key: '', nonce: 0 }) },
   results: { type: Array, default: () => [] },
   slotValues: { type: Object, required: true },
   variables: { type: Array, default: () => [] },
@@ -191,11 +221,19 @@ const emit = defineEmits([
   'option-change',
   'remove-var',
   'rename-factor',
+  'rename-factor-inline',
   'reset',
   'select-factor',
   'show-report',
   'toggle-factor-menu',
 ])
+
+const equalSlotMethodLabels = new Set([
+  '多选-多选（交叉分析）',
+  '多选-单选（对比分析）',
+  '单选-多选（对比分析）',
+])
+const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
 
 function getAcceptLabel(slot) {
   if (slot.acceptLabel) return slot.acceptLabel
@@ -217,7 +255,13 @@ function multiOptionText(option) {
 
 function optionChoices(option) {
   if (option.type !== 'factor_count') {
-    return (option.choices || []).map(choice => ({ value: choice, label: choice }))
+    return (option.choices || []).map(choice => {
+      const value = typeof choice === 'object' ? choice.value : choice
+      const label = typeof choice === 'object'
+        ? (choice.label || choice.value)
+        : (option.choice_labels?.[choice] || choice)
+      return { value, label }
+    })
   }
   const selectedCount = Array.isArray(props.slotValues.variables) ? props.slotValues.variables.length : 0
   const numericCount = props.variables.filter(variable => variable?.type === 'numeric').length
@@ -249,6 +293,17 @@ function handleDocumentPointerDown(event) {
   if (event.target?.closest?.('.ap-option-multi')) return
   closeMultiOptions()
 }
+
+watch(
+  () => props.renameFocusToken,
+  async token => {
+    if (!token?.key || token.key !== props.activeFactorKey) return
+    await nextTick()
+    titleInputRef.value?.focus?.()
+    titleInputRef.value?.select?.()
+  },
+  { deep: true },
+)
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)

@@ -317,13 +317,23 @@
               <template v-if="metricMode === 'bar'">
                 <rect v-for="(bar, barIndex) in metricData.bars" :key="'mvbar'+barIndex"
                   class="ap-metric-mark"
-                  :x="bar.x" :y="bar.y" :width="bar.w" :height="bar.h" fill="#2389e8" rx="2"
+                  :x="bar.x" :y="bar.y" :width="bar.w" :height="bar.h" :fill="metricData.barFill || '#2389e8'" rx="2"
                   @mouseenter="$emit('show-metric-tip', $event, chart, bar)"
                   @mousemove="$emit('move-tip', $event)"
                   @mouseleave="$emit('hide-tip')"/>
                 <text v-for="(bar, barIndex) in metricData.bars" :key="'mbv'+barIndex"
                   v-show="showDataLabels"
                   :x="bar.x + bar.w / 2" :y="Math.max(bar.y - 6, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(bar.value) }}</text>
+                <path v-if="metricData.paretoPath" :d="metricData.paretoPath" fill="none" :stroke="metricData.lineFill || '#3b78ff'" stroke-width="2"/>
+                <circle v-for="(point, pointIndex) in metricData.paretoPoints || []" :key="'pareto'+pointIndex"
+                  class="ap-metric-mark"
+                  :cx="point.x" :cy="point.y" r="3.5" :fill="metricData.lineFill || '#3b78ff'"
+                  @mouseenter="$emit('show-metric-tip', $event, chart, point)"
+                  @mousemove="$emit('move-tip', $event)"
+                  @mouseleave="$emit('hide-tip')"/>
+                <text v-for="(point, pointIndex) in metricData.paretoPoints || []" :key="'paretov'+pointIndex"
+                  v-show="showDataLabels"
+                  :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ percentLabel(point.value) }}</text>
               </template>
               <template v-else>
                 <path :d="metricData.path" fill="none" stroke="#2389e8" stroke-width="2"/>
@@ -343,6 +353,11 @@
                 :x="point.x" :y="metricData.mt+metricData.ph+18" text-anchor="middle" font-size="11" fill="#666">{{ metricData.shortLabel(point.label) }}</text>
               <text v-for="(tick, tickIndex) in metricData.yTicks" :key="'my'+tickIndex"
                 :x="metricData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+              <template v-if="metricData.rightTicks">
+                <line :x1="metricData.ml+metricData.pw" :y1="metricData.mt" :x2="metricData.ml+metricData.pw" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
+                <text v-for="(tick, tickIndex) in metricData.rightTicks" :key="'mry'+tickIndex"
+                  :x="metricData.ml+metricData.pw+8" :y="tick.y+4" text-anchor="start" font-size="11" fill="#888">{{ tick.label }}</text>
+              </template>
             </template>
           </svg>
         </template>
@@ -566,9 +581,9 @@ const props = defineProps({
 
 const categoryChartTypes = new Set(['category_distribution', 'category', 'categorical', 'categorical_distribution', 'frequency'])
 const categoryMode = ref('bar')
-const crosstabMode = ref('stackedColumn')
+const crosstabMode = ref(props.chart.data?.defaultMode || 'stackedColumn')
 const heatmapSize = ref(1)
-const labelMode = ref('percent')
+const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(true)
 const selectedMetric = ref(props.chart.data?.metric || '')
