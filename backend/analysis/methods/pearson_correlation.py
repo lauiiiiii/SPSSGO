@@ -74,6 +74,17 @@ def pearson_correlation(df, params):
 
     headers = ["变量", "M", "SD", "统计量"] + variables
 
+    def is_hidden_cell(display_mode, row_index, col_index):
+        return (
+            (display_mode == "upper" and col_index < row_index)
+            or (display_mode == "lower" and col_index > row_index)
+        )
+
+    def format_corr_cell(v1, v2):
+        if v1 == v2:
+            return "1"
+        return _fmt(corr_m[v1][v2]) + _sig(p_m[v1][v2]) if pd.notna(corr_m[v1][v2]) else "—"
+
     def build_matrix_rows(display_mode="all"):
         rows = []
         for row_index, v in enumerate(variables):
@@ -86,28 +97,48 @@ def pearson_correlation(df, params):
             ]
             p_row = ["P值"]
             for col_index, v2 in enumerate(variables):
-                hidden = (
-                    (display_mode == "upper" and col_index < row_index)
-                    or (display_mode == "lower" and col_index > row_index)
-                )
-                if hidden:
+                if is_hidden_cell(display_mode, row_index, col_index):
                     corr_row.append("")
                     p_row.append("")
                 elif v == v2:
-                    corr_row.append("1")
+                    corr_row.append(format_corr_cell(v, v2))
                     p_row.append("—")
                 else:
-                    corr_row.append(_fmt(corr_m[v][v2]) + _sig(p_m[v][v2]) if pd.notna(corr_m[v][v2]) else "—")
+                    corr_row.append(format_corr_cell(v, v2))
                     p_row.append(_fmt(p_m[v][v2]) if pd.notna(p_m[v][v2]) else "—")
             rows.append(corr_row)
             rows.append(p_row)
         return rows
 
+    def build_corr_only_rows(display_mode="all"):
+        rows = []
+        for row_index, v in enumerate(variables):
+            row = [v]
+            for col_index, v2 in enumerate(variables):
+                row.append("" if is_hidden_cell(display_mode, row_index, col_index) else format_corr_cell(v, v2))
+            rows.append(row)
+        return rows
+
     rows = build_matrix_rows("all")
+    corr_only_headers = ["变量"] + variables
+    full_rows_by_mode = {
+        "all": rows,
+        "upper": build_matrix_rows("upper"),
+        "lower": build_matrix_rows("lower"),
+    }
+    corr_only_rows_by_mode = {
+        "all": build_corr_only_rows("all"),
+        "upper": build_corr_only_rows("upper"),
+        "lower": build_corr_only_rows("lower"),
+    }
     display_modes = [
         {"key": "all", "label": "全显示(默认)", "rows": rows},
-        {"key": "upper", "label": "上三角", "rows": build_matrix_rows("upper")},
-        {"key": "lower", "label": "下三角", "rows": build_matrix_rows("lower")},
+        {"key": "upper", "label": "上三角", "rows": full_rows_by_mode["upper"]},
+        {"key": "lower", "label": "下三角", "rows": full_rows_by_mode["lower"]},
+    ]
+    table_views = [
+        {"key": "full", "label": "完整表", "headers": headers, "rowsByMode": full_rows_by_mode},
+        {"key": "corr_only", "label": "仅相关矩阵", "headers": corr_only_headers, "rowsByMode": corr_only_rows_by_mode},
     ]
 
     def build_heatmap_values(display_mode="all"):
@@ -162,6 +193,8 @@ def pearson_correlation(df, params):
     matrix_section["displayModeTitle"] = ""
     matrix_section["displayModes"] = display_modes
     matrix_section["defaultDisplayMode"] = "all"
+    matrix_section["tableViews"] = table_views
+    matrix_section["defaultTableView"] = "full"
     sections.append(matrix_section)
     sections.append(_sec_charts(
         f"{method_config['label']}热力图",
