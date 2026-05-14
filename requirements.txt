@@ -27,3 +27,12 @@ sqlalchemy
 pymysql
 prometheus-client
 sentry-sdk
+
+# R 不是 Python 包，pip 不会安装。部署服务器还需要额外安装：
+# - R / Rscript
+# - R 包 jsonlite、lavaan
+# Linux 示例：
+#   sudo apt-get update && sudo apt-get install -y r-base
+#   Rscript -e "install.packages(c('jsonlite','lavaan'), repos='https://cloud.r-project.org')"
+# Windows 示例：
+#   安装 R 后确认 Rscript 在 PATH 中，或在 .env 配置 RSCRIPT_BIN

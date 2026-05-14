@@ -10,6 +10,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 WORKDIR /app
 
+# R 增强分析在容器里必须可用；jsonlite/lavaan 用系统包安装，部署时别再临时拉 CRAN。
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        r-base \
+        r-cran-jsonlite \
+        r-cran-lavaan && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
