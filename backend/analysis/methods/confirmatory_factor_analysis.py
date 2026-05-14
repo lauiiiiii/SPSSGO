@@ -34,7 +34,10 @@ METHOD_META = {'label': '验证性因子分析',
             'accept': 'numeric',
             'min': 0,
             'hint': '可选：放入因子4对应的题项'}],
- 'options': [],
+ 'options': [{'key': 'second_order_model',
+              'label': '二阶因子模型',
+              'type': 'checkbox',
+              'default': False}],
  'param_builder': 'direct'}
 
 def confirmatory_factor_analysis(df, params):
@@ -52,10 +55,11 @@ def confirmatory_factor_analysis(df, params):
     factor_candidates = []
     if factor_keys:
         for idx, key in factor_keys:
-            factor_candidates.append((f"F{idx}", _resolve_cols(df, params.get(key, []))))
+            factor_candidates.append((key, f"因子{idx}", _resolve_cols(df, params.get(key, []))))
     else:
-        factor_candidates.append(("F1", _resolve_cols(df, params.get("factor1_vars", []) or params.get("variables", []))))
-    factor_map = {name: vars_ for name, vars_ in factor_candidates if vars_}
+        factor_candidates.append(("factor1_vars", "因子1", _resolve_cols(df, params.get("factor1_vars", []) or params.get("variables", []))))
+    factor_map = {name: vars_ for _, name, vars_ in factor_candidates if vars_}
+    factor_key_name_map = {key: name for key, name, vars_ in factor_candidates if vars_}
     variables = []
     for vars_ in factor_map.values():
         variables.extend(vars_)
@@ -67,6 +71,42 @@ def confirmatory_factor_analysis(df, params):
         return {"name": "验证性因子分析", "headers": [], "rows": [], "description": "每个因子至少需要2个题项。"}
     if len(variables) < 3:
         return {"name": "验证性因子分析", "headers": [], "rows": [], "description": "至少需要3个题项。" }
+    second_order_model = params.get("second_order_model") in (True, "true", "1", 1, "是")
+    if second_order_model and len(factor_map) < 2:
+        return {"name": "验证性因子分析", "headers": [], "rows": [], "description": "二阶因子模型至少需要2个一阶因子。"}
+    second_order_models = []
+    if second_order_model:
+        raw_models = params.get("second_order_models") or []
+        if isinstance(raw_models, dict):
+            raw_models = [raw_models]
+        if not raw_models:
+            raw_models = [{
+                "name": params.get("second_order_factor") or "二阶模型1",
+                "members": params.get("second_order_members") or [],
+            }]
+        used_names = set()
+        for index, raw_model in enumerate(raw_models, start=1):
+            if not isinstance(raw_model, dict):
+                continue
+            model_name = str(raw_model.get("name") or f"二阶模型{index}").strip() or f"二阶模型{index}"
+            if model_name in used_names:
+                model_name = f"{model_name}_{index}"
+            used_names.add(model_name)
+            raw_members = raw_model.get("members") or []
+            if isinstance(raw_members, str):
+                raw_members = [raw_members]
+            members = []
+            for member in raw_members:
+                member_name = factor_key_name_map.get(str(member), str(member))
+                if member_name in factor_map and member_name not in members:
+                    members.append(member_name)
+            if not members and len(raw_models) == 1:
+                members = list(factor_map.keys())
+            if len(members) < 2:
+                return {"name": "验证性因子分析", "headers": [], "rows": [], "description": f"{model_name} 至少需要选择2个一阶因子。"}
+            second_order_models.append({"name": model_name, "members": members})
+        if not second_order_models:
+            return {"name": "验证性因子分析", "headers": [], "rows": [], "description": "二阶因子模型至少需要选择2个一阶因子。"}
 
     if not is_r_runtime_available():
         return {"name": "验证性因子分析", "headers": [], "rows": [], "description": "R 运行环境不可用，验证性因子分析需要 R 引擎执行。"}
@@ -76,6 +116,10 @@ def confirmatory_factor_analysis(df, params):
     payload = {
         "factor_map": factor_map,
         "data_file": "cfa_input.csv",
+        "second_order_model": second_order_model,
+        "second_order_factor": second_order_models[0]["name"] if second_order_models else (params.get("second_order_factor") or "二阶模型1"),
+        "second_order_members": second_order_models[0]["members"] if second_order_models else [],
+        "second_order_models": second_order_models,
     }
     try:
         r_result = run_r_script(

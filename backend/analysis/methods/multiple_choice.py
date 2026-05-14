@@ -22,23 +22,6 @@ METHOD_META = {'label': '多选分析',
  'param_builder': 'direct'}
 METADATA_INJECTOR = "multiple_choice_labels"
 
-def _count_value_mask(series, count_value):
-    """
-    按用户指定的计数值判断选中项。
-
-    @param series: 选项列原始数据
-    @param count_value: 被视为“选中”的编码值，默认 1
-    @return: 布尔掩码，True 表示该样本选择了该选项
-    """
-    expected_text = str(count_value if count_value not in (None, "") else "1").strip()
-    raw_text = series.astype(str).str.strip()
-    numeric = pd.to_numeric(series, errors="coerce")
-    expected_numeric = _safe_float(expected_text, None)
-    if expected_numeric is None:
-        return raw_text == expected_text
-    return raw_text.eq(expected_text) | numeric.eq(expected_numeric)
-
-
 def _multiple_choice_chart(title, labels, counts, percents, sample_size, variable):
     return {
         "chartType": "category_distribution",

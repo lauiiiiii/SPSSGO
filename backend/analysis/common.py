@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # spssgo
 import json
+import os
 import re
 
 import numpy as np
@@ -168,13 +169,31 @@ def _selected_mask(series):
 
 
 def _count_value_mask(series, count_value):
+    if isinstance(series, pd.DataFrame):
+        # 重复列名会让 df[col] 返回 DataFrame，这里只取第一列兜底，别让主流程炸掉。
+        series = series.iloc[:, 0]
     expected_text = str(count_value if count_value not in (None, "") else "1").strip()
     raw_text = series.astype(str).str.strip()
     numeric = pd.to_numeric(series, errors="coerce")
     expected_numeric = _safe_float(expected_text, None)
     if expected_numeric is None:
         return raw_text == expected_text
-    return raw_text.eq(expected_text) | numeric.eq(expected_numeric)
+    exact_mask = raw_text.eq(expected_text) | numeric.eq(expected_numeric)
+    if expected_text != "1":
+        return exact_mask
+
+    normalized_text = raw_text.str.lower()
+    empty_texts = {"", "nan", "none", "null", "na", "n/a", "<na>"}
+    false_texts = empty_texts | {"0", "0.0", "false", "f", "no", "n", "否", "未选", "未选择", "未勾选"}
+    true_texts = {
+        "1", "1.0", "true", "t", "yes", "y", "是", "选中", "选择", "已选", "已选择", "勾选",
+        "checked", "selected",
+    }
+    textual_mask = (
+        normalized_text.isin(true_texts)
+        | (numeric.isna() & ~normalized_text.isin(false_texts))
+    )
+    return exact_mask | textual_mask
 
 
 def _sec_table(title, headers, rows, note=None, description=None):
@@ -361,8 +380,27 @@ def append_optional_missing_analysis(result, df, params):
     return result
 
 
-_REFS_GENERAL = [
-]
+def _spssgo_reference_meta():
+    """
+    SPSSGO 平台引用口径集中在这里改，别在各分析方法里散写。
+    环境变量可覆盖：SPSSGO_REFERENCE_VERSION、SPSSGO_PLATFORM_REFERENCE_DATE、SPSSGO_PAPER_REFERENCE_DATE。
+    """
+    version = os.environ.get("SPSSGO_REFERENCE_VERSION", "1.0.0").strip() or "1.0.0"
+    platform_date = os.environ.get("SPSSGO_PLATFORM_REFERENCE_DATE", "202X-XX-XX").strip() or "202X-XX-XX"
+    paper_date = os.environ.get("SPSSGO_PAPER_REFERENCE_DATE", "202X-XX-XX").strip() or "202X-XX-XX"
+    year = platform_date[:4] if len(platform_date) >= 4 and platform_date[:4].isdigit() else "202X"
+    return version, platform_date, paper_date, year
+
+
+def _spssgo_general_refs():
+    version, platform_date, paper_date, year = _spssgo_reference_meta()
+    return [
+        f"[1] SPSSGO 团队. SPSSGO 在线数据分析平台 (Version {version})[CP/OL]. ({platform_date})[{paper_date}]. https://www.spssgo.com.",
+        f"[2] SPSSGO Team. ({year}). SPSSGO (Version {version}) [Computer software]. https://www.spssgo.com.",
+    ]
+
+
+_REFS_GENERAL = _spssgo_general_refs()
 _REFS_RELIABILITY = _REFS_GENERAL + [
     "[3] Eisinga R, Te Grotenhuis M, Pelzer B. The reliability of a two-item scale: Pearson, Cronbach, or Spearman-Brown?[J]. International Journal of Public Health, 2013, 58(4):637-642.",
 ]
@@ -371,6 +409,12 @@ _REFS_CORRELATION = _REFS_GENERAL + [
 ]
 _REFS_REGRESSION = _REFS_GENERAL + [
     "[3] 温忠麟,叶宝娟. 中介效应分析:方法学发展、模型及应用[J]. 心理学报, 2014, 46(5):714-726.",
+]
+_REFS_MULTIPLE_RESPONSE_CROSS = _REFS_GENERAL + [
+    "[3] 张文彤，邝春伟. SPSS统计分析基础教程[M]. 3版. 北京：高等教育出版社，2017.",
+    "[4] 周俊. 问卷数据分析——破解SPSS的六类分析思路[M]. 北京：电子工业出版社，2017.",
+    "[5] Agresti A. Categorical Data Analysis[M]. 3rd ed. New York: John Wiley & Sons, 2012.",
+    "[6] Decady Y J, Thomas D R. A simple test of association for contingency tables with multiple column responses[J]. Biometrics, 2000, 56(3):893-896.",
 ]
 
 
@@ -587,6 +631,7 @@ __all__ = [
     "METADATA_INJECTORS",
     "_REFS_CORRELATION",
     "_REFS_GENERAL",
+    "_REFS_MULTIPLE_RESPONSE_CROSS",
     "_REFS_REGRESSION",
     "_REFS_RELIABILITY",
     "_box_chart",

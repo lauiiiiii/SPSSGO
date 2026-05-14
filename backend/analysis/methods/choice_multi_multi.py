@@ -45,18 +45,19 @@ def _choice_mask(df, variables, count_value):
     })
 
 
-def _count_value_mask(series, count_value):
-    expected_text = str(count_value if count_value not in (None, "") else "1").strip()
-    raw_text = series.astype(str).str.strip()
-    numeric = pd.to_numeric(series, errors="coerce")
-    expected_numeric = _safe_float(expected_text, None)
-    if expected_numeric is None:
-        return raw_text == expected_text
-    return raw_text.eq(expected_text) | numeric.eq(expected_numeric)
-
-
 def _label(variable_labels, variable):
     return variable_labels.get(variable, variable)
+
+
+def _unique_variables(variables):
+    seen = set()
+    unique = []
+    for variable in variables:
+        if variable in seen:
+            continue
+        seen.add(variable)
+        unique.append(variable)
+    return unique
 
 
 def _frequency_stats(labels, counts, sample_size):
@@ -81,6 +82,13 @@ def _frequency_stats(labels, counts, sample_size):
     }
 
 
+def _format_percent(value, digits=3):
+    text = _fmt(value, digits)
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return f"{text}%"
+
+
 def _frequency_rows(stats):
     rows = []
     for index, label in enumerate(stats["labels"]):
@@ -88,20 +96,104 @@ def _frequency_rows(stats):
         rows.append([
             label,
             str(stats["counts"][index]),
-            _fmt(stats["response_rates"][index], 3),
-            _fmt(stats["popularity_rates"][index], 3),
+            _format_percent(stats["response_rates"][index]),
+            _format_percent(stats["popularity_rates"][index]),
             _fmt(stats["chi2"], 3) if index == 0 else "",
             (_fmt(p_value, 3) + _sig(p_value)) if index == 0 and p_value is not None else "",
         ])
     rows.append([
         "总计",
         str(stats["total_responses"]),
-        _fmt(100.0 if stats["total_responses"] else 0.0, 3),
-        _fmt(sum(stats["popularity_rates"]), 3),
+        _format_percent(100.0 if stats["total_responses"] else 0.0),
+        _format_percent(sum(stats["popularity_rates"])),
         "",
         "",
     ])
     return rows
+
+
+def _p_summary(p_value):
+    if p_value is None:
+        return "未能计算显著性P值，建议检查选项计数是否存在全零或过度稀疏情况。"
+    if p_value <= 0.05:
+        return (
+            f"显著性P值为{_fmt(p_value, 3)}{_sig(p_value)}，P值小于等于0.05，"
+            "在α=0.05时水平上呈现显著性，拒绝原假设，说明各选项选择比例存在显著差异。"
+        )
+    return (
+        f"显著性P值为{_fmt(p_value, 3)}{_sig(p_value)}，P值大于0.05，"
+        "在α=0.05时水平上不呈现显著性，接受原假设，说明各选项选择比例未见明显差异。"
+    )
+
+
+def _analysis_result(cross):
+    p_value = cross["p"]
+    if p_value is None:
+        return (
+            "交叉分析【多选&多选】基于卡方检验来分析两组多选题选项之间是否存在显著性差异：\n"
+            "当前交叉表未能计算卡方检验显著性P值，建议检查是否存在过多空单元格或有效样本不足。"
+        )
+    decision = (
+        "水平上呈现显著性，拒绝原假设，说明两组多选题选项之间具有显著性差异。"
+        if p_value <= 0.05
+        else "水平上不呈现显著性，接受原假设，说明两组多选题选项之间不具有显著性差异。"
+    )
+    return (
+        "交叉分析【多选&多选】基于卡方检验来分析两组多选题选项之间是否存在显著性差异：\n"
+        f"卡方检验的显著性P值为{_fmt(p_value, 3)}，{decision}"
+    )
+
+
+def _analysis_steps(labels_a, labels_b):
+    return "\n".join([
+        "1. 根据多重响应频率分析表，对两组多选题分别计算选项计数、响应率与普及率，重点比较高频选项。",
+        "2. 对每组多选题做卡方拟合优度检验，判断各选项选择比例是否存在显著差异。",
+        "3. 通过响应率图、普及率图和帕累托图，观察各选项的选择集中程度和主要贡献项。",
+        "4. 根据多重响应频率交叉表，分析两组多选题选项之间的联合选择分布。",
+        "5. 通过卡方检验判断两组多选题之间的交叉关系是否显著，并结合交叉图总结结果。",
+        f"本次第一组包含：{'、'.join(labels_a)}；第二组包含：{'、'.join(labels_b)}。",
+    ])
+
+
+def _frequency_description():
+    return "\n".join([
+        "图表说明：",
+        "上表为多重响应频率分析表，展示了选项的频率分布情况，包括个案数、响应率、普及率、显著性P值等。",
+        "• 响应率为各选项被选择次数占全部选择次数的比例，例如一个多选题由10人回答，共选择了36个选项，其中A选项有8次，则响应率=8/36。",
+        "• 普及率为有效样本下各选项的选择比例，例如一个多选题由10人回答，其中A选项有8人选择，则普及率=8/10。",
+        "• 响应率和普及率都用于观察选项热度，通常重点关注比例较高的选项。",
+    ])
+
+
+def _frequency_smart(title, stats):
+    max_index = max(range(len(stats["counts"])), key=lambda index: stats["counts"][index]) if stats["counts"] else None
+    top_text = ""
+    if max_index is not None:
+        top_text = (
+            f"其中“{stats['labels'][max_index]}”选择次数最高，"
+            f"计数为{stats['counts'][max_index]}，响应率为{_format_percent(stats['response_rates'][max_index])}，"
+            f"普及率为{_format_percent(stats['popularity_rates'][max_index])}。"
+        )
+    return (
+        f"根据{title}的多重响应频率分析表显示，{top_text}"
+        f"卡方拟合优度检验{_p_summary(stats['p'])}"
+    )
+
+
+def _response_chart_description():
+    return "上图以可视化形式展示了多选题各选项响应率的频数分布情况。"
+
+
+def _popularity_chart_description():
+    return "上图以直方图形式展示了多选题各选项普及率的分布情况。"
+
+
+def _pareto_description():
+    return "\n".join([
+        "帕累托图是“二八原则”的图形化体现，用于识别少数高贡献选项。",
+        "第一：结合图形，找出累计比率为0%~80%对应的选项，这类选项通常是主要关注项。",
+        "第二：累计比率在80%~100%对应的选项，通常可作为补充观察项，重要性相对较低。",
+    ])
 
 
 def _category_chart(title, labels, counts, percents, total):
@@ -117,6 +209,18 @@ def _category_chart(title, labels, counts, percents, total):
             "total": int(total),
         },
     }
+
+
+def _response_rate_chart(title, labels, counts, percents, total):
+    chart = _category_chart(title, labels, counts, percents, total)
+    chart["data"]["defaultMode"] = "pie"
+    return chart
+
+
+def _popularity_rate_chart(title, labels, counts, percents, total):
+    chart = _category_chart(title, labels, counts, percents, total)
+    chart["data"]["defaultMode"] = "bar"
+    return chart
 
 
 def _pareto_chart(title, labels, counts):
@@ -155,22 +259,25 @@ def _frequency_sections(start_index, title, stats):
             headers,
             _frequency_rows(stats),
             note="注：***、**、*分别代表1%、5%、10%的显著性水平",
-            description="上表为多重响应频率分析表，展示了选项的频率分布情况，包括个案数、响应率、普及率、显著性P值等。",
+            description=_frequency_description(),
+        ),
+        _sec_smart(
+            _frequency_smart(title, stats)
         ),
         _sec_charts(
             f"输出结果{start_index + 1}：响应率",
-            [_category_chart(f"{title}响应率", stats["labels"], stats["counts"], stats["response_rates"], stats["total_responses"])],
-            "上图以可视化的形式展示了多选题各问题选项响应率的频数分布情况。",
+            [_response_rate_chart(f"{title}响应率", stats["labels"], stats["counts"], stats["response_rates"], stats["total_responses"])],
+            _response_chart_description(),
         ),
         _sec_charts(
             f"输出结果{start_index + 2}：普及率",
-            [_category_chart(f"{title}普及率", stats["labels"], stats["counts"], stats["popularity_rates"], sum(stats["counts"]))],
-            "上图以直方图的形式展示了各个问题选项普及率的分布情况。",
+            [_popularity_rate_chart(f"{title}普及率", stats["labels"], stats["counts"], stats["popularity_rates"], sum(stats["counts"]))],
+            _popularity_chart_description(),
         ),
         _sec_charts(
             f"输出结果{start_index + 3}：帕累托图分析",
             [_pareto_chart(f"{title}帕累托图", stats["labels"], stats["counts"])],
-            "帕累托图是“二八原则”的图形化体现，80%的问题是由20%的原因所致。",
+            _pareto_description(),
         ),
     ]
 
@@ -205,7 +312,7 @@ def _cross_result(labels_a, labels_b, masks_a, masks_b):
         row = [label_a]
         for value in matrix[row_index]:
             percent = value / row_total * 100 if row_total else 0
-            row.append(f"{value}（{_fmt(percent, 3)}%）")
+            row.append(f"{value}（{_format_percent(percent)}）")
         row.append(str(row_total))
         row.append(_fmt(chi2_value, 3) if row_index == 0 else "")
         row.append((_fmt(p_value, 3) + _sig(p_value)) if row_index == 0 and p_value is not None else "")
@@ -241,6 +348,37 @@ def _cross_chart(labels_a, labels_b, matrix):
     }
 
 
+def _cross_description():
+    return "\n".join([
+        "图表说明：",
+        "上表为多重响应频率交叉分析表，包括卡方检验值、显著性P值等。",
+        "• 表格单元格展示联合选择计数和行百分比，便于比较第一组各选项在第二组选项上的分布差异。",
+        "• 若卡方检验P值小于等于0.05，说明两组多选题选项之间存在显著差异。",
+        "• 分析时重点关注计数较高、百分比较高的组合。",
+    ])
+
+
+def _cross_smart(sample_size, labels_a, labels_b, cross):
+    p_value = cross["p"]
+    if p_value is None:
+        p_text = "未能计算卡方检验P值，建议检查交叉表是否存在过多空单元格。"
+    elif p_value <= 0.05:
+        p_text = (
+            f"卡方检验显著性P值为{_fmt(p_value, 3)}{_sig(p_value)}，P值小于等于0.05，"
+            "说明两组多选题选项之间存在显著差异。"
+        )
+    else:
+        p_text = (
+            f"卡方检验显著性P值为{_fmt(p_value, 3)}{_sig(p_value)}，P值大于0.05，"
+            "说明两组多选题选项之间未见明显差异。"
+        )
+    return (
+        f"本次多选-多选交叉分析共纳入{sample_size}个有效样本。"
+        f"第一组包含{len(labels_a)}个选项，第二组包含{len(labels_b)}个选项。"
+        f"{p_text}"
+    )
+
+
 def run(df, params):
     """
     多选题与多选题交叉分析。
@@ -256,7 +394,7 @@ def run(df, params):
     if len(variables_a) < 2 or len(variables_b) < 2:
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "两组多选题变量都至少需要 2 个拆分字段。"}
 
-    temp = df[variables_a + variables_b].copy()
+    temp = df[_unique_variables(variables_a + variables_b)].copy()
     temp = temp[temp.notna().any(axis=1)]
     sample_size = int(len(temp))
     if sample_size == 0:
@@ -270,7 +408,10 @@ def run(df, params):
     stats_b = _frequency_stats(labels_b, [int(masks_b[variable].sum()) for variable in variables_b], sample_size)
     cross = _cross_result(labels_a, labels_b, masks_a, masks_b)
 
-    sections = []
+    sections = [
+        _sec_advice(_analysis_result(cross), "分析结果"),
+        _sec_advice(_analysis_steps(labels_a, labels_b), "分析步骤"),
+    ]
     sections.extend(_frequency_sections(1, "多选题A", stats_a))
     sections.extend(_frequency_sections(5, "多选题B", stats_b))
     sections.append(_sec_table(
@@ -278,24 +419,22 @@ def run(df, params):
         cross["headers"],
         cross["rows"],
         note="注：***、**、*分别代表1%、5%、10%的显著性水平",
-        description="上表为多重响应频率交叉分析表，包括卡方检验值、显著性P值等。若P<0.05，则说明两组多选题之间存在差异性。",
+        description=_cross_description(),
     ))
     sections.append(_sec_smart(
-        f"本次多选-多选交叉分析共纳入{sample_size}个有效样本。"
-        f"卡方检验P值为{_fmt(cross['p'], 3) if cross['p'] is not None else '—'}，"
-        f"{'在0.05水平上呈现显著性，说明两组多选题选项之间存在差异。' if cross['p'] is not None and cross['p'] <= 0.05 else '在0.05水平上不呈现显著性，说明两组多选题选项之间未见明显差异。'}"
+        _cross_smart(sample_size, labels_a, labels_b, cross)
     ))
     sections.append(_sec_charts(
         "输出结果10：交叉图",
         [_cross_chart(labels_a, labels_b, cross["matrix"])],
-        "上图展示了两组多选题选项的频数分布情况。横轴为第二组多选题选项，图例为第一组多选题选项。",
+        "上图展示了两组多选题选项的频数分布情况，横轴为第二组多选题选项，图例为第一组多选题选项。",
     ))
-    sections.append(_sec_refs(_REFS_GENERAL))
+    sections.append(_sec_refs(_REFS_MULTIPLE_RESPONSE_CROSS))
 
     return {
         "name": METHOD_META["label"],
         "headers": cross["headers"],
         "rows": cross["rows"],
-        "description": f"已完成两组多选题交叉分析，共比较 {len(variables_a) * len(variables_b)} 个选项组合。",
+        "description": _analysis_result(cross).replace("\n", " "),
         "sections": sections,
     }

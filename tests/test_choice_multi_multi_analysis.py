@@ -24,11 +24,12 @@ class ChoiceMultiMultiAnalysisTests(unittest.TestCase):
 
         self.assertEqual(result["name"], "多选-多选（交叉分析）")
         self.assertEqual(result["headers"], ["分组题项", "q16_1", "q16_2", "总数", "X²", "P"])
-        self.assertEqual(result["rows"][0][:4], ["q8_1", "1（50.000%）", "1（50.000%）", "2"])
+        self.assertEqual(result["rows"][0][:4], ["q8_1", "1（50%）", "1（50%）", "2"])
         self.assertEqual(result["rows"][1][:4], ["q8_2", "1（33.333%）", "2（66.667%）", "3"])
         self.assertEqual(result["rows"][-1][:4], ["总计", "2", "3", "5"])
 
         titles = [section["title"] for section in result["sections"]]
+        self.assertEqual(titles[:2], ["分析结果", "分析步骤"])
         self.assertIn("输出结果1：多重响应频率分析表", titles)
         self.assertIn("输出结果5：多重响应频率分析表", titles)
         self.assertIn("输出结果9：多重响应频率交叉分析表", titles)
@@ -56,8 +57,36 @@ class ChoiceMultiMultiAnalysisTests(unittest.TestCase):
             "count_value": "2",
         })
 
-        self.assertEqual(result["rows"][0][:4], ["a1", "1（50.000%）", "1（50.000%）", "2"])
+        self.assertEqual(result["rows"][0][:4], ["a1", "1（50%）", "1（50%）", "2"])
         self.assertEqual(result["rows"][1][:4], ["a2", "1（33.333%）", "2（66.667%）", "3"])
+
+    def test_default_count_value_accepts_text_selected_markers(self):
+        df = pd.DataFrame({
+            "a1": ["选中", "", "未选"],
+            "a2": ["", "checked", ""],
+            "b1": ["是", "", ""],
+            "b2": ["", "selected", "否"],
+        })
+
+        result = run(df, {
+            "variables_a": ["a1", "a2"],
+            "variables_b": ["b1", "b2"],
+        })
+
+        frequency_section = next(section for section in result["sections"] if section["title"] == "输出结果1：多重响应频率分析表")
+        self.assertEqual(frequency_section["rows"][0][:4], ["a1", "1", "50%", "33.333%"])
+        self.assertEqual(frequency_section["rows"][1][:4], ["a2", "1", "50%", "33.333%"])
+        self.assertEqual(result["rows"][0][:4], ["a1", "1（100%）", "0（0%）", "1"])
+
+    def test_overlapped_groups_do_not_create_dataframe_series_error(self):
+        result = run(self.df, {
+            "variables_a": ["q8_1", "q8_2"],
+            "variables_b": ["q8_2", "q16_1"],
+        })
+
+        self.assertEqual(result["headers"], ["分组题项", "q8_2", "q16_1", "总数", "X²", "P"])
+        self.assertEqual(result["rows"][0][0], "q8_1")
+        self.assertEqual(result["rows"][1][0], "q8_2")
 
     def test_cross_chart_uses_common_crosstab_protocol(self):
         result = run(self.df, {
