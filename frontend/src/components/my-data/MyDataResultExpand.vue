@@ -36,9 +36,13 @@
               :calc-box="calcBox"
               :calc-category-bar="calcCategoryBar"
               :calc-category-pie="calcCategoryPie"
+              :calc-correspondence-map="calcCorrespondenceMap"
               :calc-crosstab="calcCrosstab"
+              :calc-factor-heatmap="calcFactorHeatmap"
               :calc-hist="calcHist"
               :calc-metric-comparison="calcMetricComparison"
+              :calc-normality-hist="calcNormalityHist"
+              :calc-probability-plot="calcProbabilityPlot"
               :chart-data-visible="chartDataVisible"
               :fmt-bin="fmtBin"
               :section="sec"
@@ -71,9 +75,13 @@ import {
   calcBoxplotLayout,
   calcCategoryBarLayout,
   calcCategoryPieLayout,
+  calcCorrespondenceMapLayout,
   calcCrosstabLayout,
   calcHistogramLayout,
+  calcFactorHeatmapLayout,
   calcMetricComparisonLayout,
+  calcNormalityHistogramLayout,
+  calcProbabilityPlotLayout,
   formatBin,
 } from '../../utils/analysisCharts.js'
 
@@ -111,6 +119,22 @@ function calcCategoryPie(data, donut = false) {
 
 function calcMetricComparison(data, mode = 'line') {
   return calcMetricComparisonLayout(data, mode)
+}
+
+function calcFactorHeatmap(data) {
+  return calcFactorHeatmapLayout(data)
+}
+
+function calcNormalityHist(data) {
+  return calcNormalityHistogramLayout(data)
+}
+
+function calcProbabilityPlot(data) {
+  return calcProbabilityPlotLayout(data)
+}
+
+function calcCorrespondenceMap(data) {
+  return calcCorrespondenceMapLayout(data)
 }
 
 function calcCrosstab(data, mode = 'stackedColumn') {

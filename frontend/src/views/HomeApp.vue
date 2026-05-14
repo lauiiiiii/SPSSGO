@@ -13,8 +13,12 @@
           <a href="#deliverables">成果</a>
           <a href="/about">关于我们</a>
           <a href="#faq">FAQ</a>
-          <a href="https://github.com/lauiiiiii/spssgo" target="_blank" class="nav-github">
+          <a href="https://github.com/lauiiiiii/spssgo" target="_blank" class="nav-github" title="GitHub">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          </a>
+          <a href="https://gitee.com/jahge/SPSSGO" target="_blank" class="nav-github" title="Gitee">
+            <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+            Gitee
           </a>
           <a class="nav-btn" href="#" @click.prevent="showLogin = true">登录</a>
         </div>
@@ -52,6 +56,10 @@
             <a class="btn-ghost" href="https://github.com/lauiiiiii/spssgo" target="_blank">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               GitHub
+            </a>
+            <a class="btn-ghost" href="https://gitee.com/jahge/SPSSGO" target="_blank">
+              <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+              Gitee
             </a>
           </div>
           <div class="hero-stats">
@@ -533,6 +541,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             GitHub
           </a>
+          <a class="btn-cta-github" href="https://gitee.com/jahge/SPSSGO" target="_blank">
+            <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+            Gitee
+          </a>
         </div>
       </div>
     </section>
@@ -550,6 +562,9 @@
               <a href="https://github.com/lauiiiiii/spssgo" target="_blank" title="GitHub" class="footer-social-link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               </a>
+              <a href="https://gitee.com/jahge/SPSSGO" target="_blank" title="Gitee" class="footer-social-link">
+                <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+              </a>
               <a href="mailto:jahe@jahe.top" title="邮箱" class="footer-social-link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
               </a>
@@ -566,15 +581,28 @@
           <div class="footer-col">
             <h4>支持</h4>
             <a href="/help">帮助中心</a>
+            <a href="/changelog">更新日志</a>
             <a href="#faq">常见问题</a>
             <a href="mailto:jahe@jahe.top">联系我们</a>
-            <a href="https://github.com/lauiiiiii/spssgo" target="_blank">GitHub</a>
+            <a class="footer-code-link" href="https://github.com/lauiiiiii/spssgo" target="_blank">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg>
+              GitHub
+            </a>
+            <a class="footer-code-link" href="https://gitee.com/jahge/SPSSGO" target="_blank">
+              <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+              Gitee
+            </a>
           </div>
           <div class="footer-col">
             <h4>法律</h4>
             <a href="/legal#terms" target="_blank">用户服务协议</a>
             <a href="/legal#privacy" target="_blank">隐私政策</a>
             <a href="/legal#license" target="_blank">开源协议 (AGPL-3.0)</a>
+          </div>
+          <div class="footer-col footer-wechat">
+            <h4>公众号</h4>
+            <img class="footer-wechat-qr" :src="wechatQrSrc" alt="SPSSGO 数据公众号二维码" />
+            <span class="footer-wechat-tip">扫码关注 SPSSGO 数派</span>
           </div>
         </div>
       </div>
@@ -601,6 +629,7 @@ import { faqItems, heroCopies } from '../data/homePageContent.js'
 
 const showLogin = ref(false)
 const faqOpen = ref(-1)
+const wechatQrSrc = '/wechat-qrcode.jpg'
 const { activeHeroCopy, heroCopyIndex } = useHomeHero(heroCopies)
 useScrollReveal()
 
@@ -674,10 +703,32 @@ body {
 }
 .nav-links a:hover { color: #1f2937; }
 .nav-github {
-  display: flex; align-items: center; color: #4b5563 !important;
+  display: flex; align-items: center; gap: 5px; color: #4b5563 !important;
   transition: color .2s !important;
 }
 .nav-github:hover { color: #1f2937 !important; }
+.nav-github > svg,
+.btn-ghost > svg,
+.btn-cta-github > svg,
+.footer-social-link > svg {
+  width: 18px;
+  height: 18px;
+}
+.gitee-mark {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: inline-block;
+  color: #c71d23;
+}
+.nav-github > .gitee-mark,
+.btn-ghost > .gitee-mark,
+.btn-cta-github > .gitee-mark,
+.footer-social-link > .gitee-mark {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
 .nav-btn {
   padding: 8px 22px !important; border-radius: 8px;
   background: #4F6EF7; color: #fff !important; font-weight: 500;
@@ -1488,7 +1539,7 @@ body {
 .footer-top { padding: 56px 36px 40px; }
 .footer-inner-grid {
   max-width: 1200px; margin: 0 auto;
-  display: grid; grid-template-columns: minmax(420px, 2.5fr) 1fr 1fr 1fr; gap: 40px;
+  display: grid; grid-template-columns: minmax(320px, 2fr) repeat(4, minmax(112px, 1fr)); gap: 36px;
 }
 .footer-brand { max-width: 500px; }
 .footer-logo { height: 28px; width: auto; opacity: .95; margin-bottom: 8px; }
@@ -1518,6 +1569,40 @@ body {
   font-size: 13px; color: #475569; text-decoration: none; transition: color .2s;
 }
 .footer-col a:hover { color: #0f172a; }
+.footer-col .footer-code-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  line-height: 1.4;
+}
+.footer-col .footer-code-link > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+.footer-col .footer-code-link > .gitee-mark {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+}
+.footer-wechat {
+  align-items: flex-start;
+}
+.footer-wechat-qr {
+  width: 108px;
+  height: 108px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 4px;
+}
+.footer-wechat-tip {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
 .footer-bottom {
   border-top: 1px solid #eef2f7;
   padding: 18px 36px;

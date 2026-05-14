@@ -23,11 +23,36 @@ class ChoiceMultiSingleAnalysisTests(unittest.TestCase):
             "count_value": "2",
         })
 
-        self.assertEqual(result["headers"], ["多选项", "A", "B"])
-        self.assertEqual(result["rows"], [
-            ["q1", "50.0%", "50.0%"],
-            ["q2", "50.0%", "50.0%"],
-        ])
+        self.assertEqual(result["headers"], ["分组题项", "A", "B", "总数", "X²", "P"])
+        self.assertEqual(result["rows"][0][:4], ["q1", "1（50%）", "1（50%）", "2"])
+        self.assertEqual(result["rows"][1][:4], ["q2", "1（50%）", "1（50%）", "2"])
+
+        titles = [section["title"] for section in result["sections"]]
+        self.assertIn("分析步骤", titles)
+        self.assertIn("输出结果1：多重响应频率分析表", titles)
+        self.assertIn("输出结果2：响应率", titles)
+        self.assertIn("输出结果3：普及率", titles)
+        self.assertIn("输出结果4：帕累托图分析", titles)
+        self.assertIn("输出结果5：多重响应频率交叉分析表", titles)
+        self.assertIn("输出结果6：交叉图", titles)
+        cross_section = next(section for section in result["sections"] if section["title"] == "输出结果5：多重响应频率交叉分析表")
+        self.assertEqual(cross_section["headerRows"][0][1], {"text": "group", "colspan": 2})
+
+    def test_multi_single_frequency_charts_follow_spsspro_modes(self):
+        result = run_multi_single(self.df, {
+            "single_var": "group",
+            "multiple_vars": ["q1", "q2"],
+            "count_value": "2",
+        })
+
+        response_chart = next(section for section in result["sections"] if section["title"] == "输出结果2：响应率")["charts"][0]
+        popularity_chart = next(section for section in result["sections"] if section["title"] == "输出结果3：普及率")["charts"][0]
+        cross_chart = next(section for section in result["sections"] if section["title"] == "输出结果6：交叉图")["charts"][0]
+
+        self.assertEqual(response_chart["data"]["defaultMode"], "pie")
+        self.assertEqual(popularity_chart["data"]["defaultMode"], "bar")
+        self.assertEqual(cross_chart["chartType"], "crosstab_distribution")
+        self.assertEqual(cross_chart["data"]["defaultMode"], "column")
 
     def test_single_multi_count_value_supports_non_one_code(self):
         result = run_single_multi(self.df, {
@@ -36,11 +61,17 @@ class ChoiceMultiSingleAnalysisTests(unittest.TestCase):
             "count_value": "2",
         })
 
-        self.assertEqual(result["headers"], ["单选结果", "q1", "q2"])
-        self.assertEqual(result["rows"], [
-            ["A", "50.0%", "50.0%"],
-            ["B", "50.0%", "50.0%"],
-        ])
+        self.assertEqual(result["headers"], ["分组题项", "", "q1", "q2", "总数", "X²", "P"])
+        self.assertEqual(result["rows"][0][:5], ["group", "A", "1（50%）", "1（50%）", "2"])
+        self.assertEqual(result["rows"][1][:5], ["", "B", "1（50%）", "1（50%）", "2"])
+        self.assertEqual(result["rows"][2][:5], ["总计", "", "2", "2", "4"])
+
+        titles = [section["title"] for section in result["sections"]]
+        self.assertIn("分析结果", titles)
+        self.assertIn("分析步骤", titles)
+        self.assertIn("输出结果1：多重响应频率分析表", titles)
+        self.assertIn("输出结果5：多重响应频率交叉分析表", titles)
+        self.assertIn("输出结果6：交叉图", titles)
 
     def test_both_methods_expose_count_value_option(self):
         expected_orders = {

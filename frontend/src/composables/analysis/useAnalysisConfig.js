@@ -2,6 +2,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 const CFA_METHOD_KEY = 'confirmatory_factor_analysis'
 const RELIABILITY_METHOD_KEY = 'reliability'
+const SUMMARY_T_METHOD_KEY = 'summary_t_test'
 const DYNAMIC_GROUP_CONFIGS = {
   [CFA_METHOD_KEY]: {
     addText: '+ 新建因子',
@@ -14,7 +15,7 @@ const DYNAMIC_GROUP_CONFIGS = {
     promptText: '请输入新的因子名称',
     slotPattern: /^factor(\d+)_vars$/,
     slotPrefix: 'factor',
-    tipText: '点击左侧切换因子，变量会加入当前选中的因子。',
+    tipText: '先点左侧因子，再把对应题项拖入右侧；每次拖入后会清空左侧多选。',
   },
   [RELIABILITY_METHOD_KEY]: {
     addText: '+ 新建维度',
@@ -41,9 +42,12 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const activeFactorKey = ref('factor1_vars')
   const renameFocusToken = ref({ key: '', nonce: 0 })
   const factorLabels = reactive({})
+  const secondOrderModels = ref([])
+  const activeSecondOrderKey = ref('second_order_1')
 
   const dynamicGroupConfig = computed(() => DYNAMIC_GROUP_CONFIGS[methodKey.value] || null)
   const isCfaMethod = computed(() => Boolean(dynamicGroupConfig.value))
+  const isSummaryTMethod = computed(() => methodKey.value === SUMMARY_T_METHOD_KEY)
   const methodSlots = computed(() => method.value?.slots || [])
 
   const displaySlots = computed(() => {
@@ -63,12 +67,53 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const dynamicGroupAddText = computed(() => dynamicGroupConfig.value?.addText || '+ 新建因子')
   const dynamicGroupItemName = computed(() => dynamicGroupConfig.value?.itemName || '题项')
   const dynamicGroupTip = computed(() => dynamicGroupConfig.value?.tipText || '')
+  const firstOrderFactorChoices = computed(() => {
+    if (!isCfaMethod.value) return []
+    return displaySlots.value
+      .map(slot => ({
+        key: slot.key,
+        label: getFactorShortLabel(slot.key),
+        count: Array.isArray(slotValues[slot.key]) ? slotValues[slot.key].length : 0,
+      }))
+      .filter(item => item.count > 0)
+  })
+  const activeSecondOrderModel = computed(() => (
+    secondOrderModels.value.find(model => model.key === activeSecondOrderKey.value) || secondOrderModels.value[0] || null
+  ))
+  const activeSecondOrderFactorName = computed(() => activeSecondOrderModel.value?.label || '二阶模型1')
+  const activeSecondOrderMembers = computed(() => activeSecondOrderModel.value?.members || [])
+  const secondOrderMemberOwnerMap = computed(() => {
+    const ownerMap = {}
+    for (const model of secondOrderModels.value) {
+      for (const member of model.members || []) {
+        if (!ownerMap[member]) ownerMap[member] = model
+      }
+    }
+    return ownerMap
+  })
+  const secondOrderFactorChoices = computed(() => firstOrderFactorChoices.value.map(factor => {
+    const owner = secondOrderMemberOwnerMap.value[factor.key] || null
+    return {
+      ...factor,
+      ownerKey: owner?.key || '',
+      ownerLabel: owner?.label || '',
+      disabled: Boolean(owner && owner.key !== activeSecondOrderKey.value),
+    }
+  }))
+  const maxSecondOrderModels = 8
 
   const canExecute = computed(() => {
     if (!method.value) return false
+    if (isSummaryTMethod.value) return summaryTReady()
     if (isCfaMethod.value) {
       const groupLengths = displaySlots.value.map(slot => (slotValues[slot.key] || []).length)
-      return groupLengths.some(length => length >= 2) && groupLengths.every(length => length === 0 || length >= 2)
+      const validGroupLengths = groupLengths.filter(length => length > 0)
+      const firstOrderReady = validGroupLengths.length > 0 && validGroupLengths.every(length => length >= 2)
+      if (!firstOrderReady) return false
+      if (optionValues.second_order_model) {
+        return secondOrderModels.value.length > 0 && secondOrderModels.value.every(model => model.members.length >= 2)
+      }
+      return true
     }
     for (const slot of displaySlots.value) {
       const vals = slotValues[slot.key] || []
@@ -123,16 +168,58 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (!slotValues[activeFactorKey.value]) {
       activeFactorKey.value = slotKeyFor(1)
     }
+    syncSecondOrderMembers()
+  }
+
+  function syncSecondOrderMembers() {
+    const availableKeys = new Set(firstOrderFactorChoices.value.map(item => item.key))
+    if (!secondOrderModels.value.length) {
+      secondOrderModels.value = [{
+        key: 'second_order_1',
+        label: '二阶模型1',
+        members: availableKeys.size >= 2 ? [...availableKeys] : [],
+      }]
+    } else {
+      secondOrderModels.value = secondOrderModels.value.map(model => {
+        const members = model.members.filter(key => availableKeys.has(key))
+        return {
+          ...model,
+          members,
+        }
+      })
+    }
+    if (!secondOrderModels.value.some(model => model.key === activeSecondOrderKey.value)) {
+      activeSecondOrderKey.value = secondOrderModels.value[0]?.key || 'second_order_1'
+    }
   }
 
   function resetConfigState(nextMethod) {
     factorMenuKey.value = null
+    secondOrderModels.value = []
+    activeSecondOrderKey.value = 'second_order_1'
     for (const key of Object.keys(slotValues)) delete slotValues[key]
     for (const key of Object.keys(optionValues)) delete optionValues[key]
     for (const key of Object.keys(factorLabels)) delete factorLabels[key]
     if (!nextMethod) return
 
-    if (isCfaMethod.value) {
+    if (isSummaryTMethod.value) {
+      Object.assign(optionValues, {
+        test_type: 'one_sample',
+        mean: '',
+        std: '',
+        n: '',
+        test_value: '0',
+        group1_mean: '',
+        group1_std: '',
+        group1_n: '',
+        group2_mean: '',
+        group2_std: '',
+        group2_n: '',
+        diff_test_value: '0',
+        confidence_level: '95',
+        alternative: '等于',
+      })
+    } else if (isCfaMethod.value) {
       dynamicFactorCount.value = 1
       activeFactorKey.value = slotKeyFor(1)
       syncCfaSlotValues()
@@ -143,6 +230,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
     }
 
     for (const option of (nextMethod.options || [])) {
+      if (isSummaryTMethod.value && Object.prototype.hasOwnProperty.call(optionValues, option.key)) {
+        continue
+      }
       if (option.type === 'checkbox') {
         optionValues[option.key] = Boolean(option.default)
       } else if (option.type === 'multiple') {
@@ -172,11 +262,20 @@ export function useAnalysisConfig(method, methodKey, emit) {
     for (const varName of names) {
       addVar(slot.key, varName, slot.type)
     }
+    emit('reset-variable-selection')
+  }
+
+  function isUsedInOtherStaticSlot(slotKey, varName) {
+    if (isCfaMethod.value || displaySlots.value.length <= 1) return false
+    return displaySlots.value.some(slot => (
+      slot.key !== slotKey && Array.isArray(slotValues[slot.key]) && slotValues[slot.key].includes(varName)
+    ))
   }
 
   function addVar(slotKey, varName, slotType) {
     if (!slotValues[slotKey]) slotValues[slotKey] = []
     if (slotValues[slotKey].includes(varName)) return
+    if (isUsedInOtherStaticSlot(slotKey, varName)) return
     if (isCfaMethod.value && slotType !== 'single') {
       for (const key of Object.keys(slotValues)) {
         if (key !== slotKey && key.match(slotPattern()) && Array.isArray(slotValues[key])) {
@@ -196,6 +295,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (!slotValues[slotKey]) return
     const index = slotValues[slotKey].indexOf(varName)
     if (index >= 0) slotValues[slotKey].splice(index, 1)
+    syncSecondOrderMembers()
   }
 
   function addFactorSlot() {
@@ -269,13 +369,20 @@ export function useAnalysisConfig(method, methodKey, emit) {
   }
 
   function resetSlots() {
+    if (isSummaryTMethod.value) {
+      resetConfigState(method.value)
+      return
+    }
     if (isCfaMethod.value) {
       dynamicFactorCount.value = 1
       for (const key of Object.keys(slotValues)) delete slotValues[key]
       for (const key of Object.keys(factorLabels)) delete factorLabels[key]
       activeFactorKey.value = slotKeyFor(1)
       factorMenuKey.value = null
+      secondOrderModels.value = []
+      activeSecondOrderKey.value = 'second_order_1'
       syncCfaSlotValues()
+      syncSecondOrderMembers()
       return
     }
     for (const slot of displaySlots.value) {
@@ -285,6 +392,88 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   function setOptionValue(key, value) {
     optionValues[key] = value
+    if (key === 'second_order_model') syncSecondOrderMembers()
+  }
+
+  function filledNumber(value, mode = 'any') {
+    if (value === '' || value === null || value === undefined) return false
+    const number = Number(value)
+    if (!Number.isFinite(number)) return false
+    if (mode === 'positive') return number > 0
+    if (mode === 'non_negative') return number >= 0
+    return true
+  }
+
+  function summaryTReady() {
+    if (optionValues.test_type === 'independent') {
+      return (
+        filledNumber(optionValues.group1_mean)
+        && filledNumber(optionValues.group1_std, 'positive')
+        && filledNumber(optionValues.group1_n, 'positive')
+        && filledNumber(optionValues.group2_mean)
+        && filledNumber(optionValues.group2_std, 'positive')
+        && filledNumber(optionValues.group2_n, 'positive')
+        && filledNumber(optionValues.diff_test_value)
+      )
+    }
+    return (
+      filledNumber(optionValues.mean)
+      && filledNumber(optionValues.std, 'positive')
+      && filledNumber(optionValues.n, 'positive')
+      && filledNumber(optionValues.test_value)
+    )
+  }
+
+  function setSecondOrderFactorName(value) {
+    const next = String(value || '').trim()
+    const activeKey = activeSecondOrderKey.value
+    secondOrderModels.value = secondOrderModels.value.map(model => (
+      model.key === activeKey ? { ...model, label: next || model.label || '二阶模型1' } : model
+    ))
+  }
+
+  function addSecondOrderModel() {
+    if (secondOrderModels.value.length >= maxSecondOrderModels) return
+    const nextIndex = secondOrderModels.value.length + 1
+    const key = `second_order_${Date.now()}_${nextIndex}`
+    secondOrderModels.value = [
+      ...secondOrderModels.value,
+      { key, label: `二阶模型${nextIndex}`, members: [] },
+    ]
+    activeSecondOrderKey.value = key
+  }
+
+  function selectSecondOrderModel(key) {
+    if (secondOrderModels.value.some(model => model.key === key)) {
+      activeSecondOrderKey.value = key
+    }
+  }
+
+  function deleteSecondOrderModel(key) {
+    if (secondOrderModels.value.length <= 1) return
+    const deletedIndex = secondOrderModels.value.findIndex(model => model.key === key)
+    secondOrderModels.value = secondOrderModels.value.filter(model => model.key !== key)
+    if (activeSecondOrderKey.value === key) {
+      const nextIndex = Math.min(Math.max(deletedIndex, 0), secondOrderModels.value.length - 1)
+      activeSecondOrderKey.value = secondOrderModels.value[nextIndex]?.key || 'second_order_1'
+    }
+  }
+
+  function toggleSecondOrderMember(slotKey) {
+    const choices = firstOrderFactorChoices.value.map(item => item.key)
+    if (!choices.includes(slotKey)) return
+    const owner = secondOrderMemberOwnerMap.value[slotKey]
+    if (owner && owner.key !== activeSecondOrderKey.value) return
+    const activeKey = activeSecondOrderKey.value
+    secondOrderModels.value = secondOrderModels.value.map(model => {
+      if (model.key !== activeKey) return model
+      return {
+        ...model,
+        members: model.members.includes(slotKey)
+          ? model.members.filter(key => key !== slotKey)
+          : [...model.members, slotKey],
+      }
+    })
   }
 
   watch([method, methodKey], ([nextMethod]) => {
@@ -300,19 +489,44 @@ export function useAnalysisConfig(method, methodKey, emit) {
     emit('update:slotValues', payload)
   }
 
+  function emitOptionValues() {
+    const payload = { ...optionValues }
+    if (isCfaMethod.value && optionValues.second_order_model) {
+      const factorLabelMap = {}
+      for (const item of firstOrderFactorChoices.value) {
+        factorLabelMap[item.key] = item.label
+      }
+      payload.second_order_models = secondOrderModels.value.map(model => ({
+        name: model.label || '二阶模型1',
+        members: model.members.filter(key => factorLabelMap[key]),
+      }))
+      const firstModel = payload.second_order_models[0] || { name: '二阶模型1', members: [] }
+      payload.second_order_factor = firstModel.name
+      payload.second_order_members = firstModel.members
+    }
+    emit('update:optionValues', payload)
+  }
+
   watch(slotValues, emitSlotValues, { deep: true })
   watch(factorLabels, emitSlotValues, { deep: true })
-  watch(optionValues, () => emit('update:optionValues', { ...optionValues }), { deep: true })
+  watch(firstOrderFactorChoices, syncSecondOrderMembers, { deep: true })
+  watch(optionValues, emitOptionValues, { deep: true })
+  watch([secondOrderModels, activeSecondOrderKey], emitOptionValues, { deep: true })
 
   return {
+    activeSecondOrderFactorName,
+    activeSecondOrderKey,
+    activeSecondOrderMembers,
     activeFactorSlot,
     activeFactorItems,
     activeFactorKey,
     activeFactorTitle,
+    addSecondOrderModel,
     addFactorSlot,
     addVar,
     canExecute,
     deleteFactor,
+    deleteSecondOrderModel,
     displaySlots,
     dragOverSlot,
     dynamicFactorCount,
@@ -322,7 +536,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
     factorMenuKey,
     getFactorShortLabel,
     isCfaMethod,
+    isSummaryTMethod,
     maxDynamicFactors,
+    maxSecondOrderModels,
     onDragLeave,
     onDragOver,
     onDrop,
@@ -334,8 +550,14 @@ export function useAnalysisConfig(method, methodKey, emit) {
     renameFocusToken,
     resetSlots,
     selectFactor,
+    selectSecondOrderModel,
     setOptionValue,
+    setSecondOrderFactorName,
     slotValues,
+    firstOrderFactorChoices,
+    secondOrderModels,
+    secondOrderFactorChoices,
     toggleFactorMenu,
+    toggleSecondOrderMember,
   }
 }

@@ -10,14 +10,97 @@
       <span class="ap-method-name">{{ method.label }}</span>
     </div>
     <div class="ap-method-desc">{{ method.description }}</div>
-    <template v-if="isCfaMethod">
+    <template v-if="isSummaryTMethod">
+      <div class="ap-summary-t-card">
+        <div class="ap-summary-t-tabs">
+          <button
+            type="button"
+            :class="{ 'is-active': optionValues.test_type !== 'independent' }"
+            @click="$emit('option-change', 'test_type', 'one_sample')"
+          >
+            单样本T检验
+          </button>
+          <button
+            type="button"
+            :class="{ 'is-active': optionValues.test_type === 'independent' }"
+            @click="$emit('option-change', 'test_type', 'independent')"
+          >
+            独立样本T检验
+          </button>
+        </div>
+
+        <div v-if="optionValues.test_type === 'independent'" class="ap-summary-t-form ap-summary-t-form--two">
+          <div class="ap-summary-t-head"></div>
+          <div class="ap-summary-t-head">第1组</div>
+          <div class="ap-summary-t-head">第2组</div>
+
+          <label>平均值</label>
+          <input type="number" step="any" :value="optionValues.group1_mean" placeholder="请输入" @input="$emit('option-change', 'group1_mean', $event.target.value)" />
+          <input type="number" step="any" :value="optionValues.group2_mean" placeholder="请输入" @input="$emit('option-change', 'group2_mean', $event.target.value)" />
+
+          <label>标准差</label>
+          <input type="number" step="any" min="0" :value="optionValues.group1_std" placeholder="请输入" @input="$emit('option-change', 'group1_std', $event.target.value)" />
+          <input type="number" step="any" min="0" :value="optionValues.group2_std" placeholder="请输入" @input="$emit('option-change', 'group2_std', $event.target.value)" />
+
+          <label>样本量</label>
+          <input type="number" step="1" min="2" :value="optionValues.group1_n" placeholder="请输入" @input="$emit('option-change', 'group1_n', $event.target.value)" />
+          <input type="number" step="1" min="2" :value="optionValues.group2_n" placeholder="请输入" @input="$emit('option-change', 'group2_n', $event.target.value)" />
+
+          <label>差值对比</label>
+          <input class="ap-summary-t-wide" type="number" step="any" :value="optionValues.diff_test_value" placeholder="默认0" @input="$emit('option-change', 'diff_test_value', $event.target.value)" />
+
+          <label>置信水平</label>
+          <select class="ap-summary-t-wide" :value="optionValues.confidence_level" @change="$emit('option-change', 'confidence_level', $event.target.value)">
+            <option value="90">90%</option>
+            <option value="95">95%</option>
+            <option value="99">99%</option>
+          </select>
+
+          <label>假设检验</label>
+          <select class="ap-summary-t-wide" :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
+            <option value="等于">等于</option>
+            <option value="大于">大于</option>
+            <option value="小于">小于</option>
+          </select>
+        </div>
+
+        <div v-else class="ap-summary-t-form">
+          <label>平均值</label>
+          <input type="number" step="any" :value="optionValues.mean" placeholder="请输入" @input="$emit('option-change', 'mean', $event.target.value)" />
+
+          <label>标准差</label>
+          <input type="number" step="any" min="0" :value="optionValues.std" placeholder="请输入" @input="$emit('option-change', 'std', $event.target.value)" />
+
+          <label>样本量</label>
+          <input type="number" step="1" min="2" :value="optionValues.n" placeholder="请输入" @input="$emit('option-change', 'n', $event.target.value)" />
+
+          <label>对比均值</label>
+          <input type="number" step="any" :value="optionValues.test_value" placeholder="默认0" @input="$emit('option-change', 'test_value', $event.target.value)" />
+
+          <label>置信水平</label>
+          <select :value="optionValues.confidence_level" @change="$emit('option-change', 'confidence_level', $event.target.value)">
+            <option value="90">90%</option>
+            <option value="95">95%</option>
+            <option value="99">99%</option>
+          </select>
+
+          <label>假设检验</label>
+          <select :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
+            <option value="等于">等于</option>
+            <option value="大于">大于</option>
+            <option value="小于">小于</option>
+          </select>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="isCfaMethod">
       <div class="ap-slot-label">
         放入
         <span class="ap-accept-tag accept-numeric">[定量]</span>
         变量
         <span class="ap-slot-constraint">（变量数≥2）</span>
       </div>
-      <div class="ap-cfa-board">
+      <div class="ap-cfa-board" :class="{ 'ap-cfa-board--with-second-order': optionValues.second_order_model }">
         <div class="ap-cfa-sidebar">
           <button type="button" class="ap-factor-btn ap-factor-btn--wide" @click="$emit('add-factor')" :disabled="dynamicFactorCount >= maxDynamicFactors">
             {{ dynamicGroupAddText }}
@@ -84,6 +167,87 @@
           />
         </div>
       </div>
+      <div v-if="optionValues.second_order_model" class="ap-slot-label ap-second-order-label">
+        归属
+        <span class="ap-accept-tag accept-numeric">[一阶因子]</span>
+        因子
+        <span class="ap-slot-constraint">（因子数≥2）</span>
+      </div>
+      <div v-if="optionValues.second_order_model" class="ap-cfa-board ap-second-order-board">
+        <div class="ap-cfa-sidebar ap-second-order-sidebar">
+          <button type="button" class="ap-factor-btn ap-factor-btn--wide" @click="$emit('add-second-order-model')" :disabled="secondOrderModels.length >= maxSecondOrderModels">
+            + 新建模型
+          </button>
+          <div class="ap-cfa-factor-list">
+            <button
+              v-for="model in secondOrderModels"
+              :key="model.key"
+              type="button"
+              class="ap-cfa-factor-item"
+              :class="{ 'is-active': activeSecondOrderKey === model.key }"
+              @click="$emit('select-second-order-model', model.key)"
+            >
+              <span class="ap-cfa-factor-name">{{ model.label }}</span>
+              <span class="ap-cfa-factor-badge">{{ model.members.length }}</span>
+              <span class="ap-cfa-factor-menu-wrap">
+                <button
+                  type="button"
+                  class="ap-cfa-factor-more"
+                  @click.stop="$emit('delete-second-order-model', model.key)"
+                  :disabled="secondOrderModels.length <= 1"
+                >
+                  ×
+                </button>
+              </span>
+            </button>
+          </div>
+          <div class="ap-factor-tip">点击右侧一阶因子，将其加入或移出当前二阶模型。</div>
+        </div>
+        <div class="ap-cfa-main">
+          <div class="ap-cfa-main-head">
+            <label class="ap-cfa-title-edit">
+              <input
+                class="ap-cfa-title-input"
+                :value="activeSecondOrderFactorName"
+                @change="$emit('rename-second-order-factor', $event.target.value)"
+              />
+              <span class="ap-cfa-title-edit-btn" title="重命名">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </label>
+            <span class="ap-cfa-main-sub">{{ activeSecondOrderMembers.length }} 个一阶因子</span>
+          </div>
+          <div class="ap-second-order-drop-zone">
+            <button
+              v-for="factor in secondOrderFactorChoices"
+              :key="factor.key"
+              type="button"
+              class="ap-second-order-factor-row"
+              :class="{ 'is-included': activeSecondOrderMembers.includes(factor.key), 'is-disabled': factor.disabled }"
+              :disabled="factor.disabled"
+              @click="$emit('toggle-second-order-member', factor.key)"
+            >
+              <span class="ap-second-order-check">
+                <svg v-if="activeSecondOrderMembers.includes(factor.key)" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M3.5 8.2 6.7 11.2 12.6 4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="ap-var-row-name">{{ factor.label }}</span>
+              <span v-if="factor.disabled" class="ap-second-order-owner">已归属：{{ factor.ownerLabel }}</span>
+              <span class="ap-var-row-tag accept-numeric">{{ factor.count }} 个题项</span>
+            </button>
+            <div v-if="!firstOrderFactorChoices.length" class="ap-drop-empty">
+              先在上方建立一阶因子
+            </div>
+          </div>
+          <div v-if="activeSecondOrderMembers.length < 2" class="ap-second-order-warning">
+            二阶因子至少需要选择 2 个一阶因子。
+          </div>
+        </div>
+      </div>
     </template>
 
     <div
@@ -130,7 +294,7 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
-      <div v-if="method.options?.length" class="ap-options ap-options--actions">
+      <div v-if="method.options?.length && !isSummaryTMethod" class="ap-options ap-options--actions">
         <div v-for="option in method.options" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
@@ -183,6 +347,9 @@ const configRoot = ref(null)
 const titleInputRef = ref(null)
 
 const props = defineProps({
+  activeSecondOrderFactorName: { type: String, default: '二阶模型1' },
+  activeSecondOrderKey: { type: String, default: 'second_order_1' },
+  activeSecondOrderMembers: { type: Array, default: () => [] },
   activeFactorItems: { type: Array, default: () => [] },
   activeFactorKey: { type: String, default: '' },
   activeFactorSlot: { type: Object, default: null },
@@ -197,38 +364,49 @@ const props = defineProps({
   editingConfig: { type: Boolean, default: false },
   executing: { type: Boolean, default: false },
   factorMenuKey: { type: String, default: null },
+  firstOrderFactorChoices: { type: Array, default: () => [] },
   getFactorShortLabel: { type: Function, required: true },
   getVarType: { type: Function, required: true },
   getVarTypeClass: { type: Function, required: true },
   isCfaMethod: { type: Boolean, default: false },
+  isSummaryTMethod: { type: Boolean, default: false },
   maxDynamicFactors: { type: Number, default: 12 },
+  maxSecondOrderModels: { type: Number, default: 8 },
   method: { type: Object, required: true },
   optionValues: { type: Object, required: true },
   renameFocusToken: { type: Object, default: () => ({ key: '', nonce: 0 }) },
   results: { type: Array, default: () => [] },
+  secondOrderModels: { type: Array, default: () => [] },
+  secondOrderFactorChoices: { type: Array, default: () => [] },
   slotValues: { type: Object, required: true },
   variables: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([
+  'add-second-order-model',
   'add-factor',
   'close-factor-menu',
   'delete-factor',
+  'delete-second-order-model',
   'drag-leave',
   'drag-over',
   'drop-slot',
   'execute',
   'option-change',
   'remove-var',
+  'rename-second-order-factor',
   'rename-factor',
   'rename-factor-inline',
   'reset',
   'select-factor',
+  'select-second-order-model',
   'show-report',
   'toggle-factor-menu',
+  'toggle-second-order-member',
 ])
 
 const equalSlotMethodLabels = new Set([
+  'Kano模型',
   '多选-多选（交叉分析）',
   '多选-单选（对比分析）',
   '单选-多选（对比分析）',

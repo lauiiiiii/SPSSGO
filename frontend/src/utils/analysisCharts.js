@@ -598,6 +598,76 @@ export function calcProbabilityPlotLayout(data) {
   return { W, H, ml, mr, mt, mb, pw, ph, marks, linePath, xTicks, yTicks, xLabel: data?.xLabel || '', yLabel: data?.yLabel || '' }
 }
 
+export function calcCorrespondenceMapLayout(data) {
+  const points = data?.points || []
+  const W = 720
+  const H = 390
+  const ml = 64
+  const mr = 34
+  const mt = 32
+  const mb = 58
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const xs = points.map(point => Number(point.x || 0))
+  const ys = points.map(point => Number(point.y || 0))
+  const xMaxAbs = Math.max(...xs.map(value => Math.abs(value)), 0.5)
+  const yMaxAbs = Math.max(...ys.map(value => Math.abs(value)), 0.5)
+  const xLimit = xMaxAbs * 1.18
+  const yLimit = yMaxAbs * 1.18
+  const xMin = -xLimit
+  const xMax = xLimit
+  const yMin = -yLimit
+  const yMax = yLimit
+  const toX = value => ml + ((value - xMin) / (xMax - xMin || 1)) * pw
+  const toY = value => mt + ph - ((value - yMin) / (yMax - yMin || 1)) * ph
+  const series = data?.series || [...new Set(points.map(point => point.series || '类别'))]
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+  const shapes = ['circle', 'diamond', 'triangle', 'square']
+  const marks = points.map((point) => {
+    const seriesIndex = Math.max(series.indexOf(point.series), 0)
+    return {
+      ...point,
+      rawX: Number(point.x || 0),
+      rawY: Number(point.y || 0),
+      x: toX(Number(point.x || 0)),
+      y: toY(Number(point.y || 0)),
+      color: colors[seriesIndex % colors.length],
+      shape: shapes[seriesIndex % shapes.length],
+    }
+  })
+  const xTicks = Array.from({ length: 7 }, (_, index) => {
+    const value = xMin + (index / 6) * (xMax - xMin)
+    return { x: toX(value), label: Number(value.toFixed(2)) }
+  })
+  const yTicks = Array.from({ length: 7 }, (_, index) => {
+    const value = yMin + (index / 6) * (yMax - yMin)
+    return { y: toY(value), label: Number(value.toFixed(2)) }
+  })
+  const legend = series.map((label, index) => ({
+    label,
+    color: colors[index % colors.length],
+    shape: shapes[index % shapes.length],
+  }))
+  return {
+    W,
+    H,
+    ml,
+    mr,
+    mt,
+    mb,
+    pw,
+    ph,
+    marks,
+    xTicks,
+    yTicks,
+    zeroX: toX(0),
+    zeroY: toY(0),
+    xLabel: data?.xLabel || '维度1',
+    yLabel: data?.yLabel || '维度2',
+    legend,
+  }
+}
+
 export function svgToCanvas(svgEl) {
   return new Promise((resolve) => {
     const svgData = new XMLSerializer().serializeToString(svgEl)

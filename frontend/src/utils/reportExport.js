@@ -211,7 +211,10 @@ function buildRtfTableRow(cells, options) {
     row += buildRtfCellBorder('r', 0)
     row += `\\cellx${(index + 1) * cellWidth}`
   }
-  const normalizedCells = Array.from({ length: columnCount }, (_, index) => String(cells[index] ?? ''))
+  const normalizedCells = Array.from(
+    { length: columnCount },
+    (_, index) => String(headerCellText(cells[index]) ?? ''),
+  )
   normalizedCells.forEach(cell => {
     const boldToken = bold ? '\\b' : ''
     const boldReset = bold ? '\\b0' : ''
@@ -278,9 +281,11 @@ function appendTableSection(builder, section) {
   const exportRows = section.exportRows || section.rows || []
   builder.rtf += buildRtfTable({ ...section, rows: exportRows })
   if (section.headers?.length) {
-    builder.plain += section.headers.join('\t') + '\n'
+    builder.plain += section.headers.map(headerCellText).join('\t') + '\n'
     exportRows.forEach(row => {
-      const normalizedRow = section.headers.map((_, index) => String(row?.[index] ?? ''))
+      const normalizedRow = section.headers.map((_, index) => (
+        String(headerCellText(row?.[index]) ?? '')
+      ))
       builder.plain += normalizedRow.join('\t') + '\n'
     })
   }

@@ -20,7 +20,11 @@
         <option value="percent">百分比</option>
       </select>
     </div>
-    <div class="ap-chart-wrap" :ref="el => setChartRef(sectionIndex, chartIndex, el)">
+    <div
+      class="ap-chart-wrap"
+      :ref="el => setChartRef(sectionIndex, chartIndex, el)"
+      :style="chartWrapStyle"
+    >
       <template v-if="chart.chartType === 'histogram'">
         <template v-for="histogramData in [calcHist(chart.data)]" :key="0">
           <svg class="ap-chart-svg" :viewBox="`0 0 ${histogramData.W} ${histogramData.H}`" :width="histogramData.W" :height="histogramData.H"
@@ -136,6 +140,62 @@
             <text :x="plotData.ml+plotData.pw/2" :y="plotData.H-10" text-anchor="middle" font-size="11" fill="#777">{{ plotData.xLabel }}</text>
             <text :x="13" :y="plotData.mt+plotData.ph/2" text-anchor="middle" font-size="11" fill="#aaa"
               :transform="`rotate(-90,13,${plotData.mt+plotData.ph/2})`">{{ plotData.yLabel }}</text>
+          </svg>
+        </template>
+      </template>
+      <template v-else-if="isCorrespondenceMap">
+        <template v-for="mapData in [calcCorrespondenceMap(chart.data)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--correspondence" :viewBox="`0 0 ${mapData.W} ${mapData.H}`" :width="mapData.W" :height="mapData.H">
+            <rect :x="mapData.ml" :y="mapData.mt" :width="mapData.pw" :height="mapData.ph" fill="white"/>
+            <line v-for="(tick, tickIndex) in mapData.xTicks" :key="'cxg'+tickIndex"
+              :x1="tick.x" :y1="mapData.mt" :x2="tick.x" :y2="mapData.mt+mapData.ph" stroke="#f2f4f7" stroke-width="1"/>
+            <line v-for="(tick, tickIndex) in mapData.yTicks" :key="'cyg'+tickIndex"
+              :x1="mapData.ml" :y1="tick.y" :x2="mapData.ml+mapData.pw" :y2="tick.y" stroke="#f2f4f7" stroke-width="1"/>
+            <line :x1="mapData.ml" :y1="mapData.zeroY" :x2="mapData.ml+mapData.pw" :y2="mapData.zeroY" stroke="#111827" stroke-width="1"/>
+            <line :x1="mapData.zeroX" :y1="mapData.mt" :x2="mapData.zeroX" :y2="mapData.mt+mapData.ph" stroke="#111827" stroke-width="1"/>
+            <g v-for="(mark, markIndex) in mapData.marks" :key="'cam'+markIndex">
+              <circle
+                v-if="mark.shape === 'circle'"
+                :cx="mark.x"
+                :cy="mark.y"
+                r="4.5"
+                :fill="mark.color"
+              />
+              <rect
+                v-else-if="mark.shape === 'square'"
+                :x="mark.x - 4"
+                :y="mark.y - 4"
+                width="8"
+                height="8"
+                :fill="mark.color"
+              />
+              <path
+                v-else-if="mark.shape === 'triangle'"
+                :d="`M ${mark.x} ${mark.y - 5} L ${mark.x - 5} ${mark.y + 4} L ${mark.x + 5} ${mark.y + 4} Z`"
+                :fill="mark.color"
+              />
+              <rect
+                v-else
+                :x="mark.x - 4"
+                :y="mark.y - 4"
+                width="8"
+                height="8"
+                :fill="mark.color"
+                :transform="`rotate(45 ${mark.x} ${mark.y})`"
+              />
+              <text :x="mark.x + 7" :y="mark.y - 6" font-size="11" :fill="mark.color">{{ mark.label }}</text>
+            </g>
+            <text v-for="(tick, tickIndex) in mapData.xTicks" :key="'cax'+tickIndex"
+              :x="tick.x" :y="mapData.mt+mapData.ph+18" text-anchor="middle" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text v-for="(tick, tickIndex) in mapData.yTicks" :key="'cay'+tickIndex"
+              :x="mapData.ml-8" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text :x="mapData.ml+mapData.pw/2" :y="mapData.H-14" text-anchor="middle" font-size="12" fill="#555">{{ mapData.xLabel }}</text>
+            <text :x="18" :y="mapData.mt+mapData.ph/2" text-anchor="middle" font-size="12" fill="#555"
+              :transform="`rotate(-90,18,${mapData.mt+mapData.ph/2})`">{{ mapData.yLabel }}</text>
+            <g v-for="(item, itemIndex) in mapData.legend" :key="'cal'+itemIndex" :transform="`translate(${mapData.ml + itemIndex * 132}, ${mapData.H - 34})`">
+              <circle cx="0" cy="0" r="4.5" :fill="item.color"/>
+              <text x="12" y="4" font-size="12" fill="#555">{{ item.label }}</text>
+            </g>
           </svg>
         </template>
       </template>
@@ -270,6 +330,131 @@
                 <text x="15" y="9" font-size="11" fill="#666">{{ label }}</text>
               </g>
             </g>
+          </svg>
+        </template>
+      </template>
+      <template v-else-if="isKanoBetterWorseChart">
+        <template v-for="plotData in [calcKanoBetterWorse(chart.data)]" :key="0">
+          <svg
+            class="ap-chart-svg ap-chart-svg--kano-bw"
+            :viewBox="`0 0 ${plotData.W} ${plotData.H}`"
+            :width="plotData.W"
+            :height="plotData.H"
+            @mouseleave="$emit('hide-tip')"
+          >
+            <defs>
+              <linearGradient id="kanoBwBg" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="#f8fbff"/>
+                <stop offset="100%" stop-color="#ffffff"/>
+              </linearGradient>
+              <filter id="kanoBwShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity=".16"/>
+              </filter>
+            </defs>
+            <rect :x="plotData.ml" :y="plotData.mt" :width="plotData.pw" :height="plotData.ph" fill="url(#kanoBwBg)" stroke="#cbd5e1" stroke-width="1.2"/>
+            <rect :x="plotData.ml" :y="plotData.mt" :width="plotData.meanX - plotData.ml" :height="plotData.meanY - plotData.mt" fill="#eaf5ff" opacity=".42"/>
+            <rect :x="plotData.meanX" :y="plotData.mt" :width="plotData.ml + plotData.pw - plotData.meanX" :height="plotData.meanY - plotData.mt" fill="#ecfdf5" opacity=".38"/>
+            <rect :x="plotData.ml" :y="plotData.meanY" :width="plotData.meanX - plotData.ml" :height="plotData.mt + plotData.ph - plotData.meanY" fill="#f8fafc" opacity=".7"/>
+            <rect :x="plotData.meanX" :y="plotData.meanY" :width="plotData.ml + plotData.pw - plotData.meanX" :height="plotData.mt + plotData.ph - plotData.meanY" fill="#fff7ed" opacity=".38"/>
+            <line
+              v-for="(tick, tickIndex) in plotData.xTicks"
+              :key="'kxg'+tickIndex"
+              :x1="tick.x"
+              :y1="plotData.mt"
+              :x2="tick.x"
+              :y2="plotData.mt + plotData.ph"
+              stroke="#eef1f5"
+              stroke-width="1"
+            />
+            <line
+              v-for="(tick, tickIndex) in plotData.yTicks"
+              :key="'kyg'+tickIndex"
+              :x1="plotData.ml"
+              :y1="tick.y"
+              :x2="plotData.ml + plotData.pw"
+              :y2="tick.y"
+              stroke="#eef1f5"
+              stroke-width="1"
+            />
+            <line :x1="plotData.meanX" :y1="plotData.mt" :x2="plotData.meanX" :y2="plotData.mt + plotData.ph" stroke="#334155" stroke-width="1.2" stroke-dasharray="4 4"/>
+            <line :x1="plotData.ml" :y1="plotData.meanY" :x2="plotData.ml + plotData.pw" :y2="plotData.meanY" stroke="#334155" stroke-width="1.2" stroke-dasharray="4 4"/>
+            <text :x="plotData.meanX + 6" :y="plotData.mt + 16" font-size="11" font-style="italic" fill="#9a5a00">{{ plotData.xMeanLabel }}</text>
+            <text :x="plotData.ml + plotData.pw - 8" :y="plotData.meanY - 7" text-anchor="end" font-size="11" font-style="italic" fill="#9a5a00">{{ plotData.yMeanLabel }}</text>
+            <text
+              v-for="quadrant in plotData.quadrants"
+              :key="quadrant.label"
+              :x="quadrant.x"
+              :y="quadrant.y"
+              text-anchor="middle"
+              font-size="13"
+              font-weight="600"
+              :fill="quadrant.color"
+              opacity=".42"
+            >{{ quadrant.label }}</text>
+            <circle
+              v-for="(point, pointIndex) in plotData.points"
+              :key="'kpt'+pointIndex"
+              class="ap-kano-bw-point"
+              :cx="point.x"
+              :cy="point.y"
+              r="4.8"
+              :fill="point.color"
+              stroke="#fff"
+              stroke-width="1.4"
+              filter="url(#kanoBwShadow)"
+              @mouseenter="$emit('show-metric-tip', $event, chart, point)"
+              @mousemove="$emit('move-tip', $event)"
+              @mouseleave="$emit('hide-tip')"
+            />
+            <rect
+              v-for="(point, pointIndex) in plotData.points"
+              :key="'kpb'+pointIndex"
+              :x="point.boxX"
+              :y="point.boxY"
+              :width="point.boxW"
+              height="16"
+              rx="3"
+              fill="white"
+              opacity=".82"
+            />
+            <text
+              v-for="(point, pointIndex) in plotData.points"
+              :key="'kpl'+pointIndex"
+              :x="point.labelX"
+              :y="point.labelY"
+              :text-anchor="point.labelAnchor"
+              font-size="11"
+              fill="#003a75"
+            >{{ point.label }}</text>
+            <line :x1="plotData.ml" :y1="plotData.mt + plotData.ph" :x2="plotData.ml + plotData.pw" :y2="plotData.mt + plotData.ph" stroke="#64748b" stroke-width="1.2"/>
+            <line :x1="plotData.ml" :y1="plotData.mt" :x2="plotData.ml" :y2="plotData.mt + plotData.ph" stroke="#64748b" stroke-width="1.2"/>
+            <text
+              v-for="(tick, tickIndex) in plotData.xTicks"
+              :key="'kxt'+tickIndex"
+              :x="tick.x"
+              :y="plotData.mt + plotData.ph + 20"
+              text-anchor="middle"
+              font-size="11"
+              fill="#345"
+            >{{ tick.label }}</text>
+            <text
+              v-for="(tick, tickIndex) in plotData.yTicks"
+              :key="'kyt'+tickIndex"
+              :x="plotData.ml - 8"
+              :y="tick.y + 4"
+              text-anchor="end"
+              font-size="11"
+              fill="#345"
+            >{{ tick.label }}</text>
+            <text :x="plotData.ml + plotData.pw / 2" :y="plotData.H - 20" text-anchor="middle" font-size="12" fill="#003a75">{{ plotData.xLabel }}</text>
+            <text
+              :x="22"
+              :y="plotData.mt + plotData.ph / 2"
+              text-anchor="middle"
+              font-size="12"
+              fill="#003a75"
+              :transform="`rotate(-90,22,${plotData.mt + plotData.ph / 2})`"
+            >{{ plotData.yLabel }}</text>
           </svg>
         </template>
       </template>
@@ -438,6 +623,16 @@
       </button>
     </div>
     <div class="ap-chart-actions">
+      <label v-if="isKanoBetterWorseChart" class="ap-chart-size-control">
+        <span>缩放：</span>
+        <input
+          v-model.number="kanoChartZoom"
+          type="range"
+          min="0.75"
+          max="1.6"
+          step="0.05"
+        />
+      </label>
       <label v-if="isHeatmapChart" class="ap-chart-size-control">
         <span>尺寸：</span>
         <input
@@ -509,6 +704,18 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && isKanoBetterWorseChart" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>功能/服务</th><th>Better</th><th>Worse绝对值</th></tr></thead>
+        <tbody>
+          <tr v-for="(label, rowIndex) in chart.data.labels" :key="rowIndex">
+            <td>{{ label }}</td>
+            <td>{{ Number(chart.data.better?.[rowIndex] || 0).toFixed(3) }}</td>
+            <td>{{ Number(chart.data.worseAbs?.[rowIndex] || 0).toFixed(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div v-if="dataVisible && isCrosstabChart" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
         <thead><tr><th>名称</th><th v-for="label in chart.data.groupLabels" :key="label">{{ label }}</th><th>合计</th></tr></thead>
@@ -555,6 +762,19 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && isCorrespondenceMap" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>类别</th><th>字段</th><th>维度1</th><th>维度2</th></tr></thead>
+        <tbody>
+          <tr v-for="(point, pointIndex) in chart.data.points" :key="pointIndex">
+            <td>{{ point.label }}</td>
+            <td>{{ point.series }}</td>
+            <td>{{ Number(point.x || 0).toFixed(3) }}</td>
+            <td>{{ Number(point.y || 0).toFixed(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -565,6 +785,7 @@ const props = defineProps({
   calcBox: { type: Function, required: true },
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
+  calcCorrespondenceMap: { type: Function, required: true },
   calcCrosstab: { type: Function, required: true },
   calcFactorHeatmap: { type: Function, required: true },
   calcHist: { type: Function, required: true },
@@ -580,9 +801,10 @@ const props = defineProps({
 })
 
 const categoryChartTypes = new Set(['category_distribution', 'category', 'categorical', 'categorical_distribution', 'frequency'])
-const categoryMode = ref('bar')
+const categoryMode = ref(props.chart.data?.defaultMode || 'bar')
 const crosstabMode = ref(props.chart.data?.defaultMode || 'stackedColumn')
 const heatmapSize = ref(1)
+const kanoChartZoom = ref(1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(true)
@@ -594,8 +816,10 @@ const categoryModeOptions = [
   { value: 'donut', label: '环形图' },
 ]
 const isCategoryChart = computed(() => categoryChartTypes.has(props.chart.chartType))
+const isCorrespondenceMap = computed(() => props.chart.chartType === 'correspondence_map')
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
 const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
+const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
@@ -652,6 +876,13 @@ const activeHeatmapData = computed(() => {
     defaultDisplayMode: data.defaultDisplayMode,
   }
 })
+const chartWrapStyle = computed(() => {
+  if (!isKanoBetterWorseChart.value) return {}
+  return {
+    width: `${Math.round(760 * kanoChartZoom.value)}px`,
+    height: `${Math.round(420 * kanoChartZoom.value)}px`,
+  }
+})
 const metricComparisonTitle = computed(() => {
   const option = metricModeOptions.find(item => item.value === metricMode.value)
   const data = metricChartData.value
@@ -671,6 +902,7 @@ const crosstabTitle = computed(() => {
 const displayTitle = computed(() => {
   if (isCategoryChart.value) return categoryTitle.value
   if (isCrosstabChart.value) return crosstabTitle.value
+  if (isKanoBetterWorseChart.value) return props.chart.title || 'Better-Worse系数图'
   if (isMetricComparisonChart.value) return metricComparisonTitle.value
   return props.chart.title
 })
@@ -693,6 +925,159 @@ function metricValueLabel(value) {
   if (!Number.isFinite(num)) return ''
   if (Math.abs(num) >= 100) return String(Math.round(num))
   return Number(num.toFixed(2)).toString()
+}
+
+function chartMean(values) {
+  const nums = values.map(value => Number(value)).filter(Number.isFinite)
+  if (!nums.length) return 0
+  return nums.reduce((sum, value) => sum + value, 0) / nums.length
+}
+
+function compactNumber(value) {
+  const num = Number(value || 0)
+  if (Math.abs(num) >= 10) return num.toFixed(2).replace(/\.?0+$/, '')
+  return num.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function chartTicks(maxValue, mapValue) {
+  const steps = 5
+  return Array.from({ length: steps + 1 }, (_, index) => {
+    const value = (maxValue / steps) * index
+    return {
+      label: compactNumber(value),
+      x: mapValue(value),
+      y: mapValue(value),
+    }
+  })
+}
+
+function labelBox(point) {
+  const width = Math.max(42, String(point.label || '').length * 6.3 + 8)
+  const x = point.labelAnchor === 'end' ? point.labelX - width + 3 : point.labelX - 3
+  return {
+    ...point,
+    boxX: x,
+    boxY: point.labelY - 12,
+    boxW: width,
+  }
+}
+
+function spreadKanoLabels(points, mt, ph) {
+  const minY = mt + 14
+  const maxY = mt + ph - 8
+  const groups = [
+    points.filter(point => point.labelAnchor !== 'end'),
+    points.filter(point => point.labelAnchor === 'end'),
+  ]
+  groups.forEach((group) => {
+    group.sort((a, b) => a.labelY - b.labelY)
+    group.forEach((point, index) => {
+      if (index === 0) {
+        point.labelY = Math.max(point.labelY, minY)
+      } else {
+        point.labelY = Math.max(point.labelY, group[index - 1].labelY + 15)
+      }
+    })
+    for (let index = group.length - 1; index >= 0; index -= 1) {
+      const next = group[index + 1]
+      pointBound(group[index], next, maxY)
+    }
+  })
+  return points.map(labelBox)
+}
+
+function pointBound(point, next, maxY) {
+  point.labelY = Math.min(point.labelY, next ? next.labelY - 15 : maxY)
+}
+
+function calcKanoBetterWorse(data = {}) {
+  const labels = data.labels || []
+  const better = (data.better || []).map(value => Number(value || 0))
+  const worseAbs = (data.worseAbs || data.worse || []).map(value => Math.abs(Number(value || 0)))
+  const W = 760
+  const H = 420
+  const ml = 76
+  const mt = 34
+  const mr = 54
+  const mb = 62
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const maxX = Math.max(1, ...worseAbs)
+  const maxY = Math.max(1, ...better)
+  const xMax = maxX * 1.12
+  const yMax = maxY * 1.12
+  const xMean = Number.isFinite(Number(data.xMean)) ? Number(data.xMean) : chartMean(worseAbs)
+  const yMean = Number.isFinite(Number(data.yMean)) ? Number(data.yMean) : chartMean(better)
+  const toX = value => ml + (Number(value || 0) / xMax) * pw
+  const toY = value => mt + ph - (Number(value || 0) / yMax) * ph
+  const meanX = toX(xMean)
+  const meanY = toY(yMean)
+  const pointPalette = ['#2389e8', '#16a34a', '#f97316', '#7c3aed', '#dc2626', '#0891b2']
+  const points = labels.map((label, index) => {
+    const xValue = worseAbs[index] || 0
+    const yValue = better[index] || 0
+    const x = toX(xValue)
+    const y = toY(yValue)
+    const nearRight = x > ml + pw - 110
+    const nearLeft = x < ml + 24
+    const nearTop = y < mt + 20
+    return {
+      label,
+      metric: 'Better',
+      value: yValue,
+      better: yValue,
+      worseAbs: xValue,
+      x,
+      y,
+      color: pointPalette[index % pointPalette.length],
+      labelX: nearRight ? x - 8 : x + (nearLeft ? 10 : 8),
+      labelY: nearTop ? y + 16 : y - 8,
+      labelAnchor: nearRight ? 'end' : 'start',
+    }
+  })
+  return {
+    W,
+    H,
+    ml,
+    mt,
+    pw,
+    ph,
+    meanX,
+    meanY,
+    xLabel: data.xLabel || 'Worse绝对值',
+    yLabel: data.yLabel || 'Better',
+    xMeanLabel: compactNumber(xMean),
+    yMeanLabel: compactNumber(yMean),
+    xTicks: chartTicks(xMax, toX),
+    yTicks: chartTicks(yMax, toY),
+    points: spreadKanoLabels(points, mt, ph),
+    quadrants: [
+      {
+        label: '魅力属性',
+        x: ml + (meanX - ml) / 2,
+        y: mt + (meanY - mt) / 2,
+        color: '#2563eb',
+      },
+      {
+        label: '期望属性',
+        x: meanX + (ml + pw - meanX) / 2,
+        y: mt + (meanY - mt) / 2,
+        color: '#059669',
+      },
+      {
+        label: '无差异属性',
+        x: ml + (meanX - ml) / 2,
+        y: meanY + (mt + ph - meanY) / 2,
+        color: '#64748b',
+      },
+      {
+        label: '必备属性',
+        x: meanX + (ml + pw - meanX) / 2,
+        y: meanY + (mt + ph - meanY) / 2,
+        color: '#ea580c',
+      },
+    ],
+  }
 }
 
 function crosstabLabels(crossData) {

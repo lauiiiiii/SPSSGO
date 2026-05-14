@@ -8,6 +8,7 @@
       <nav class="help-topnav" aria-label="顶部导航">
         <a href="/about">产品介绍</a>
         <a href="/help" class="active">帮助中心</a>
+        <a href="/changelog">更新日志</a>
       </nav>
 
       <div class="help-topbar-actions">

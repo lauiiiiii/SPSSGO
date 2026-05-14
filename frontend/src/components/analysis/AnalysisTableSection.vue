@@ -104,7 +104,7 @@
           <span class="ap-sec-copy-txt">复制</span>
         </button>
       </div>
-      <table class="tlt" :class="tableDensityClass">
+      <table class="tlt" :class="[tableDensityClass, section.tableClass]">
         <thead>
           <tr
             v-for="(headerRow, headerRowIndex) in tableHeaderRows"

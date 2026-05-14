@@ -17,6 +17,7 @@
         :calc-box="calcBox"
         :calc-category-bar="calcCategoryBar"
         :calc-category-pie="calcCategoryPie"
+        :calc-correspondence-map="calcCorrespondenceMap"
         :calc-crosstab="calcCrosstab"
         :calc-factor-heatmap="calcFactorHeatmap"
         :calc-hist="calcHist"
@@ -55,6 +56,9 @@
       <!-- 配置区：有方法且（无结果、执行中、或用户点击返回配置） -->
       <AnalysisConfigPanel
         v-else-if="method"
+        :active-second-order-factor-name="activeSecondOrderFactorName"
+        :active-second-order-key="activeSecondOrderKey"
+        :active-second-order-members="activeSecondOrderMembers"
         :active-factor-items="activeFactorItems"
         :active-factor-key="activeFactorKey"
         :active-factor-slot="activeFactorSlot"
@@ -69,32 +73,42 @@
         :editing-config="editingConfig"
         :executing="executing"
         :factor-menu-key="factorMenuKey"
+        :first-order-factor-choices="firstOrderFactorChoices"
         :get-factor-short-label="getFactorShortLabel"
         :get-var-type="getVarType"
         :get-var-type-class="getVarTypeClass"
         :is-cfa-method="isCfaMethod"
+        :is-summary-t-method="isSummaryTMethod"
         :max-dynamic-factors="maxDynamicFactors"
+        :max-second-order-models="maxSecondOrderModels"
         :method="method"
         :option-values="optionValues"
         :rename-focus-token="renameFocusToken"
         :results="results"
+        :second-order-models="secondOrderModels"
+        :second-order-factor-choices="secondOrderFactorChoices"
         :slot-values="slotValues"
         :variables="variables"
         @show-report="showReport"
+        @add-second-order-model="addSecondOrderModel"
         @add-factor="addFactorSlot"
         @select-factor="selectFactor"
         @toggle-factor-menu="toggleFactorMenu"
         @rename-factor="renameFactor"
         @rename-factor-inline="renameFactorInline"
         @delete-factor="deleteFactor"
+        @delete-second-order-model="deleteSecondOrderModel"
         @close-factor-menu="factorMenuKey = null"
         @drag-over="onDragOver"
         @drag-leave="onDragLeave"
         @drop-slot="onDrop"
         @remove-var="removeVar"
         @option-change="setOptionValue"
+        @rename-second-order-factor="setSecondOrderFactorName"
         @reset="handleReset"
+        @select-second-order-model="selectSecondOrderModel"
         @execute="$emit('execute')"
+        @toggle-second-order-member="toggleSecondOrderMember"
       />
 
       <!-- Executing indicator -->
@@ -152,14 +166,19 @@ const props = defineProps({
 const emit = defineEmits(['upload', 'execute', 'update:slotValues', 'update:optionValues', 'report-view', 'reset-variable-selection'])
 
 const {
+  activeSecondOrderFactorName,
+  activeSecondOrderKey,
+  activeSecondOrderMembers,
   activeFactorItems,
   activeFactorKey,
   activeFactorSlot,
   activeFactorTitle,
+  addSecondOrderModel,
   addFactorSlot,
   addVar,
   canExecute,
   deleteFactor,
+  deleteSecondOrderModel,
   displaySlots,
   dragOverSlot,
   dynamicFactorCount,
@@ -167,9 +186,12 @@ const {
   dynamicGroupItemName,
   dynamicGroupTip,
   factorMenuKey,
+  firstOrderFactorChoices,
   getFactorShortLabel,
   isCfaMethod,
+  isSummaryTMethod,
   maxDynamicFactors,
+  maxSecondOrderModels,
   onDragLeave,
   onDragOver,
   onDrop,
@@ -180,14 +202,20 @@ const {
   renameFocusToken,
   resetSlots,
   selectFactor,
+  selectSecondOrderModel,
   setOptionValue,
+  setSecondOrderFactorName,
+  secondOrderModels,
+  secondOrderFactorChoices,
   slotValues,
   toggleFactorMenu,
+  toggleSecondOrderMember,
 } = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
 const {
   calcBox,
   calcCategoryBar,
   calcCategoryPie,
+  calcCorrespondenceMap,
   calcCrosstab,
   calcFactorHeatmap,
   calcHist,

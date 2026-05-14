@@ -3,6 +3,7 @@ import {
   calcBoxplotLayout,
   calcCategoryBarLayout,
   calcCategoryPieLayout,
+  calcCorrespondenceMapLayout,
   calcCrosstabLayout,
   calcFactorHeatmapLayout,
   calcHistogramLayout,
@@ -159,6 +160,10 @@ export function useAnalysisCharts() {
     return calcProbabilityPlotLayout(data)
   }
 
+  function calcCorrespondenceMap(data) {
+    return calcCorrespondenceMapLayout(data)
+  }
+
   function showCrosstabTip(event, chart, dataPoint) {
     tip.lines = [
       { text: chart.title || '交叉图', dot: null },
@@ -180,6 +185,7 @@ export function useAnalysisCharts() {
     calcBox,
     calcCategoryBar,
     calcCategoryPie,
+    calcCorrespondenceMap,
     calcCrosstab,
     calcFactorHeatmap,
     calcHist,

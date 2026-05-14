@@ -10,6 +10,7 @@
         :calc-box="calcBox"
         :calc-category-bar="calcCategoryBar"
         :calc-category-pie="calcCategoryPie"
+        :calc-correspondence-map="calcCorrespondenceMap"
         :calc-crosstab="calcCrosstab"
         :calc-factor-heatmap="calcFactorHeatmap"
         :calc-hist="calcHist"
@@ -48,6 +49,7 @@ defineProps({
   calcBox: { type: Function, required: true },
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
+  calcCorrespondenceMap: { type: Function, required: true },
   calcCrosstab: { type: Function, required: true },
   calcFactorHeatmap: { type: Function, required: true },
   calcHist: { type: Function, required: true },

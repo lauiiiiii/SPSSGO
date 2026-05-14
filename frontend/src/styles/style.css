@@ -1041,6 +1041,9 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   overflow: visible;
   margin-bottom: 20px;
 }
+.ap-cfa-board--with-second-order {
+  min-height: clamp(380px, 42vh, 460px);
+}
 .ap-cfa-sidebar {
   width: 148px;
   flex-shrink: 0;
@@ -1252,6 +1255,98 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   background: #eff6ff;
   box-shadow: 0 0 0 3px rgba(59,130,246,.08);
 }
+.ap-second-order-label {
+  margin-top: 2px;
+}
+.ap-second-order-board {
+  min-height: clamp(280px, 30vh, 320px);
+  margin-top: 0;
+}
+.ap-second-order-sidebar {
+  padding-top: 12px;
+  width: 176px;
+}
+.ap-second-order-model {
+  margin: 0 8px;
+  width: calc(100% - 16px);
+}
+.ap-second-order-drop-zone {
+  flex: 1;
+  min-height: clamp(198px, 22vh, 238px);
+  border-radius: 12px;
+  border: 1.5px dashed #d1d5db;
+  background: #fcfcfd;
+  padding: 10px;
+  overflow-y: auto;
+}
+.ap-second-order-factor-row {
+  width: 100%;
+  min-height: 38px;
+  margin: 0 0 2px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background-color .12s ease, border-color .12s ease;
+}
+.ap-second-order-factor-row:hover {
+  background: #f0f1f3;
+}
+.ap-second-order-factor-row.is-included {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.ap-second-order-factor-row.is-disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+.ap-second-order-factor-row.is-disabled:hover {
+  background: #f8fafc;
+}
+.ap-second-order-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid #cbd5e1;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #fff;
+}
+.ap-second-order-factor-row.is-included .ap-second-order-check {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+.ap-second-order-factor-row.is-disabled .ap-second-order-check {
+  border-color: #d8dee8;
+  background: #eef2f7;
+  color: #94a3b8;
+}
+.ap-second-order-owner {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ap-second-order-factor-row .ap-second-order-owner + .ap-var-row-tag {
+  margin-left: 12px;
+}
+.ap-second-order-warning {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #dc2626;
+}
 .ap-drop-empty {
   color: #9ca3af;
   font-size: 14px;
@@ -1352,6 +1447,12 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
     min-height: 220px;
     margin: 0;
   }
+  .ap-second-order-board {
+    min-height: auto;
+  }
+  .ap-second-order-drop-zone {
+    min-height: 160px;
+  }
 }
 .ap-slot { margin-bottom: 20px; display: flex; flex-direction: column; min-height: 0; }
 .ap-slot-grow { flex: 1; margin-bottom: 0; min-height: 0; }
@@ -1382,6 +1483,80 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .ap-drop-zone.has-items {
   border-style: dashed; border-color: #d1d5db; border-radius: 4px;
   padding: 4px 6px; background: #fff;
+}
+.ap-summary-t-card {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  background: #fff;
+}
+.ap-summary-t-tabs {
+  display: inline-grid;
+  grid-template-columns: 190px 190px;
+  margin-bottom: 28px;
+  border: 1px solid #eef2f7;
+  background: #fff;
+}
+.ap-summary-t-tabs button {
+  height: 44px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ap-summary-t-tabs button.is-active {
+  background: #1e88e5;
+  color: #fff;
+}
+.ap-summary-t-form {
+  display: grid;
+  grid-template-columns: 112px minmax(180px, 236px);
+  align-items: center;
+  column-gap: 26px;
+  row-gap: 12px;
+  max-width: 520px;
+}
+.ap-summary-t-form--two {
+  grid-template-columns: 112px 112px 112px;
+  column-gap: 10px;
+  max-width: 520px;
+}
+.ap-summary-t-form label,
+.ap-summary-t-head {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  color: #44546a;
+  font-size: 14px;
+}
+.ap-summary-t-head {
+  justify-content: center;
+  color: #64748b;
+}
+.ap-summary-t-form input,
+.ap-summary-t-form select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 4px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.ap-summary-t-form input:focus,
+.ap-summary-t-form select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, .10);
+}
+.ap-summary-t-wide {
+  grid-column: span 2;
 }
 .ap-drop-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -1566,6 +1741,45 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .tlt tbody td.tlt-cell--danger { color: #ff6d56; font-weight: 600; }
 .tlt tbody td.tlt-cell--success { color: #00bf6f; font-weight: 600; }
 .tlt tbody td.tlt-cell--accent { color: #1677ff; }
+.tlt--kano-matrix {
+  table-layout: fixed;
+}
+.tlt--kano-matrix th,
+.tlt--kano-matrix td {
+  white-space: pre-line;
+  vertical-align: middle;
+}
+.tlt--kano-matrix tbody tr:hover {
+  background: transparent;
+}
+.tlt--kano-matrix .kano-axis-cell,
+.tlt--kano-matrix .kano-answer-cell {
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 500;
+}
+.tlt--kano-matrix .kano-rule-cell {
+  color: #0f172a;
+  font-weight: 600;
+}
+.tlt--kano-matrix .kano-rule-a {
+  background: #e0f2fe;
+}
+.tlt--kano-matrix .kano-rule-o {
+  background: #dcfce7;
+}
+.tlt--kano-matrix .kano-rule-m {
+  background: #ffedd5;
+}
+.tlt--kano-matrix .kano-rule-i {
+  background: #dbeafe;
+}
+.tlt--kano-matrix .kano-rule-r {
+  background: #f8fafc;
+}
+.tlt--kano-matrix .kano-rule-q {
+  background: #fee2e2;
+}
 
 .ap-result-desc {
   font-size: 14px; line-height: 1.85; color: #555;
@@ -1951,6 +2165,17 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   width: 100%;
   height: 100%;
 }
+.ap-chart-item:has(.ap-chart-svg--kano-bw) .ap-chart-wrap {
+  width: 760px;
+  height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ap-chart-svg--kano-bw {
+  width: 100%;
+  height: 100%;
+}
 .ap-chart-item:has(.ap-chart-svg--crosstab) .ap-chart-wrap {
   width: 660px;
   height: 330px;
@@ -1980,6 +2205,10 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   transition: opacity .15s, filter .15s;
 }
 .ap-metric-mark {
+  cursor: pointer;
+  transition: opacity .15s, filter .15s;
+}
+.ap-kano-bw-point {
   cursor: pointer;
   transition: opacity .15s, filter .15s;
 }

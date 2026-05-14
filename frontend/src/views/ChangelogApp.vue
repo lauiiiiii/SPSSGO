@@ -1,0 +1,1232 @@
+<template>
+  <div class="changelog-page">
+    <header class="changelog-topbar">
+      <a href="/" class="changelog-brand">
+        <img src="/logo.png" alt="spssgo" />
+      </a>
+      <nav class="changelog-topnav" aria-label="顶部导航">
+        <a href="/about">产品介绍</a>
+        <a href="/help">帮助中心</a>
+        <a href="/changelog" class="active">更新日志</a>
+      </nav>
+      <div class="changelog-topbar-actions">
+        <a class="changelog-login-btn" href="/login?redirect=%2Fworkspace">进入工作台</a>
+      </div>
+    </header>
+
+    <section class="changelog-hero">
+      <div class="changelog-hero-bg" aria-hidden="true">
+        <div class="changelog-hero-glow changelog-hero-glow--1" />
+        <div class="changelog-hero-glow changelog-hero-glow--2" />
+      </div>
+      <div class="changelog-hero-body">
+        <div class="changelog-hero-badge">更新日志</div>
+        <h1 class="changelog-hero-title">版本发布记录</h1>
+        <p class="changelog-hero-desc">
+          SPSSGO 的每一次功能迭代与修复改进，都在这里记录。
+        </p>
+      </div>
+    </section>
+
+    <div class="changelog-shell">
+      <aside class="changelog-sidebar">
+        <div class="changelog-sidebar-title">版本目录</div>
+        <button
+          v-for="(entry, index) in changelogEntries"
+          :key="index"
+          class="changelog-sidebar-item"
+          :class="{ active: activeEntryIndex === index }"
+          type="button"
+          @click="scrollToEntry(index)"
+        >
+          <span class="changelog-sidebar-date">{{ entry.date }}</span>
+          <span class="changelog-sidebar-label">{{ entry.title }}</span>
+        </button>
+      </aside>
+
+      <main class="changelog-timeline">
+        <div
+          v-for="(entry, index) in changelogEntries"
+          :key="index"
+          :ref="el => { if (el) entryRefs[index] = el }"
+          :data-entry-index="index"
+          class="changelog-entry"
+        >
+          <div class="changelog-entry-marker" />
+          <div class="changelog-entry-card">
+            <div class="changelog-entry-head">
+              <time class="changelog-entry-date">{{ entry.date }}</time>
+              <span class="changelog-entry-tag" :class="`changelog-entry-tag--${entry.type}`">
+                {{ tagLabel(entry.type) }}
+              </span>
+            </div>
+            <h2 class="changelog-entry-title">{{ entry.title }}</h2>
+            <ul v-if="entry.items?.length" class="changelog-entry-list">
+              <li v-for="(item, i) in entry.items" :key="i">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const changelogEntries = [
+  {
+    date: '2026-05-13',
+    type: 'feat',
+    title: '新增更新日志页面，全面改版左侧目录',
+    items: [
+      '新增独立更新日志页面（/changelog），左侧目录 + 右侧时间线双栏布局',
+      '目录侧边栏随滚动自动高亮当前条目，支持点击跳转',
+      '移动端自适应折叠为横向标签布局',
+      '产品介绍页、帮助中心、首页页脚统一添加「更新日志」入口',
+    ],
+  },
+  {
+    date: '2026-05-12',
+    type: 'feat',
+    title: '相关分析与报告展示优化',
+    items: [
+      '皮尔逊相关分析：优化结果输出与报告展示，增强可读性',
+      '因子分析：增强结果解读与可视化呈现，完善输出结构',
+      '图表组件：优化交互体验与视觉一致性',
+      '报告页面：改进布局与数据展示效果',
+      '公共分析层：完善通用处理逻辑',
+    ],
+  },
+  {
+    date: '2026-05-10',
+    type: 'feat',
+    title: '学术化报告升级 — 全线三线表与参考文献',
+    items: [
+      '频数分析：优化输出格式与图表展示，提升学术规范度',
+      '卡方检验：完善结果呈现与报告排版',
+      '信度分析（Cronbach\'s α）：增强结果解读与输出结构',
+      '报告系统：全线升级为三线表样式，符合学术期刊/论文标准',
+      '参考文献：更新引用格式，规范化文献列表',
+      '前端图表组件：优化交互体验与视觉一致性',
+    ],
+  },
+  {
+    date: '2026-05-08',
+    type: 'feat',
+    title: '分类汇总增强与正态性检验上线',
+    items: [
+      '分类汇总功能增强，支持更多分组统计与输出格式',
+      '优化 README 文档，添加界面预览截图并改进布局',
+      '修复：文件夹删除时级联清理关联项，解决孤立数据问题',
+      '新增正态性检验分析方法（Shapiro-Wilk、K-S、Jarque-Bera）',
+      '新增全局悬浮提示组件（useGlobalTooltip），提升交互反馈',
+    ],
+  },
+  {
+    date: '2026-05-06',
+    type: 'feat',
+    title: '重构产品介绍页与帮助中心',
+    items: [
+      '全面重构产品介绍页（About），优化 UI 设计与交互体验',
+      '重构帮助中心（Help），改进文档分类与内容呈现结构',
+      '帮助文档支持段落、要点卡片、步骤引导、问答、公式块、代码块等多内容类型',
+      '数据分析方法帮助文档补充，覆盖全部已有分析方法',
+    ],
+  },
+  {
+    date: '2026-05-03',
+    type: 'feat',
+    title: '多选题分析与判断题分析上线',
+    items: [
+      '新增多选分析：多选题选项频次统计、响应率与普及率计算',
+      '支持多选题帕累托图展示，识别核心选择项',
+      '新增区分度分析：基于 R 引擎检验题项对高/低分组样本的区分能力',
+      '新增 NPS 净推荐值分析：贬损者/被动者/推荐者分类与 NPS 计算',
+      '新增单选题-多选题、多选题-多选题交叉分析',
+    ],
+  },
+  {
+    date: '2026-04-28',
+    type: 'feat',
+    title: '高级问卷分析模块上线',
+    items: [
+      '新增联合分析（Conjoint Analysis）：通过 OLS 估计属性偏好权重',
+      '新增 MaxDiff 模型：基于最好/最差选择恢复偏好强度排序',
+      '新增 MaxDiff Pro：个体层效用恢复与高级模拟',
+      '新增 CBC 联合分析：基于选择任务的离散选择模型',
+      '新增 BPTO 品牌价格抵补模型：评估品牌与价格的权衡关系',
+    ],
+  },
+  {
+    date: '2026-04-25',
+    type: 'feat',
+    title: '可视化绘图模块上线',
+    items: [
+      '新增可视化绘图模块，支持柱状图、折线图、饼图、箱线图、散点图等常见图表类型',
+      '图表配置面板支持数据列选择、颜色主题、标签格式等自定义选项',
+      '分析结果图表支持独立保存、复制到剪贴板',
+      '图表组件封装为统一协议：category_distribution / crosstab_distribution / metric_comparison',
+      '分析结果图表复用公共渲染能力，新增方法无需重写图表',
+    ],
+  },
+  {
+    date: '2026-04-20',
+    type: 'feat',
+    title: 'TURF分析与惩罚分析上线',
+    items: [
+      '新增 TURF 分析：寻找在给定数量约束下覆盖最多受众的最优选项组合',
+      '新增惩罚分析（Penalty Analysis）：识别属性表现偏低时对总体满意度的拖累程度',
+      '新增价格断裂点模型：识别价格敏感度研究中的心理接受边界与关键交点',
+    ],
+  },
+  {
+    date: '2026-04-15',
+    type: 'feat',
+    title: '对应分析与 Kano 模型上线',
+    items: [
+      '新增对应分析（Correspondence Analysis）：对分类变量列联表做 SVD 降维，观察类别间接近关系',
+      '新增 Kano 模型：基于正向题与反向题的配对回答，识别题项的 Kano 类别（A/O/M/I/R/Q）',
+      '新增交叉表（调研专项）：输出交叉频数、行百分比和列百分比',
+    ],
+  },
+  {
+    date: '2026-04-10',
+    type: 'feat',
+    title: '结构方程模型 SEM 上线',
+    items: [
+      '基于 R/lavaan 实现结构方程模型（SEM），同时估计测量模型和结构模型',
+      '新增路径分析（Path Analysis）：分析观测变量之间的直接与间接路径',
+      '新增验证性因子分析（CFA）：支持多因子测量模型的 CFA',
+      '新增探索性因子分析（EFA）：识别潜在结构与指标归类',
+    ],
+  },
+  {
+    date: '2026-04-05',
+    type: 'feat',
+    title: '效度分析与中介调节效应上线',
+    items: [
+      '基于 R 引擎实现效度分析：KMO 检验、Bartlett 球形检验和因子载荷',
+      '新增中介效应分析（Mediation）：检验单中介模型',
+      '新增平行中介效应：多个中介变量并行传递影响',
+      '新增链式中介效应：多个中介变量按顺序传递影响',
+    ],
+  },
+  {
+    date: '2026-03-28',
+    type: 'feat',
+    title: '调节效应与 ICC 一致性分析上线',
+    items: [
+      '新增调节作用分析（Moderation）：分层回归检验调节效应',
+      '新增组内相关系数 ICC：基于 R 引擎评估评价者间可靠性',
+      '新增多维尺度分析 MDS：基于变量间距离关系建立二维空间坐标',
+      '新增 Spearman 等级相关分析：非参数等级相关分析',
+    ],
+  },
+  {
+    date: '2026-03-20',
+    type: 'feat',
+    title: '报告系统升级 — Word 导出与共享',
+    items: [
+      '分析报告支持导出为 Word 文档（.docx），含标题、表格、图表、说明文字',
+      '报告支持生成分享链接，匿名用户可查看',
+      '新增报告历史记录管理',
+      '报告导出支持三线表样式与学术格式',
+    ],
+  },
+  {
+    date: '2026-03-15',
+    type: 'feat',
+    title: '非参数检验模块上线',
+    items: [
+      '新增 Mann-Whitney U 检验：比较两个独立组秩次分布',
+      '新增 Wilcoxon 符号秩检验：配对样本中位数差异',
+      '新增单样本 Wilcoxon 符号秩检验：检验样本中位数是否偏离给定值',
+      '新增 Kruskal-Wallis 检验：比较 3 组以上独立样本秩次分布',
+      '新增 Friedman 检验：多配对样本秩次差异检验',
+    ],
+  },
+  {
+    date: '2026-03-10',
+    type: 'feat',
+    title: '信度分析与正态性检验上线',
+    items: [
+      '基于 R 引擎实现 Cronbach\'s α 信度分析',
+      '支持折半系数（Split-half）、McDonald Omega、Theta 系数',
+      '支持删除项后的信度变化预览',
+      '新增正态性检验：Shapiro-Wilk、K-S、Jarque-Bera 综合输出',
+      '支持直方图、P-P 图和 Q-Q 图辅助判断正态性',
+    ],
+  },
+  {
+    date: '2026-03-05',
+    type: 'feat',
+    title: '卡方检验与一致性分析上线',
+    items: [
+      '新增卡方检验：含 Cramer\'s V 效应量，2x2 表自动输出连续性校正',
+      '新增卡方拟合优度检验：检验样本分布是否符合理论分布',
+      '新增 Cochran\'s Q 检验：比较 3 个以上相关二分类变量比例差异',
+      '新增 Kappa 一致性检验：评估两个评价者分类结果的一致性',
+      '新增 Kendall 一致性检验：评估多个评价对象排序的一致性（Kendall\'s W）',
+    ],
+  },
+  {
+    date: '2026-02-28',
+    type: 'feat',
+    title: '等价性检验上线',
+    items: [
+      '新增单样本等价性检验：使用 TOST 检验均值是否落在等价区间内',
+      '新增双样本等价性检验：使用 TOST 检验两个独立样本均值的等价性',
+      '新增配对样本等价性检验：使用 TOST 检验配对差值的等价性',
+    ],
+  },
+  {
+    date: '2026-02-25',
+    type: 'feat',
+    title: '数据处理功能上线',
+    items: [
+      '新增数据标签（值标签）管理：支持为分类变量设置标签',
+      '新增数据编码：支持反向计分、连续变量离散化',
+      '新增异常值处理：Z-Score 法、IQR 法识别异常值',
+      '新增无效样本处理：按缺失比例、异常值标记剔除样本',
+      '新增缺失值处理：删除、均值/中位数/众数填充、多重插补',
+      '新增数据标准化：Z-Score 标准化、Min-Max 归一化',
+      '新增数据变换与虚拟变量转换',
+    ],
+  },
+  {
+    date: '2026-02-20',
+    type: 'feat',
+    title: '相关性分析自动求解器上线',
+    items: [
+      '新增相关性分析自动求解器：自动识别变量特征并推荐合适方法',
+      '实现 Pearson / Spearman / Kendall 三种相关系数矩阵',
+      '支持显著性检验与星号标注',
+      '输出相关矩阵热力图，直观展示变量间关系',
+    ],
+  },
+  {
+    date: '2026-02-15',
+    type: 'feat',
+    title: '多元回归与共线性分析上线',
+    items: [
+      '新增多元线性回归：模型摘要、B/Beta 系数、VIF 共线性诊断',
+      '支持 95% 置信区间输出',
+      '新增多重共线性 VIF 分析：检测自变量之间的共线性，含容忍度',
+      '新增单样本 T 检验：检验样本均值是否显著偏离给定检验值',
+    ],
+  },
+  {
+    date: '2026-02-10',
+    type: 'feat',
+    title: '多维方差分析与协方差分析上线',
+    items: [
+      '新增多变量方差分析 MANOVA：同时检验多个因变量在组间的总体差异',
+      '新增协方差分析 ANCOVA：在控制协变量影响后比较组间均值差异',
+    ],
+  },
+  {
+    date: '2026-02-05',
+    type: 'feat',
+    title: '双因素/三因素方差分析上线',
+    items: [
+      '新增双因素方差分析：检验两个分类因素及其交互作用',
+      '新增三因素方差分析：检验三个分类因素及其交互作用',
+      '新增多因素方差分析 N-Way ANOVA：两个以上因素的通用入口',
+    ],
+  },
+  {
+    date: '2026-01-25',
+    type: 'feat',
+    title: '方差分析与事后多重比较上线',
+    items: [
+      '新增单因素方差分析 One-Way ANOVA：SS/MS/F/eta-squared',
+      '支持事后多重比较：LSD / Bonferroni / Tukey 三种方法',
+      '新增摘要 T 检验与摘要单因素方差分析：简化封装的快速输出',
+    ],
+  },
+  {
+    date: '2026-01-20',
+    type: 'feat',
+    title: 'T 检验系列上线',
+    items: [
+      '新增独立样本 T 检验：含 Levene 方差齐性检验和 Cohen\'s d 效应量',
+      '新增配对样本 T 检验：含 Cohen\'s d 和配对相关系数',
+      '新增摘要 T 检验：独立样本 T 检验的简化摘要封装',
+    ],
+  },
+  {
+    date: '2026-01-15',
+    type: 'feat',
+    title: '综合评价方法（一）上线',
+    items: [
+      '新增 TOPSIS 优劣解距离法：基于与正负理想解的距离排序',
+      '新增 RSR 秩和比综合评价法：通过排序后秩和比值排序',
+      '新增熵值法（Entropy Method）：依据指标离散程度自动分配客观权重',
+      '新增变异系数法：使用变异系数衡量指标离散程度并客观赋权',
+    ],
+  },
+  {
+    date: '2026-01-10',
+    type: 'feat',
+    title: '综合评价方法（二）上线',
+    items: [
+      '新增 AHP 层次分析法简化版：基于指标均值近似构造判断矩阵',
+      '新增 AHP 层次分析法专业版：补充一致性检验和综合得分',
+      '新增耦合协调度：衡量 2-3 个子系统的耦合关系与协调发展水平',
+      '新增模糊综合评价：通过模糊隶属度和加权合成得到综合得分',
+    ],
+  },
+  {
+    date: '2026-01-05',
+    type: 'feat',
+    title: '数据管理模块上线',
+    items: [
+      '支持 CSV、Excel、SPSS（.sav）格式数据文件导入',
+      '数据预览：变量列表、前 N 行预览、数据类型推断',
+      '数据集管理：新建、重命名、删除、文件夹分类',
+      '变量管理：设置测量尺度（名义/有序/连续）、变量类型转换',
+    ],
+  },
+  {
+    date: '2025-12-28',
+    type: 'feat',
+    title: '综合评价方法（三）上线',
+    items: [
+      '新增 DEA 数据包络分析：使用 CCR 模型计算各决策单元相对效率',
+      '新增 CRITIC 权重法：综合考虑指标对比强度与冲突性客观赋权',
+      '新增独立性权系数法：依据指标独立性和离散度构造综合客观权重',
+      '新增灰色关联分析：通过比较序列与参考序列接近程度评估关联强弱',
+    ],
+  },
+  {
+    date: '2025-12-20',
+    type: 'feat',
+    title: '综合决策与结构模型上线',
+    items: [
+      '新增 VIKOR 多准则妥协排序法：群体效用与个体遗憾构建折中排序',
+      '新增 ISM 解释结构模型：基于变量间相关关系构建多层级的解释结构',
+      '新增数据探查功能：数据集规模、变量类型分布、缺失与异常概览',
+      '新增交叉分析功能：支持 1 个分组变量对应多个 X 变量',
+    ],
+  },
+  {
+    date: '2025-12-15',
+    type: 'feat',
+    title: '频数分析与描述性统计分析上线',
+    items: [
+      '频数分析：频数表、百分比、累计百分比、条形图、饼图',
+      '描述性统计：均值、中位数、众数、标准差、方差、偏度、峰度',
+      '支持按分组输出统计量',
+      '支持输出百分位数（四分位数、自定义分位点）',
+    ],
+  },
+  {
+    date: '2025-12-10',
+    type: 'feat',
+    title: '熵权法与权重分析上线',
+    items: [
+      '新增熵权法权重分析：依据指标离散程度自动分配客观权重',
+      '支持问卷分析包中的权重计算场景',
+    ],
+  },
+  {
+    date: '2025-12-05',
+    type: 'feat',
+    title: '变量管理与数据预览功能上线',
+    items: [
+      '新增变量管理面板：变量列表排序、筛选、搜索',
+      '变量行组件支持类型图标与测量尺度标识',
+      '新增变量批量重命名功能',
+      '新增数据预览工作表组件：支持横向滚动查看全部变量',
+    ],
+  },
+  {
+    date: '2025-12-01',
+    type: 'feat',
+    title: '用户系统与工作台上线',
+    items: [
+      '用户注册、登录、退出功能',
+      'JWT 身份认证与会话管理',
+      '工作台主页：数据集列表、分析方法导航、快捷入口',
+      '个人中心：密码修改、账户设置',
+      'AI 助手侧边栏：智能问答辅助数据分析',
+    ],
+  },
+  {
+    date: '2025-11-25',
+    type: 'feat',
+    title: '数据处理面板与任务中心上线',
+    items: [
+      '数据处理面板上线，集中管理数据前处理/后处理流程',
+      '任务中心：分析任务执行状态实时跟踪',
+      '新增实时任务日志查看与中断操作',
+      '新增历史记录管理：分析记录保存、筛选、删除',
+    ],
+  },
+  {
+    date: '2025-11-20',
+    type: 'feat',
+    title: '管理后台上线',
+    items: [
+      '新增管理后台路由与前端页面（AdminApp）',
+      '仪表盘概览：系统运行数据统计',
+      '用户管理：用户列表、创建、编辑、启用/禁用、重置密码',
+      '会话管理：查看/清理活跃会话',
+      '任务管理：任务列表与状态筛选',
+      '系统信息查看与 AI 配置管理',
+    ],
+  },
+  {
+    date: '2025-11-15',
+    type: 'feat',
+    title: 'R 脚本集成引擎完成',
+    items: [
+      '搭建 Python 调用 R 脚本的桥接层（rpy2 接口封装）',
+      'R 运行时环境检测与自动配置',
+      '标准化 R 脚本接口协议：输入输出参数规范',
+      '13 个 R 分析脚本开发：信度、效度、因子分析、ICC、中介、调节、路径、SEM、CFA、EFA、区分度',
+    ],
+  },
+  {
+    date: '2025-11-10',
+    type: 'feat',
+    title: '任务调度与异步处理系统上线',
+    items: [
+      '新增异步任务调度引擎：计划执行与辅助执行双模式',
+      '新增任务提交与调度服务：支持长时间分析任务',
+      '新增任务容错与故障注入测试',
+      '新增运行时控制与沙箱服务：确保分析任务安全隔离',
+      '新增任务事件机制：实时监控任务状态变更',
+    ],
+  },
+  {
+    date: '2025-11-05',
+    type: 'feat',
+    title: '数据上传与文件系统上线',
+    items: [
+      '新增数据上传服务：支持 CSV、Excel、SPSS（.sav）格式',
+      '新增上传拖拽组件（UploadDropCard）',
+      '新增文件存储抽象层：支持本地文件系统与 S3 云存储',
+      '新增文件上传进度追踪与校验',
+    ],
+  },
+  {
+    date: '2025-10-28',
+    type: 'feat',
+    title: '分析方法注册与元数据系统上线',
+    items: [
+      '搭建分析方法自动注册系统（registry.py），扫描 methods/ 目录自动注册',
+      '定义分析方法元数据规范：METHOD_KEY、METHOD_META、run 函数',
+      '分析方法分类系统上线：8 大分类、80+ 方法自动归类',
+      '新增通用参数构造器与元数据注入器注册表',
+    ],
+  },
+  {
+    date: '2025-10-20',
+    type: 'feat',
+    title: '后端 API 框架搭建完成',
+    items: [
+      '基于 FastAPI 搭建 RESTful API 层，11 个路由模块',
+      '数据访问与业务服务分层：Service 模式',
+      '文件存储层：本地文件系统 / 云存储适配',
+      '统一的错误处理与请求验证机制',
+      '会话管理与数据集版本管理服务',
+    ],
+  },
+  {
+    date: '2025-10-15',
+    type: 'feat',
+    title: '账号体系与权限控制上线',
+    items: [
+      '用户注册、登录 API，JWT Token 签发与验证',
+      '路由守卫机制：公开路由、需登录路由、仅游客路由三级隔离',
+      '登录页与注册流程开发',
+      '密码重置与账户安全管理',
+    ],
+  },
+  {
+    date: '2025-10-10',
+    type: 'feat',
+    title: '共享报告与法律声明页面上线',
+    items: [
+      '新增共享报告页面（/share/report/:shareToken）：匿名用户可查看分析报告',
+      '新增法律声明页面（/legal）',
+      '共享报告支持独立渲染，不依赖用户登录状态',
+    ],
+  },
+  {
+    date: '2025-10-05',
+    type: 'feat',
+    title: '我的数据模块上线',
+    items: [
+      '新增数据集管理面板：列表/卡片双视图',
+      '支持数据文件夹分类管理',
+      '数据集上下文菜单：重命名、删除、下载、查看详情',
+      '数据集结果展开组件：预览分析输出',
+    ],
+  },
+  {
+    date: '2025-09-28',
+    type: 'feat',
+    title: '分析配置面板与执行引擎上线',
+    items: [
+      '新增分析配置面板：变量拖拽选择、参数配置',
+      '新增分析执行引擎：同步/异步双模式执行',
+      '新增分析执行遮罩层：执行过程中的状态反馈',
+      '新增分析报告页面：分节展示结果表格、图表、建议、参考文献',
+    ],
+  },
+  {
+    date: '2025-09-20',
+    type: 'feat',
+    title: '图表组件系统搭建',
+    items: [
+      '通用图表组件封装：柱状图、条形图、饼图、环形图、折线图、雷达图',
+      '图表悬浮提示组件（AnalysisChartTooltip）',
+      '图表独立保存与复制功能',
+      '图表数据展开：查看原始数据明细',
+      '分类分布图、交叉分布图、指标对比图三种统一图表协议',
+    ],
+  },
+  {
+    date: '2025-09-15',
+    type: 'feat',
+    title: '前端基础框架搭建完成',
+    items: [
+      '基于 Vue 3 + Vite 搭建前端工程',
+      'Vue Router 路由系统：9 条路由，公共/认证页面隔离',
+      'Pinia 状态管理：用户状态、数据集状态、分析任务状态',
+      '全局样式系统：统一色彩、排版、间距规范',
+      'Axios HTTP 客户端封装，请求/响应拦截器',
+      '前端入口文件完成（RootApp/App 分层架构）',
+    ],
+  },
+  {
+    date: '2025-09-10',
+    type: 'feat',
+    title: '结果展示与报告工具链上线',
+    items: [
+      '新增结果展示组件：表格渲染、指标高亮、显著性星号标注',
+      '新增分析建议段落组件（AnalysisAdviceSection）',
+      '新增智能分析段落组件（AnalysisSmartSection）',
+      '新增参考文献段落组件（AnalysisReferencesSection）',
+      '新增报告工具栏：导出、分享、打印',
+    ],
+  },
+  {
+    date: '2025-09-05',
+    type: 'feat',
+    title: 'Composable 组合式函数架构搭建',
+    items: [
+      '分析相关：useAnalysisConfig / useAnalysisExecution / useAnalysisReport / useAnalysisCharts / useAnalysisShare',
+      '数据相关：useDataUpload / useDatasetLibrary / useExpandedResults / useTaskJobs',
+      '工作区相关：useAppBootstrap / useWorkspaceNavigation / useWorkspaceDialogs / useWorkspaceExport',
+      '通用工具：useClipboardCopy / useScrollReveal / useProfileAccount',
+    ],
+  },
+  {
+    date: '2025-08-25',
+    type: 'feat',
+    title: 'AI 智能分析与预览面板上线',
+    items: [
+      'AI 助手侧边栏组件（AiAssistant）：智能问答辅助数据分析',
+      '新增 AI 配置服务与接口（ai_settings_service）',
+      '新增分析结果 AI 解读功能（useAiInterpretation）',
+      '新增研究流程面板（ResearchForm）与计划审查面板（PlanReview）',
+      '新增数据预览面板（PreviewPane）',
+    ],
+  },
+  {
+    date: '2025-08-15',
+    type: 'feat',
+    title: '数据集版本管理与导入引擎开发',
+    items: [
+      '新增数据集版本管理服务：版本创建、追溯、回滚',
+      '新增上传导入服务（upload_ingest_service）：文件解析与数据入库',
+      '新增数据集健康检查与测试',
+      '新增数据集生命周期测试覆盖',
+    ],
+  },
+  {
+    date: '2025-08-05',
+    type: 'feat',
+    title: '公式渲染与代码块组件开发',
+    items: [
+      '新增 FormulaBlock 公式渲染组件：LaTeX 公式实时渲染',
+      '新增 CodeBlock 代码块组件：语法高亮与复制',
+      '新增通用对话框组件：ConfirmDialog、RenameDialog、UploadDataDialog',
+    ],
+  },
+  {
+    date: '2025-07-25',
+    type: 'feat',
+    title: '工作台交互框架开发',
+    items: [
+      '新增工作台 TopBar 与侧边栏 AppSidebar',
+      '新增步骤导航组件 StepNav：引导用户完成分析流程',
+      '新增分析方法导航组件 MethodNav：按分类浏览分析方法',
+      '新增首页登录弹窗组件 HomeLoginModal',
+    ],
+  },
+  {
+    date: '2025-07-20',
+    type: 'feat',
+    title: '技术选型与项目立项',
+    items: [
+      '确定前端技术栈：Vue 3 + Vite + Pinia + Vue Router',
+      '确定后端技术栈：Python FastAPI + MySQL + Redis',
+      '确定统计分析引擎：Python（SciPy/Statsmodels）+ R 脚本桥接',
+      '项目仓库初始化，CI/CD 流水线搭建',
+      '产品原型设计与交互方案评审',
+    ],
+  },
+  {
+    date: '2025-07-10',
+    type: 'feat',
+    title: '首页与产品介绍页开发',
+    items: [
+      '首页（HomeApp）开发：Hero 区域、核心能力展示、产品优势、Footer',
+      '首页内容配置化：homePageContent.js 管理页面内容',
+      '产品介绍页（AboutApp）初版开发',
+      '页面滚动动画效果（useScrollReveal）',
+    ],
+  },
+  {
+    date: '2025-06-25',
+    type: 'feat',
+    title: '赞助与技术支持页面上线',
+    items: [
+      '新增赞助页面组件（SponsorSection）',
+      '新增首页 Footer：GitHub/Gitee 源码链接',
+      '首页 FAQ 区上线',
+    ],
+  },
+  {
+    date: '2025-06-15',
+    type: 'feat',
+    title: '测试框架搭建与基础测试覆盖',
+    items: [
+      '搭建 pytest 测试框架',
+      '添加配置文件路径测试、数据库连接池测试',
+      '添加数据集服务单元测试',
+      '添加 R 引擎桥接测试（因子分析、信度分析）',
+      '添加报告导出测试',
+    ],
+  },
+  {
+    date: '2025-06-05',
+    type: 'feat',
+    title: '数据库模型与基础设施搭建',
+    items: [
+      '数据库模型设计与建表',
+      'Redis 缓存集成',
+      '基础设施配置：环境配置、日志系统、监控接入',
+      '健康检查接口与脚本',
+    ],
+  },
+  {
+    date: '2025-05-20',
+    type: 'feat',
+    title: '项目初始化 — 前后端脚手架',
+    items: [
+      '前端项目初始化：Vue 3 + Vite 模板搭建',
+      '后端项目初始化：FastAPI 项目结构与依赖管理',
+      '项目目录结构与编码规范确立',
+      'Git 仓库初始化与分支策略定义',
+    ],
+  },
+  {
+    date: '2025-05-01',
+    type: 'init',
+    title: 'SPSSGO 项目诞生',
+    items: [
+      '产品愿景确立：打造面向科研与教学的在线统计分析平台',
+      '核心团队组建：前后端开发、统计分析专家、UI 设计',
+      '市场调研与竞品分析：对标 SPSSAU、SPSSPRO 等产品',
+      '产品需求文档（PRD）初稿完成',
+      '项目代号：SPSSGO（Smart Processing Statistical System Guided Operations）',
+    ],
+  },
+]
+
+const activeEntryIndex = ref(0)
+const entryRefs = ref({})
+
+function tagLabel(type) {
+  const map = { feat: '功能更新', fix: '问题修复', docs: '文档改进', init: '初始版本' }
+  return map[type] || type
+}
+
+function scrollToEntry(index) {
+  const el = entryRefs.value[index]
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+let scrollObserver = null
+onMounted(() => {
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const idx = Number(entry.target.dataset.entryIndex)
+          if (!isNaN(idx)) {
+            activeEntryIndex.value = idx
+          }
+        }
+      }
+    },
+    { rootMargin: '-20% 0px -60% 0px' }
+  )
+
+  for (const key of Object.keys(entryRefs.value)) {
+    const el = entryRefs.value[key]
+    if (el) scrollObserver.observe(el)
+  }
+})
+
+onUnmounted(() => {
+  if (scrollObserver) scrollObserver.disconnect()
+})
+</script>
+
+<style scoped>
+.changelog-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* ===== Top Bar ===== */
+.changelog-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 76px;
+  padding: 0 22px;
+  background: #fff;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.changelog-brand {
+  display: inline-flex;
+  align-items: center;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.changelog-brand img {
+  width: auto;
+  height: 30px;
+  object-fit: contain;
+}
+
+.changelog-topnav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-right: auto;
+  margin-left: 16px;
+}
+
+.changelog-topnav a {
+  padding: 8px 12px;
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 15px;
+  border-radius: 10px;
+  transition: all 0.16s ease;
+}
+
+.changelog-topnav a:hover,
+.changelog-topnav a.active {
+  color: #1d4ed8;
+  background: #f3f7ff;
+}
+
+.changelog-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112px;
+  height: 38px;
+  padding: 0 18px;
+  background: #1d4ed8;
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.changelog-login-btn:hover {
+  background: #1e40af;
+}
+
+/* ===== Hero ===== */
+.changelog-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 22px 50px;
+  overflow: hidden;
+}
+
+.changelog-hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.changelog-hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.35;
+}
+
+.changelog-hero-glow--1 {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  left: -60px;
+  background: #3b82f6;
+}
+
+.changelog-hero-glow--2 {
+  width: 360px;
+  height: 360px;
+  bottom: -120px;
+  right: -40px;
+  background: #8b5cf6;
+}
+
+.changelog-hero-body {
+  position: relative;
+  text-align: center;
+  max-width: 680px;
+}
+
+.changelog-hero-badge {
+  display: inline-flex;
+  padding: 6px 18px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+
+.changelog-hero-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin: 0 0 14px;
+}
+
+.changelog-hero-desc {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ===== Shell (Sidebar + Content) ===== */
+.changelog-shell {
+  display: flex;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 22px 80px;
+  gap: 40px;
+}
+
+/* ===== Sidebar ===== */
+.changelog-sidebar {
+  position: sticky;
+  top: 100px;
+  flex-shrink: 0;
+  width: 220px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  align-self: flex-start;
+}
+
+:global(.changelog-sidebar::-webkit-scrollbar) {
+  width: 5px;
+}
+
+:global(.changelog-sidebar::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+:global(.changelog-sidebar::-webkit-scrollbar-thumb) {
+  background: #e2e5ea;
+  border-radius: 8px;
+}
+
+:global(.changelog-sidebar::-webkit-scrollbar-thumb:hover) {
+  background: #d1d5db;
+}
+
+.changelog-sidebar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.changelog-sidebar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.changelog-sidebar-item:hover {
+  background: #f3f4f6;
+}
+
+.changelog-sidebar-item.active {
+  background: #eef2ff;
+}
+
+.changelog-sidebar-date {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.changelog-sidebar-item.active .changelog-sidebar-date {
+  color: #4f46e5;
+}
+
+.changelog-sidebar-label {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.changelog-sidebar-item.active .changelog-sidebar-label {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+/* ===== Timeline ===== */
+.changelog-timeline {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding-left: 32px;
+}
+
+.changelog-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+.changelog-entry {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 32px;
+  scroll-margin-top: 100px;
+}
+
+.changelog-entry:last-child {
+  margin-bottom: 0;
+}
+
+.changelog-entry-marker {
+  position: absolute;
+  left: -7px;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #3b82f6;
+  z-index: 1;
+}
+
+.changelog-entry-card {
+  background: #fff;
+  border: 1px solid #edf1f5;
+  border-radius: 12px;
+  padding: 20px 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.changelog-entry-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.changelog-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.changelog-entry-date {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.changelog-entry-tag {
+  display: inline-flex;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.changelog-entry-tag--feat {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.changelog-entry-tag--fix {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.changelog-entry-tag--docs {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.changelog-entry-tag--init {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.changelog-entry-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.changelog-entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.changelog-entry-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.changelog-entry-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d1d5db;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .changelog-shell {
+    flex-direction: column;
+    padding: 0 14px 60px;
+    gap: 0;
+  }
+
+  .changelog-sidebar {
+    position: relative;
+    top: auto;
+    width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    margin-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .changelog-sidebar-title {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .changelog-sidebar-item {
+    width: auto;
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+  }
+
+  .changelog-sidebar-label {
+    -webkit-line-clamp: 1;
+  }
+
+  .changelog-timeline {
+    padding-left: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .changelog-topbar {
+    padding: 0 14px;
+  }
+
+  .changelog-topnav {
+    display: none;
+  }
+
+  .changelog-hero {
+    padding: 40px 14px 30px;
+  }
+
+  .changelog-hero-title {
+    font-size: 28px;
+  }
+
+  .changelog-entry-card {
+    padding: 16px 18px;
+  }
+}
+</style>

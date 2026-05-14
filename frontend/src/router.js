@@ -19,6 +19,7 @@ const routes = [
   { path: '/admin', name: 'admin', component: () => import('./admin/AdminApp.vue'), meta: { requiresAuth: true } },
   { path: '/about', name: 'about', component: () => import('./views/AboutApp.vue'), meta: { public: true } },
   { path: '/help', name: 'help', component: () => import('./views/HelpApp.vue'), meta: { public: true } },
+  { path: '/changelog', name: 'changelog', component: () => import('./views/ChangelogApp.vue'), meta: { public: true } },
   { path: '/legal', name: 'legal', component: () => import('./views/LegalApp.vue'), meta: { public: true } },
 ]
 

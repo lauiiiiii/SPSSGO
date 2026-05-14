@@ -76,6 +76,7 @@
             :calc-box="calcBox"
             :calc-category-bar="calcCategoryBar"
             :calc-category-pie="calcCategoryPie"
+            :calc-correspondence-map="calcCorrespondenceMap"
             :calc-crosstab="calcCrosstab"
             :calc-factor-heatmap="calcFactorHeatmap"
             :calc-hist="calcHist"
@@ -152,6 +153,7 @@ const {
   calcBox,
   calcCategoryBar,
   calcCategoryPie,
+  calcCorrespondenceMap,
   calcCrosstab,
   calcFactorHeatmap,
   calcHist,

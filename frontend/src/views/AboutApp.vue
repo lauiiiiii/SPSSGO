@@ -7,6 +7,7 @@
       <nav class="about-topnav" aria-label="顶部导航">
         <a href="/about" class="active">产品介绍</a>
         <a href="/help">帮助中心</a>
+        <a href="/changelog">更新日志</a>
       </nav>
       <div class="about-topbar-actions">
         <a class="about-login-btn" href="/login?redirect=%2Fworkspace">进入工作台</a>
@@ -30,7 +31,11 @@
             <a class="about-btn-primary" href="/login?redirect=%2Fworkspace">开始使用</a>
             <a class="about-btn-ghost" href="https://github.com/lauiiiiii/spssgo" target="_blank">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" fill="currentColor"/></svg>
-              查看源代码
+              GitHub 源码
+            </a>
+            <a class="about-btn-ghost" href="https://gitee.com/jahge/SPSSGO" target="_blank">
+              <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+              Gitee 源码
             </a>
           </div>
         </div>
@@ -93,6 +98,10 @@
             <a href="https://github.com/lauiiiiii/spssgo" target="_blank">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" fill="currentColor"/></svg>
               GitHub 仓库
+            </a>
+            <a href="https://gitee.com/jahge/SPSSGO" target="_blank">
+              <svg class="gitee-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z" fill="currentColor"/></svg>
+              Gitee 仓库
             </a>
             <a href="/legal#license">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 5a1 1 0 1 1 2 0 1 1 0 0 1-2 0zm1 2a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
@@ -371,6 +380,20 @@ const techStack = [
 .about-btn-ghost:hover {
   color: #111827;
   background: #f3f4f6;
+}
+
+.about-btn-ghost > svg,
+.about-links a > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gitee-mark {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: inline-block;
+  color: #c71d23;
 }
 
 /* ===== Sections ===== */
