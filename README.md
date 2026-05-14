@@ -30,6 +30,15 @@ Docker Compose 一键部署：
 docker compose up -d
 ```
 
+Docker 镜像会自动安装 `Rscript`、`jsonlite` 和 `lavaan`，使用 Docker 部署时不需要在宿主机额外安装 R；只有本地直接运行后端时才需要手动安装。
+
+非 Docker 部署时，信度、EFA、CFA、SEM、路径/中介等方法还需要额外安装 R：
+
+```bash
+sudo apt-get update && sudo apt-get install -y r-base
+Rscript -e "install.packages(c('jsonlite','lavaan'), repos='https://cloud.r-project.org')"
+```
+
 ## 能做什么
 
 ### 数据导入
@@ -52,7 +61,7 @@ docker compose up -d
 完整参数说明见 [docs/ANALYSIS_METHOD_PARAMS.md](docs/ANALYSIS_METHOD_PARAMS.md)。
 
 ### R 增强分析
-信度分析、EFA、CFA、SEM 等高级方法走 R 引擎，R 不可用时明确报错不降级。R 脚本位于 [backend/r_scripts/](backend/r_scripts/)。
+信度分析、EFA、CFA、SEM、路径分析、中介效应等高级方法走 R 引擎，R 不可用时明确报错不降级。Docker 镜像已内置 `Rscript`、`jsonlite` 和 `lavaan`；非 Docker 部署时需要在服务器手动安装。R 脚本位于 [backend/r_scripts/](backend/r_scripts/)。
 
 ### AI 辅助
 接入 DeepSeek，支持 AI 生成分析计划、自动化任务编排、结果解读。

@@ -73,5 +73,5 @@
 示例：
 
 ```r
-install.packages("jsonlite")
+install.packages(c("jsonlite", "lavaan"), repos = "https://cloud.r-project.org")
 ```
