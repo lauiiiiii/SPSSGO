@@ -2,6 +2,8 @@
 
 AI 驱动的在线数据分析平台。导入数据、处理变量、选择分析方法，一键出结果和报告。
 
+体验网址：[http://wj.maxform.top/](http://wj.maxform.top/)
+
 ## 快速开始
 
 ```powershell
