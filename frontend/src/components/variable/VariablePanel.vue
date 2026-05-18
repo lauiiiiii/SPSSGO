@@ -84,7 +84,7 @@ const props = defineProps({
   selectedVars: { type: Array, default: () => [] },
   usedVars: { type: Set, default: () => new Set() },
 })
-const emit = defineEmits(['select', 'deselect', 'select-range', 'drag-start', 'change-type', 'delete-variable', 'rename-variable', 'rename-batch'])
+const emit = defineEmits(['select', 'deselect', 'select-range', 'drag-start', 'drag-end', 'change-type', 'delete-variable', 'rename-variable', 'rename-batch'])
 
 const filter = ref('all')
 const searchQuery = ref('')
@@ -123,13 +123,16 @@ function toggleSelect(e, v) {
 
 function onDragStart(e, v) {
   draggingVar.value = v.name
-  e.dataTransfer.setData('text/plain', buildVariableDragPayload(v.name, props.selectedVars))
+  const payload = buildVariableDragPayload(v.name, props.selectedVars)
+  const names = payload.split(',').filter(Boolean)
+  e.dataTransfer.setData('text/plain', payload)
   e.dataTransfer.effectAllowed = 'copy'
-  emit('drag-start', v.name)
+  emit('drag-start', names)
 }
 
 function onDragEnd() {
   draggingVar.value = null
+  emit('drag-end')
 }
 
 function openMenu(v, e) {

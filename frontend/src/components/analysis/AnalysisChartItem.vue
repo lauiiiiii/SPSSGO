@@ -460,7 +460,11 @@
       </template>
       <template v-else-if="isMetricComparisonChart">
         <template v-for="metricData in [calcMetricComparison(metricChartData, metricMode)]" :key="metricMode">
-          <svg class="ap-chart-svg ap-chart-svg--metric" :viewBox="`0 0 ${metricData.W} ${metricData.H}`" :width="metricData.W" :height="metricData.H"
+          <svg
+            class="ap-chart-svg ap-chart-svg--metric"
+            :viewBox="`0 0 ${metricData.W} ${metricData.H}`"
+            :width="Math.round(metricData.W * metricChartZoom)"
+            :height="Math.round(metricData.H * metricChartZoom)"
             @mouseleave="$emit('hide-tip')">
             <template v-if="metricMode === 'radar'">
               <polygon v-for="(ring, ringIndex) in metricData.rings" :key="'ring'+ringIndex" :points="ring" fill="none" stroke="#eef1f5" stroke-width="1"/>
@@ -521,16 +525,45 @@
                   :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ percentLabel(point.value) }}</text>
               </template>
               <template v-else>
-                <path :d="metricData.path" fill="none" stroke="#2389e8" stroke-width="2"/>
-                <circle v-for="(point, pointIndex) in metricData.points" :key="'mp'+pointIndex"
-                  class="ap-metric-mark"
-                  :cx="point.x" :cy="point.y" r="4" fill="#2389e8"
-                  @mouseenter="$emit('show-metric-tip', $event, chart, point)"
-                  @mousemove="$emit('move-tip', $event)"
-                  @mouseleave="$emit('hide-tip')"/>
-                <text v-for="(point, pointIndex) in metricData.points" :key="'mpv'+pointIndex"
-                  v-show="showDataLabels"
-                  :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(point.value) }}</text>
+                <template v-if="metricData.multiSeries">
+                  <path v-for="(series, seriesIndex) in metricData.series" :key="'msline'+seriesIndex"
+                    :d="series.path" fill="none" :stroke="series.color" stroke-width="2" :stroke-dasharray="series.dash"/>
+                  <circle v-for="(point, pointIndex) in multiMetricPoints(metricData)" :key="'msp'+pointIndex"
+                    class="ap-metric-mark"
+                    :cx="point.x" :cy="point.y" r="3.4" :fill="point.color"
+                    @mouseenter="$emit('show-metric-tip', $event, chart, point)"
+                    @mousemove="$emit('move-tip', $event)"
+                    @mouseleave="$emit('hide-tip')"/>
+                  <text v-for="(point, pointIndex) in multiMetricPoints(metricData)" :key="'mspv'+pointIndex"
+                    v-show="showDataLabels"
+                    :x="point.x" :y="Math.max(point.y - 9, 12)" text-anchor="middle" font-size="10" :fill="point.color">{{ metricValueLabel(point.value) }}</text>
+                  <rect v-for="(hit, hitIndex) in metricData.hitAreas" :key="'mshit'+hitIndex"
+                    :x="hit.rectX" :y="metricData.mt" :width="hit.rectW" :height="metricData.ph"
+                    fill="transparent"
+                    @mouseenter="$emit('show-metric-tip', $event, chart, hit)"
+                    @mousemove="$emit('move-tip', $event)"
+                    @mouseleave="$emit('hide-tip')"/>
+                  <line v-for="(hit, hitIndex) in metricData.hitAreas" :key="'msvx'+hitIndex"
+                    :x1="hit.x" :y1="metricData.mt" :x2="hit.x" :y2="metricData.mt+metricData.ph"
+                    stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3" opacity=".28"/>
+                  <g v-for="(legend, legendIndex) in metricData.legend" :key="'mslg'+legendIndex">
+                    <line :x1="legend.x" :y1="legend.y" :x2="legend.x + 18" :y2="legend.y" :stroke="legend.color" stroke-width="2" :stroke-dasharray="legend.dash"/>
+                    <circle :cx="legend.x + 9" :cy="legend.y" r="3" :fill="legend.color"/>
+                    <text :x="legend.x + 24" :y="legend.y + 4" font-size="11" fill="#333">{{ legend.name }}</text>
+                  </g>
+                </template>
+                <template v-else>
+                  <path :d="metricData.path" fill="none" stroke="#2389e8" stroke-width="2"/>
+                  <circle v-for="(point, pointIndex) in metricData.points" :key="'mp'+pointIndex"
+                    class="ap-metric-mark"
+                    :cx="point.x" :cy="point.y" r="4" fill="#2389e8"
+                    @mouseenter="$emit('show-metric-tip', $event, chart, point)"
+                    @mousemove="$emit('move-tip', $event)"
+                    @mouseleave="$emit('hide-tip')"/>
+                  <text v-for="(point, pointIndex) in metricData.points" :key="'mpv'+pointIndex"
+                    v-show="showDataLabels"
+                    :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(point.value) }}</text>
+                </template>
               </template>
               <line :x1="metricData.ml" :y1="metricData.mt+metricData.ph" :x2="metricData.ml+metricData.pw" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
               <line :x1="metricData.ml" :y1="metricData.mt" :x2="metricData.ml" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
@@ -640,6 +673,16 @@
           type="range"
           min="0.45"
           max="1.6"
+          step="0.05"
+        />
+      </label>
+      <label v-if="isMetricComparisonChart" class="ap-chart-size-control">
+        <span>尺寸：</span>
+        <input
+          v-model.number="metricChartZoom"
+          type="range"
+          min="0.7"
+          max="1.8"
           step="0.05"
         />
       </label>
@@ -805,6 +848,7 @@ const categoryMode = ref(props.chart.data?.defaultMode || 'bar')
 const crosstabMode = ref(props.chart.data?.defaultMode || 'stackedColumn')
 const heatmapSize = ref(1)
 const kanoChartZoom = ref(1)
+const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(true)
@@ -832,6 +876,7 @@ const supportsLabelMode = computed(() => (
 ))
 const hasMetricSwitcher = computed(() => (
   isMetricComparisonChart.value
+  && !props.chart.data?.multiSeries
   && props.chart.data?.metrics
   && Object.keys(props.chart.data.metrics).length > 1
 ))
@@ -877,6 +922,14 @@ const activeHeatmapData = computed(() => {
   }
 })
 const chartWrapStyle = computed(() => {
+  if (isMetricComparisonChart.value) {
+    const baseWidth = props.chart.data?.multiSeries ? 760 : 640
+    const baseHeight = props.chart.data?.multiSeries ? 390 : 340
+    return {
+      width: `${Math.round(baseWidth * metricChartZoom.value)}px`,
+      height: `${Math.round(baseHeight * metricChartZoom.value)}px`,
+    }
+  }
   if (!isKanoBetterWorseChart.value) return {}
   return {
     width: `${Math.round(760 * kanoChartZoom.value)}px`,
@@ -925,6 +978,10 @@ function metricValueLabel(value) {
   if (!Number.isFinite(num)) return ''
   if (Math.abs(num) >= 100) return String(Math.round(num))
   return Number(num.toFixed(2)).toString()
+}
+
+function multiMetricPoints(metricData) {
+  return (metricData.series || []).flatMap(series => series.points || [])
 }
 
 function chartMean(values) {

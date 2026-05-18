@@ -65,6 +65,7 @@
         :active-factor-title="activeFactorTitle"
         :can-execute="canExecute"
         :display-slots="displaySlots"
+        :drag-preview-count="dragPreviewCount"
         :drag-over-slot="dragOverSlot"
         :dynamic-factor-count="dynamicFactorCount"
         :dynamic-group-add-text="dynamicGroupAddText"
@@ -158,6 +159,7 @@ const props = defineProps({
   executing: { type: Boolean, default: false },
   results: { type: Array, default: () => [] },
   variables: { type: Array, default: () => [] },
+  dragPreviewCount: { type: Number, default: 0 },
   sessionId: { type: String, default: '' },
   currentDatasetVersionId: { type: Number, default: null },
   currentDatasetVersionNo: { type: Number, default: null },

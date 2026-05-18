@@ -99,6 +99,8 @@ export function calcBoxplotLayout(data) {
 }
 
 const CATEGORY_COLORS = ['#2389e8', '#45d0bf', '#31c260', '#ffcf1a', '#eb9450', '#7a6ff0', '#f36ca2', '#8bc34a']
+const CATEGORY_MAX_COLUMN_WIDTH = 72
+const CATEGORY_MAX_BAR_HEIGHT = 34
 
 function shortLabel(value, maxLength = 10) {
   const text = String(value ?? '')
@@ -119,15 +121,16 @@ export function calcCategoryBarLayout(data, horizontal = false) {
     const bars = labels.map((label, index) => {
       const value = percents[index] || 0
       const width = (value / maxPercent) * pw
+      const barH = Math.min(Math.max(rowH * 0.56, 12), CATEGORY_MAX_BAR_HEIGHT)
       return {
         label,
         count: counts[index] || 0,
         percent: value,
         x: ml,
-        y: mt + index * rowH + rowH * 0.18,
+        y: mt + index * rowH + (rowH - barH) / 2,
         w: width,
-        h: Math.max(rowH * 0.56, 12),
-        labelY: mt + index * rowH + rowH * 0.55,
+        h: barH,
+        labelY: mt + index * rowH + rowH / 2,
       }
     })
     const xTicks = Array.from({ length: 6 }, (_, index) => {
@@ -148,13 +151,14 @@ export function calcCategoryBarLayout(data, horizontal = false) {
   const bars = labels.map((label, index) => {
     const value = percents[index] || 0
     const h = (value / maxPercent) * ph
+    const barW = Math.min(Math.max(bw * 0.64, 8), CATEGORY_MAX_COLUMN_WIDTH)
     return {
       label,
       count: counts[index] || 0,
       percent: value,
-      x: ml + index * bw + Math.max(bw * 0.18, 4),
+      x: ml + index * bw + (bw - barW) / 2,
       y: mt + ph - h,
-      w: Math.max(bw * 0.64, 8),
+      w: barW,
       h,
       tickX: ml + index * bw + bw / 2,
     }
@@ -376,15 +380,20 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
   const labels = data?.labels || []
   const values = (data?.values || []).map(value => Number(value || 0))
   const metric = data?.metric || '指标'
-  const W = 640, H = 340
+  const multiSeries = data?.multiSeries && data?.metrics && Object.keys(data.metrics).length > 1 && mode === 'line'
+  const W = multiSeries ? 760 : 640
+  const H = multiSeries ? 390 : 340
   const ml = mode === 'horizontalBar' ? 96 : 62
-  const mr = 46
+  const mr = multiSeries ? 128 : 46
   const mt = 30
   const mb = 58
   const pw = W - ml - mr
   const ph = H - mt - mb
-  const minV = Math.min(...values, 0)
-  const maxV = Math.max(...values, 1)
+  const multiValues = multiSeries
+    ? Object.values(data.metrics).flat().map(value => Number(value || 0))
+    : values
+  const minV = Math.min(...multiValues, 0)
+  const maxV = Math.max(...multiValues, 1)
   const span = maxV - minV || 1
   const pad = Math.max(span * 0.15, 0.1)
   const low = minV - pad
@@ -401,6 +410,49 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
     x: toX(index),
     y: toY(values[index]),
   }))
+  if (multiSeries) {
+    const seriesNames = Object.keys(data.metrics)
+    const colors = ['#2f7cff', '#00b96b', '#f6bd16', '#ff654f', '#7367ff', '#14c9c9', '#f759ab', '#722ed1', '#165dff']
+    const dashStyles = ['', '6 4', '2 4', '', '5 3', '8 3 2 3']
+    const series = seriesNames.map((name, seriesIndex) => {
+      const seriesValues = (data.metrics[name] || []).map(value => Number(value || 0))
+      const seriesPoints = labels.map((label, index) => ({
+        label,
+        metric: name,
+        value: seriesValues[index],
+        x: toX(index),
+        y: toY(seriesValues[index]),
+        color: colors[seriesIndex % colors.length],
+      }))
+      return {
+        name,
+        color: colors[seriesIndex % colors.length],
+        dash: dashStyles[seriesIndex % dashStyles.length],
+        points: seriesPoints,
+        path: seriesPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' '),
+      }
+    })
+    const hitAreas = labels.map((label, index) => ({
+      label,
+      x: toX(index),
+      rectX: index === 0 ? ml : (toX(index - 1) + toX(index)) / 2,
+      rectW: index === 0
+        ? (labels.length > 1 ? (toX(0) + toX(1)) / 2 - ml : pw)
+        : (index === labels.length - 1 ? ml + pw - (toX(index - 1) + toX(index)) / 2 : (toX(index + 1) - toX(index - 1)) / 2),
+      seriesItems: series.map(item => ({
+        label: item.name,
+        metric: item.name,
+        value: item.points[index]?.value || 0,
+        color: item.color,
+      })),
+    }))
+    const legend = series.map((item, index) => ({
+      ...item,
+      x: ml + pw + 22,
+      y: mt + 42 + index * 18,
+    }))
+    return { W, H, ml, mr, mt, mb, pw, ph, metric, points, series, legend, hitAreas, yTicks, shortLabel, mode, multiSeries: true }
+  }
   if (mode === 'horizontalBar') {
     const rowH = ph / Math.max(labels.length, 1)
     const zeroX = ml + ((0 - low) / (high - low || 1)) * pw

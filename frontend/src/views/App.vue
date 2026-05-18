@@ -54,6 +54,8 @@
                 @select="onVarSelect"
                 @deselect="onVarDeselect"
                 @select-range="onVarSelectRange"
+                @drag-start="onVariableDragStart"
+                @drag-end="onVariableDragEnd"
                 @change-type="onChangeVariableType"
                 @delete-variable="onDeleteVariable"
                 @rename-variable="onRenameVariable"
@@ -67,6 +69,7 @@
                 :executing="executing"
                 :results="currentResults"
                 :variables="variables"
+                :drag-preview-count="dragPreviewCount"
                 :session-id="sessionId"
                 :current-dataset-version-id="currentDatasetVersionId"
                 :current-dataset-version-no="currentDatasetVersionNo"
@@ -226,6 +229,7 @@ const activeMethodKey = ref('')
 const variables = ref([])
 const totalRows = ref(0)
 const selectedVars = ref([])
+const dragPreviewCount = ref(0)
 
 const executing = ref(false)
 const currentResults = ref([])
@@ -500,4 +504,12 @@ const onChangeVariableType = variableActions.changeType
 const onDeleteVariable = variableActions.deleteVariable
 const onRenameVariable = variableActions.renameVariable
 const onRenameVariablesBatch = variableActions.renameBatch
+
+function onVariableDragStart(names) {
+  dragPreviewCount.value = Array.isArray(names) && names.length ? names.length : 1
+}
+
+function onVariableDragEnd() {
+  dragPreviewCount.value = 0
+}
 </script>

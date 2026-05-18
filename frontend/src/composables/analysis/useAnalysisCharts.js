@@ -83,6 +83,18 @@ export function useAnalysisCharts() {
   }
 
   function showMetricTip(event, chart, dataPoint) {
+    if (Array.isArray(dataPoint.seriesItems)) {
+      tip.lines = [
+        { text: dataPoint.label || chart.title || '指标对比', dot: null },
+        ...dataPoint.seriesItems.map(item => ({
+          text: `${item.label}：${Number(item.value || 0).toFixed(3)}`,
+          dot: item.color || '#2389e8',
+        })),
+      ]
+      moveTip(event)
+      tip.show = true
+      return
+    }
     const metric = dataPoint.metric || chart.data?.metric || '指标'
     tip.lines = [
       { text: chart.title || `${metric}对比图`, dot: null },

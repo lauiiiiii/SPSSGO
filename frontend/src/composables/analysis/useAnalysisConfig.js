@@ -118,7 +118,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
     for (const slot of displaySlots.value) {
       const vals = slotValues[slot.key] || []
       const min = slot.min ?? (slot.type === 'single' ? 1 : 1)
+      const max = Number(slot.max)
       if (vals.length < min) return false
+      if (Number.isFinite(max) && vals.length > max) return false
     }
     return true
   })
@@ -276,6 +278,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (!slotValues[slotKey]) slotValues[slotKey] = []
     if (slotValues[slotKey].includes(varName)) return
     if (isUsedInOtherStaticSlot(slotKey, varName)) return
+    const slot = displaySlots.value.find(item => item.key === slotKey)
+    const max = Number(slot?.max)
+    if (slotType !== 'single' && Number.isFinite(max) && slotValues[slotKey].length >= max) return
     if (isCfaMethod.value && slotType !== 'single') {
       for (const key of Object.keys(slotValues)) {
         if (key !== slotKey && key.match(slotPattern()) && Array.isArray(slotValues[key])) {

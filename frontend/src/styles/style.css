@@ -2161,9 +2161,9 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   justify-content: center;
 }
 .ap-chart-svg--metric {
-  max-width: 640px;
-  width: 100%;
-  height: 100%;
+  max-width: none;
+  width: auto;
+  height: auto;
 }
 .ap-chart-item:has(.ap-chart-svg--kano-bw) .ap-chart-wrap {
   width: 760px;

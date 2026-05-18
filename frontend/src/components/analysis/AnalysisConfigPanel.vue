@@ -152,6 +152,7 @@
           <AnalysisDropZone
             v-if="activeFactorSlot"
             :drag-over-slot="dragOverSlot"
+            :drag-preview-count="dragPreviewCount"
             :empty-text="`将待分析变量拖入到 ${activeFactorTitle}`"
             :get-var-type="getVarType"
             :get-var-type-class="getVarTypeClass"
@@ -268,13 +269,14 @@
         </span>
         {{ slot.label }}
         <span class="ap-slot-constraint">
-          （{{ slot.type === 'single' ? '单个变量' : '变量数≥' + (slot.min ?? 1) }}）
+          （{{ slotConstraintText(slot) }}）
         </span>
         <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
       </div>
       <AnalysisDropZone
         :drag-over-slot="dragOverSlot"
-        :empty-text="`将待分析变量拖入到此区域${slot.type === 'single' ? '（单个变量）' : ''}`"
+        :drag-preview-count="dragPreviewCount"
+        :empty-text="slot.hint || `将待分析变量拖入到此区域${slot.type === 'single' ? '（单个变量）' : ''}`"
         :get-var-type="getVarType"
         :get-var-type-class="getVarTypeClass"
         :slot="slot"
@@ -295,7 +297,7 @@
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
       <div v-if="method.options?.length && !isSummaryTMethod" class="ap-options ap-options--actions">
-        <div v-for="option in method.options" :key="option.key" class="ap-option-group">
+        <div v-for="option in visibleOptions" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
               type="checkbox"
@@ -356,6 +358,7 @@ const props = defineProps({
   activeFactorTitle: { type: String, default: '' },
   canExecute: { type: Boolean, default: false },
   displaySlots: { type: Array, default: () => [] },
+  dragPreviewCount: { type: Number, default: 0 },
   dragOverSlot: { type: String, default: null },
   dynamicFactorCount: { type: Number, default: 1 },
   dynamicGroupAddText: { type: String, default: '+ 新建因子' },
@@ -412,6 +415,13 @@ const equalSlotMethodLabels = new Set([
   '单选-多选（对比分析）',
 ])
 const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
+const visibleOptions = computed(() => (props.method?.options || []).filter(option => {
+  if (['second_order_interaction', 'third_order_interaction'].includes(option.key)) {
+    return Boolean(props.optionValues.include_interaction)
+  }
+  if (option.key === 'post_hoc_method') return Boolean(props.optionValues.do_post_hoc)
+  return true
+}))
 
 function getAcceptLabel(slot) {
   if (slot.acceptLabel) return slot.acceptLabel
@@ -419,6 +429,15 @@ function getAcceptLabel(slot) {
   if (slot.accept === 'numeric') return '定量'
   if (slot.accept === 'categorical') return '定类'
   return slot.accept
+}
+
+function slotConstraintText(slot) {
+  if (slot.type === 'single') return '单个变量'
+  const min = Number(slot.min ?? 1)
+  const max = Number(slot.max)
+  if (Number.isFinite(max) && max === min) return `变量数=${max}`
+  if (Number.isFinite(max)) return `变量数${min}-${max}`
+  return `变量数≥${min}`
 }
 
 function multiOptionValues(key) {
