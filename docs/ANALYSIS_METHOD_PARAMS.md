@@ -677,21 +677,29 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
 | group_var | 分组变量 | 单选，定类变量 | 放入分组变量（3组及以上） |
-| test_var | 检验变量 | 单选，定量变量 | 放入检验变量 |
+| test_vars | 检验变量 | 多选，定量变量 | 放入需要比较的定量变量 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| method | 比较方法 | "Bonferroni" | LSD, Bonferroni, Tukey |  |
+| method | 比较方法 | "LSD方法(默认)" | LSD方法(默认), Scheffe, Tukey, Bonferroni校正, sidak, Tamhane T2(方差不齐), SNK Q检验, Duncan检验, Games-Howell(方差不齐) |  |
+| use_letters | 字母标记法 | false | true, false |  |
+| include_effect_size | 效应量 | false | true, false |  |
+| show_p_marks | P值标识 | true | true, false |  |
 
 前端槽位示例：
 
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1",
-  "method": "Bonferroni"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "method": "LSD方法(默认)",
+  "use_letters": false,
+  "include_effect_size": false,
+  "show_p_marks": true
 }
 ```
 
@@ -700,8 +708,13 @@ Authorization: Bearer <access_token>
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1",
-  "method": "Bonferroni"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "method": "LSD方法(默认)",
+  "use_letters": false,
+  "include_effect_size": false,
+  "show_p_marks": true
 }
 ```
 
@@ -715,21 +728,31 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| factor1 | 因素1 | 单选，定类变量 | 放入第一个分组因素 |
-| factor2 | 因素2 | 单选，定类变量 | 放入第二个分组因素 |
-| dependent | 因变量 | 单选，定量变量 | 放入因变量 |
+| factors | 分组变量X | 多选，定类变量 | 放入2个分组因素 |
+| dependent | 因变量Y | 单选，定量变量 | 放入因变量 |
+| covariates | 协变量 | 多选，定量变量 | 可选，放入需要控制的协变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_interaction | 分析交互效应 | true | true, false |  |
+| do_post_hoc | 事后多重比较 | false | true, false |  |
+| post_hoc_method | 方法选择 | "LSD" | LSD, bonf, sidak |  |
 
 前端槽位示例：
 
 ```json
 {
-  "factor1": "分类变量1",
-  "factor2": "分类变量1",
-  "dependent": "数值变量1"
+  "factors": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "dependent": "数值变量1",
+  "covariates": [],
+  "include_interaction": true,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD"
 }
 ```
 
@@ -737,9 +760,15 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "factor1": "分类变量1",
-  "factor2": "分类变量1",
-  "dependent": "数值变量1"
+  "factors": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "dependent": "数值变量1",
+  "covariates": [],
+  "include_interaction": true,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD"
 }
 ```
 
@@ -753,23 +782,38 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| factor1 | 因素1 | 单选，定类变量 | 放入第一个因素 |
-| factor2 | 因素2 | 单选，定类变量 | 放入第二个因素 |
-| factor3 | 因素3 | 单选，定类变量 | 放入第三个因素 |
-| dependent | 因变量 | 单选，定量变量 | 放入因变量 |
+| factors | 分组变量X | 多选，定类变量 | 放入3个分组因素 |
+| dependent | 因变量Y | 单选，定量变量 | 放入因变量 |
+| covariates | 协变量 | 多选，定量变量 | 可选，放入需要控制的协变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_interaction | 分析交互效应 | true | true, false |  |
+| second_order_interaction | 二阶交互效应 | true | true, false |  |
+| third_order_interaction | 三阶交互效应 | false | true, false |  |
+| include_effect_size | 效应量 | false | true, false |  |
+| do_post_hoc | 事后多重比较 | false | true, false |  |
+| post_hoc_method | 方法选择 | "LSD" | LSD, Tukey法, Bonferroni校正, Sidak法 |  |
 
 前端槽位示例：
 
 ```json
 {
-  "factor1": "分类变量1",
-  "factor2": "分类变量1",
-  "factor3": "分类变量1",
-  "dependent": "数值变量1"
+  "factors": [
+    "分类变量1",
+    "分类变量2",
+    "分类变量3"
+  ],
+  "dependent": "数值变量1",
+  "covariates": [],
+  "include_interaction": true,
+  "second_order_interaction": true,
+  "third_order_interaction": false,
+  "include_effect_size": false,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD"
 }
 ```
 
@@ -777,10 +821,19 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "factor1": "分类变量1",
-  "factor2": "分类变量1",
-  "factor3": "分类变量1",
-  "dependent": "数值变量1"
+  "factors": [
+    "分类变量1",
+    "分类变量2",
+    "分类变量3"
+  ],
+  "dependent": "数值变量1",
+  "covariates": [],
+  "include_interaction": true,
+  "second_order_interaction": true,
+  "third_order_interaction": false,
+  "include_effect_size": false,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD"
 }
 ```
 
