@@ -134,6 +134,7 @@ def build_document() -> str:
         "- `params` 是后端真正执行时读取的参数结构。",
         "- “前端槽位示例”对应 `/api/methods` 返回的变量槽位；部分方法会通过参数构建器转换成最终 `params`。",
         "- 变量名必须来自 `GET /api/variables/{session_id}` 返回的变量列表。",
+        "- 差异检验、回归/因果、数据检验、综合评价和高级问卷方法做 SPSSAU/SPSSPRO 对齐时，按 [分析方法 R 对齐清单](./ANALYSIS_R_ALIGNMENT.md) 优先走 R 脚本；Python 只做参数整理、R bridge 和结果透传。",
         "",
     ]
 
