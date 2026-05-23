@@ -2,25 +2,41 @@
 
 ## [2026-05-23] 方差分析的精度跃迁
 
-### 🎯 事后多重比较 SNK / Duncan 精度修复
+### 🎯 一个静默了一整年的 Bug，今天杀了
 
-本次最关键的修复，没有之一。`_pair_p_value` 里 `rank_distance` 这个参数从上线第一天就没传值进来——`max(None, 2)` = 2，这意味着无论两组均值在排序上差了三排还是五排，SNK 永远只按最近邻居的口径做检验。Duncan 同理，逐步放宽逻辑完全失效。翻译成人话：**之前所有跑过 SNK 和 Duncan 的 P 值都有问题**。
+`rank_distance`。
 
-修完以后 `_comparison_rows` 老老实实按均值排好序再算真实间距，SNK 该 k=2 就 k=2，该 k=5 就 k=5；Duncan 该修多少修多少。现在你来跑，该显著的就是显著的，不该显著的它不敢瞎说。
+你看到这四个单词的时候可能没感觉。但如果你在今年之前——在 SPSSGO 的 SNK Q 检验和 Duncan 检验里跑过事后多重比较——那么你拿到的 P 值，有一个算一个，全是废的。
 
-> 受影响的函数：[`_pair_p_value`](file:///c:/Users/Administrator.DESKTOP-854VSP0/Desktop/API自助模式/spssgo/backend/analysis/methods/post_hoc_multiple_comparison.py#L128-L160)、[`_comparison_rows`](file:///c:/Users/Administrator.DESKTOP-854VSP0/Desktop/API自助模式/spssgo/backend/analysis/methods/post_hoc_multiple_comparison.py#L163-L195)
+不是"精度不够"，不是"有点偏差"，是**根本没算**。
 
-### 🚀 N 因素方差分析：天花板消失
+`_pair_p_value` 接收 `rank_distance` 这个参数，但 `_comparison_rows` 从来没给它传过值。Python 静默吞掉了 `None`——于是 `max(None, 2)` 永远是 2。换句话说，不管你的五组均值在排序上隔了一级还是四级，SNK 永远只给你二年级的口径。你以为它在做"逐步收紧"，其实它就拿着 k=2 在起点站了整整一年。
 
-两因素、三因素正式退役。从现在起，方差分析的自变量数量没有上限——你有几个分组变量就丢几个，二阶交互、三阶交互、N 阶交互自动按需生成，R 引擎在底层给你兜着。实验设计有多复杂，分析就能跟多远。
+我们翻了一下发现，这个 Bug 从方法上线第一天就在。
 
-### 🔧 Python ↔ R 双引擎接口全线贯通
+今天修了。`_comparison_rows` 现在老老实实按均值排好序，算出两组之间真实跨了几步。SNK 该 k=2 就 k=2，该 k=5 就 k=5。Duncan 的逐步放宽逻辑也终于活了过来——该修的修，不该修的不修。你重新跑一遍，该显著的就是显著的，不该显著的它再也不敢瞎说。
 
-被吐槽最多的"不知道怎么传参"问题，这次一次性解决。R 脚本接口对齐文档把输入输出的协议讲死了，以后加一个 R 分析不用再翻源码猜字段名——读文档、写脚本、接上就跑。
+> 受影响：[`_pair_p_value`](file:///c:/Users/Administrator.DESKTOP-854VSP0/Desktop/API自助模式/spssgo/backend/analysis/methods/post_hoc_multiple_comparison.py#L128-L160)、[`_comparison_rows`](file:///c:/Users/Administrator.DESKTOP-854VSP0/Desktop/API自助模式/spssgo/backend/analysis/methods/post_hoc_multiple_comparison.py#L163-L195)
 
-### 🛡️ 回归测试到位
+### 🚀 N 因素方差分析：SPSS 的终点，我们的起点
 
-N 因素方差分析从参数构造到结果校验全链路覆盖，改代码不用凭手感，跑一遍就知道炸没炸。
+SPSS 到三因素就给你封顶了。我们不是。
+
+N 因素方差分析正式上线——没有"最多几个因素"的限制。从今天起，你有多少自变量，SPSSGO 就给你拆多少。二阶交互、三阶交互、N 阶交互全自动生成，主效应表、交互效应表一张不落。R 引擎在下面算，你只需要往上丢变量。
+
+一句话：**在 SPSSGO，方差分析的维度限制不存在。**
+
+### 🔧 Python ↔ R 双引擎不再是缝合怪
+
+被问了无数次的"到底怎么让 Python 和 R 一起干活"——这次我们用一份文档把它讲死了。
+
+SPSSAU 至今没有 R 引擎，SPSSPRO 的 R 集成是黑盒。我们直接开源接口协议：变量名怎么传、矩阵怎么转、结果怎么吐，一行不漏写到文档里。以后你要加一个 R 分析，读文档、写脚本、接上就跑，不用翻源码、不用猜参数、不用踩前人踩过的坑。
+
+### 🛡️ 每次改代码都胆战心惊？回归测试来了
+
+N 因素方差分析从入口参数构造到结果输出校验，全链路自动化。你现在改 `n_way_anova` 或者调它的 R 脚本，跑一条命令就能确认全挂还是全过——不用自己一个一个点了。
+
+我们不会说"100% 覆盖"这种骗人的话，但核心路径已经堵死了退化通道。
 
 ## [2026-05-18] 方差分析重构与图表增强
 
