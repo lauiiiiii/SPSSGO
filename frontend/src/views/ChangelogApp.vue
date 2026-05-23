@@ -76,6 +76,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
+    date: '2026-05-23',
+    type: 'fix',
+    title: 'Bug 修复与 N 因素方差分析',
+    items: [
+      '修复事后多重比较 SNK/Duncan 方法 rank_distance 变量计算缺失问题，确保逐步比较逻辑正确',
+      '新增 N 因素方差分析（n_way_anova）：支持任意数量因素的方差分析，底层通过 R 引擎实现',
+      '新增 R 脚本接口对齐文档（ANALYSIS_R_ALIGNMENT.md）',
+      '新增 N 因素方差分析测试用例',
+    ],
+  },
+  {
     date: '2026-05-18',
     type: 'feat',
     title: '方差分析重构与图表增强',
