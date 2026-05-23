@@ -11,6 +11,7 @@
 - `METHOD_META["category"]` 必须使用已有分类；要新增分类，先改 `backend/analysis/categories.py`。
 - 同类方法按 `METHOD_META["order"]` 排序，留 5 或 10 的间隔，后面插队才不难受。
 - 不要为了归类移动旧文件。真要迁移目录，先改注册器支持递归扫描，并做兼容验证。
+- 截图里列出的差异检验、回归/因果、数据检验、综合评价、高级问卷方法，后续对齐 SPSSAU/SPSSPRO 时统一按 [分析方法 R 对齐清单](../../../docs/ANALYSIS_R_ALIGNMENT.md) 走 R；Python 只做参数、桥接和结果透传。
 
 ## 常用方法
 

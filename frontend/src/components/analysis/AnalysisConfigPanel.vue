@@ -251,6 +251,47 @@
       </div>
     </template>
 
+    <template v-else-if="isNWayAnovaMethod">
+      <div class="ap-nway-form">
+        <div
+          v-for="slot in nWaySlots"
+          :key="slot.key"
+          class="ap-nway-slot"
+          :class="{
+            'ap-nway-slot--factors': slot.key === 'factors',
+            'ap-nway-slot--dependent': slot.key === 'dependent',
+          }"
+        >
+          <div class="ap-slot-label">
+            放入
+            <span v-if="getAcceptLabel(slot)" class="ap-accept-tag" :class="'accept-' + slot.accept">
+              [{{ getAcceptLabel(slot) }}]
+            </span>
+            {{ slot.label }}
+            <span class="ap-slot-constraint">
+              （{{ slotConstraintText(slot) }}）
+            </span>
+            <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+          </div>
+          <AnalysisDropZone
+            :drag-over-slot="dragOverSlot"
+            :drag-preview-count="dragPreviewCount"
+            :empty-text="nWaySlotEmptyText(slot)"
+            :get-var-type="getVarType"
+            :get-var-type-class="getVarTypeClass"
+            :slot="slot"
+            :slot-key="slot.key"
+            :values="slotValues[slot.key] || []"
+            zone-class="ap-nway-drop-zone"
+            @drag-over="$emit('drag-over', $event)"
+            @drag-leave="$emit('drag-leave')"
+            @drop-slot="(...args) => $emit('drop-slot', ...args)"
+            @remove-var="(...args) => $emit('remove-var', ...args)"
+          />
+        </div>
+      </div>
+    </template>
+
     <div
       v-else
       v-for="(slot, slotIndex) in displaySlots"
@@ -415,6 +456,14 @@ const equalSlotMethodLabels = new Set([
   '单选-多选（对比分析）',
 ])
 const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
+const isNWayAnovaMethod = computed(() => props.method?.label === '多因素方差分析')
+const nWaySlots = computed(() => {
+  if (!isNWayAnovaMethod.value) return []
+  const order = ['dependent', 'factors']
+  return order
+    .map(key => props.displaySlots.find(slot => slot.key === key))
+    .filter(Boolean)
+})
 const visibleOptions = computed(() => (props.method?.options || []).filter(option => {
   if (['second_order_interaction', 'third_order_interaction'].includes(option.key)) {
     return Boolean(props.optionValues.include_interaction)
@@ -438,6 +487,12 @@ function slotConstraintText(slot) {
   if (Number.isFinite(max) && max === min) return `变量数=${max}`
   if (Number.isFinite(max)) return `变量数${min}-${max}`
   return `变量数≥${min}`
+}
+
+function nWaySlotEmptyText(slot) {
+  if (slot.key === 'factors') return '放入2个及以上分组因素'
+  if (slot.key === 'dependent') return '放入因变量'
+  return slot.hint || '将待分析变量拖入到此区域'
 }
 
 function multiOptionValues(key) {

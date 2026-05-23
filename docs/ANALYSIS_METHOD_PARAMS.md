@@ -32,6 +32,7 @@ Authorization: Bearer <access_token>
 - `params` 是后端真正执行时读取的参数结构。
 - “前端槽位示例”对应 `/api/methods` 返回的变量槽位；部分方法会通过参数构建器转换成最终 `params`。
 - 变量名必须来自 `GET /api/variables/{session_id}` 返回的变量列表。
+- 差异检验、回归/因果、数据检验、综合评价和高级问卷方法做 SPSSAU/SPSSPRO 对齐时，按 [分析方法 R 对齐清单](./ANALYSIS_R_ALIGNMENT.md) 优先走 R 脚本；Python 只做参数整理、R bridge 和结果透传。
 
 当前共整理 80 个统计分析方法。
 
@@ -840,29 +841,36 @@ Authorization: Bearer <access_token>
 ### `n_way_anova` - 多因素方差分析
 
 - 分类：差异对比分析包
-- 说明：检验多个分类因素及其交互作用对因变量的影响
+- 说明：检验多个分类因素对因变量的影响
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| factors | 因素变量 | 多选，定类变量，至少 2 个 | 放入多个因素变量 |
-| dependent | 因变量 | 单选，定量变量 | 放入因变量 |
+| dependent | Y | 单选，定量变量 | 放入因变量 |
+| factors | X | 多选，定类变量，至少 2 个 | 放入2个及以上分组因素 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| do_post_hoc | 事后多重比较 | false | true, false |  |
+| post_hoc_method | 方法选择 | "LSD" | LSD, Tukey法, Bonferroni校正, Sidak法 | 默认不进行事后多重比较，可选比如LSD等事后多重比较检验方法。 |
+| include_effect_size | 效应量 | false | true, false | 选中后结果表格中会输出效应量。 |
 
 前端槽位示例：
 
 ```json
 {
+  "dependent": "数值变量1",
   "factors": [
     "分类变量1",
     "分类变量2"
   ],
-  "dependent": "数值变量1"
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD",
+  "include_effect_size": false
 }
 ```
 
@@ -870,11 +878,14 @@ Authorization: Bearer <access_token>
 
 ```json
 {
+  "dependent": "数值变量1",
   "factors": [
     "分类变量1",
     "分类变量2"
   ],
-  "dependent": "数值变量1"
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD",
+  "include_effect_size": false
 }
 ```
 

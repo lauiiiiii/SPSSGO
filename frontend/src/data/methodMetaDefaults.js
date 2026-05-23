@@ -194,6 +194,42 @@ export function normalizeMethodMetaMap(rawMethods) {
     param_builder: methods.three_way_anova?.param_builder || 'direct',
   })
 
+  ensureSlotMethod('n_way_anova', {
+    label: methods.n_way_anova?.label || '多因素方差分析',
+    category: methods.n_way_anova?.category || '差异对比分析包',
+    description: methods.n_way_anova?.description || '检验多个分类因素对因变量的影响',
+    order: methods.n_way_anova?.order ?? 50,
+    slots: [
+      { key: 'dependent', label: 'Y', type: 'single', accept: 'numeric', hint: '放入因变量' },
+      { key: 'factors', label: 'X', type: 'multiple', accept: 'categorical', min: 2, hint: '放入2个及以上分组因素' },
+    ],
+    options: [
+      {
+        key: 'do_post_hoc',
+        label: '事后多重比较',
+        type: 'checkbox',
+        default: false,
+      },
+      {
+        key: 'post_hoc_method',
+        label: '方法选择',
+        choices: ['LSD', 'Tukey法', 'Bonferroni校正', 'Sidak法'],
+        default: 'LSD',
+        hint: '默认不进行事后多重比较，可选比如LSD等事后多重比较检验方法。',
+      },
+      {
+        key: 'include_effect_size',
+        label: '效应量',
+        type: 'checkbox',
+        default: false,
+        hint: '选中后结果表格中会输出效应量。',
+      },
+      ...(methods.n_way_anova?.options || [])
+        .filter(option => !['do_post_hoc', 'post_hoc_method', 'include_effect_size'].includes(option.key)),
+    ],
+    param_builder: methods.n_way_anova?.param_builder || 'direct',
+  })
+
   ensureSlotMethod('confirmatory_factor_analysis', {
     label: '验证性因子分析',
     category: methods.confirmatory_factor_analysis?.category || '问卷分析包',
