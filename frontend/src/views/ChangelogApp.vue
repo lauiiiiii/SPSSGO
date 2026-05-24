@@ -76,7 +76,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
-    date: '2026-05-23',
+    date: '2026-05-24',
     type: 'feat',
     title: '分析方法全面升级与配置面板重构',
     items: [
