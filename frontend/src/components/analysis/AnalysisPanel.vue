@@ -79,7 +79,12 @@
         :get-var-type="getVarType"
         :get-var-type-class="getVarTypeClass"
         :is-cfa-method="isCfaMethod"
+        :is-one-sample-equivalence-method="isOneSampleEquivalenceMethod"
+        :is-one-way-anova-method="isOneWayAnovaMethod"
+        :is-paired-equivalence-method="isPairedEquivalenceMethod"
+        :is-summary-one-way-anova-method="isSummaryOneWayAnovaMethod"
         :is-summary-t-method="isSummaryTMethod"
+        :is-two-sample-equivalence-method="isTwoSampleEquivalenceMethod"
         :max-dynamic-factors="maxDynamicFactors"
         :max-second-order-models="maxSecondOrderModels"
         :method="method"
@@ -93,12 +98,14 @@
         @show-report="showReport"
         @add-second-order-model="addSecondOrderModel"
         @add-factor="addFactorSlot"
+        @add-summary-one-way-group="addSummaryOneWayGroup"
         @select-factor="selectFactor"
         @toggle-factor-menu="toggleFactorMenu"
         @rename-factor="renameFactor"
         @rename-factor-inline="renameFactorInline"
         @delete-factor="deleteFactor"
         @delete-second-order-model="deleteSecondOrderModel"
+        @remove-summary-one-way-group="removeSummaryOneWayGroup"
         @close-factor-menu="factorMenuKey = null"
         @drag-over="onDragOver"
         @drag-leave="onDragLeave"
@@ -110,6 +117,7 @@
         @select-second-order-model="selectSecondOrderModel"
         @execute="$emit('execute')"
         @toggle-second-order-member="toggleSecondOrderMember"
+        @update-summary-one-way-group="updateSummaryOneWayGroup"
       />
 
       <!-- Executing indicator -->
@@ -177,6 +185,7 @@ const {
   activeFactorTitle,
   addSecondOrderModel,
   addFactorSlot,
+  addSummaryOneWayGroup,
   addVar,
   canExecute,
   deleteFactor,
@@ -191,13 +200,19 @@ const {
   firstOrderFactorChoices,
   getFactorShortLabel,
   isCfaMethod,
+  isOneSampleEquivalenceMethod,
+  isOneWayAnovaMethod,
+  isPairedEquivalenceMethod,
+  isSummaryOneWayAnovaMethod,
   isSummaryTMethod,
+  isTwoSampleEquivalenceMethod,
   maxDynamicFactors,
   maxSecondOrderModels,
   onDragLeave,
   onDragOver,
   onDrop,
   optionValues,
+  removeSummaryOneWayGroup,
   removeVar,
   renameFactor,
   renameFactorInline,
@@ -212,6 +227,7 @@ const {
   slotValues,
   toggleFactorMenu,
   toggleSecondOrderMember,
+  updateSummaryOneWayGroup,
 } = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
 const {
   calcBox,

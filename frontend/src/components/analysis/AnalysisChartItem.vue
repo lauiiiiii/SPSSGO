@@ -580,6 +580,63 @@
           </svg>
         </template>
       </template>
+      <template v-else-if="isEquivalenceIntervalChart">
+        <template v-for="eqData in [calcEquivalenceInterval(chart.data)]" :key="0">
+          <svg
+            class="ap-chart-svg ap-chart-svg--equivalence"
+            :viewBox="`0 0 ${eqData.W} ${eqData.H}`"
+            :width="eqData.W"
+            :height="eqData.H">
+            <rect :x="eqData.ml" :y="eqData.mt" :width="eqData.pw" :height="eqData.ph" fill="white"/>
+            <line
+              v-for="(tick, tickIndex) in eqData.xTicks"
+              :key="'eqxg'+tickIndex"
+              :x1="tick.x"
+              :y1="eqData.mt"
+              :x2="tick.x"
+              :y2="eqData.mt + eqData.ph"
+              stroke="#e5eaf2"
+              stroke-width="1"
+            />
+            <line :x1="eqData.ml" :y1="eqData.axisY" :x2="eqData.ml + eqData.pw" :y2="eqData.axisY" stroke="#b8c0cc" stroke-width="1.2"/>
+            <line
+              v-for="limit in eqData.limits"
+              :key="limit.key"
+              :x1="limit.x"
+              :y1="eqData.mt"
+              :x2="limit.x"
+              :y2="eqData.mt + eqData.ph"
+              stroke="#ff4d4f"
+              stroke-width="1"
+              stroke-dasharray="4 3"
+            />
+            <text
+              v-for="limit in eqData.limits"
+              :key="'eql'+limit.key"
+              :x="limit.x"
+              :y="eqData.mt - 9"
+              text-anchor="middle"
+              font-size="11"
+              fill="#ff4d4f"
+            >{{ limit.label }}</text>
+            <line :x1="eqData.ciLowX" :y1="eqData.ciY" :x2="eqData.ciHighX" :y2="eqData.ciY" stroke="#1677ff" stroke-width="2"/>
+            <line :x1="eqData.ciLowX" :y1="eqData.ciY - 22" :x2="eqData.ciLowX" :y2="eqData.ciY + 22" stroke="#1677ff" stroke-width="2"/>
+            <line :x1="eqData.ciHighX" :y1="eqData.ciY - 22" :x2="eqData.ciHighX" :y2="eqData.ciY + 22" stroke="#1677ff" stroke-width="2"/>
+            <circle :cx="eqData.diffX" :cy="eqData.ciY" r="4" fill="#1677ff" stroke="#fff" stroke-width="1.5"/>
+            <text :x="eqData.ciLowX" :y="eqData.ciY + 7" text-anchor="end" font-size="12" fill="#374151">{{ eqData.ciLabel }}</text>
+            <text :x="eqData.ml + eqData.pw / 2" :y="eqData.H - 18" text-anchor="middle" font-size="12" fill="#6b7280">差值</text>
+            <text
+              v-for="(tick, tickIndex) in eqData.xTicks"
+              :key="'eqxt'+tickIndex"
+              :x="tick.x"
+              :y="eqData.mt + eqData.ph + 22"
+              text-anchor="middle"
+              font-size="11"
+              fill="#8a94a6"
+            >{{ tick.label }}</text>
+          </svg>
+        </template>
+      </template>
       <template v-else-if="isHeatmapChart">
         <template v-for="heatmapData in [calcFactorHeatmap(activeHeatmapData)]" :key="0">
           <svg class="ap-chart-svg ap-chart-svg--heatmap" :viewBox="`0 0 ${heatmapData.W} ${heatmapData.H}`" :width="heatmapData.W" :height="heatmapData.H">
@@ -747,6 +804,18 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && isEquivalenceIntervalChart" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>指标</th><th>值</th></tr></thead>
+        <tbody>
+          <tr><td>差值</td><td>{{ Number(chart.data.difference || 0).toFixed(3) }}</td></tr>
+          <tr><td>CI下限</td><td>{{ Number(chart.data.ciLow || 0).toFixed(3) }}</td></tr>
+          <tr><td>CI上限</td><td>{{ Number(chart.data.ciHigh || 0).toFixed(3) }}</td></tr>
+          <tr><td>等价下限</td><td>{{ Number(chart.data.lower || 0).toFixed(3) }}</td></tr>
+          <tr><td>等价上限</td><td>{{ Number(chart.data.upper || 0).toFixed(3) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
     <div v-if="dataVisible && isKanoBetterWorseChart" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
         <thead><tr><th>功能/服务</th><th>Better</th><th>Worse绝对值</th></tr></thead>
@@ -862,6 +931,7 @@ const categoryModeOptions = [
 const isCategoryChart = computed(() => categoryChartTypes.has(props.chart.chartType))
 const isCorrespondenceMap = computed(() => props.chart.chartType === 'correspondence_map')
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
+const isEquivalenceIntervalChart = computed(() => props.chart.chartType === 'equivalence_interval')
 const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
 const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
@@ -957,6 +1027,7 @@ const displayTitle = computed(() => {
   if (isCrosstabChart.value) return crosstabTitle.value
   if (isKanoBetterWorseChart.value) return props.chart.title || 'Better-Worse系数图'
   if (isMetricComparisonChart.value) return metricComparisonTitle.value
+  if (isEquivalenceIntervalChart.value) return props.chart.title || '等价检验可视化'
   return props.chart.title
 })
 
@@ -994,6 +1065,57 @@ function compactNumber(value) {
   const num = Number(value || 0)
   if (Math.abs(num) >= 10) return num.toFixed(2).replace(/\.?0+$/, '')
   return num.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function calcEquivalenceInterval(data = {}) {
+  const W = 720
+  const H = 320
+  const ml = 74
+  const mr = 54
+  const mt = 46
+  const mb = 60
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const values = [
+    Number(data.ciLow),
+    Number(data.ciHigh),
+    Number(data.lower),
+    Number(data.upper),
+    Number(data.difference),
+    0,
+  ].filter(Number.isFinite)
+  const minV = Math.min(...values)
+  const maxV = Math.max(...values)
+  const span = maxV - minV || 1
+  const pad = Math.max(span * 0.16, 0.1)
+  const low = minV - pad
+  const high = maxV + pad
+  const toX = value => ml + ((Number(value || 0) - low) / (high - low || 1)) * pw
+  const axisY = mt + ph * 0.5
+  const ciY = axisY - 10
+  const xTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = low + (index / 5) * (high - low)
+    return { x: toX(value), label: compactNumber(value) }
+  })
+  return {
+    W,
+    H,
+    ml,
+    mt,
+    pw,
+    ph,
+    axisY,
+    ciY,
+    ciLowX: toX(data.ciLow),
+    ciHighX: toX(data.ciHigh),
+    diffX: toX(data.difference),
+    ciLabel: data.ciLabel || '对等项的95% CI',
+    limits: [
+      { key: 'lower', label: 'LEL', x: toX(data.lower) },
+      { key: 'upper', label: 'UEL', x: toX(data.upper) },
+    ],
+    xTicks,
+  }
 }
 
 function chartTicks(maxValue, mapValue) {

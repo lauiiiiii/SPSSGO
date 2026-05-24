@@ -12,84 +12,451 @@
     <div class="ap-method-desc">{{ method.description }}</div>
     <template v-if="isSummaryTMethod">
       <div class="ap-summary-t-card">
-        <div class="ap-summary-t-tabs">
-          <button
-            type="button"
-            :class="{ 'is-active': optionValues.test_type !== 'independent' }"
-            @click="$emit('option-change', 'test_type', 'one_sample')"
-          >
+        <div class="ap-summary-t-radios">
+          <label>
+            <input
+              type="radio"
+              name="summary-t-test-type"
+              :checked="optionValues.test_type !== 'independent'"
+              @change="$emit('option-change', 'test_type', 'one_sample')"
+            />
             单样本T检验
-          </button>
-          <button
-            type="button"
-            :class="{ 'is-active': optionValues.test_type === 'independent' }"
-            @click="$emit('option-change', 'test_type', 'independent')"
-          >
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="summary-t-test-type"
+              :checked="optionValues.test_type === 'independent'"
+              @change="$emit('option-change', 'test_type', 'independent')"
+            />
             独立样本T检验
-          </button>
+          </label>
         </div>
 
-        <div v-if="optionValues.test_type === 'independent'" class="ap-summary-t-form ap-summary-t-form--two">
-          <div class="ap-summary-t-head"></div>
-          <div class="ap-summary-t-head">第1组</div>
-          <div class="ap-summary-t-head">第2组</div>
+        <table v-if="optionValues.test_type !== 'independent'" class="ap-summary-stat-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>样本量</th>
+              <th>平均值</th>
+              <th>标准差</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>样本1</td>
+              <td><input type="number" step="1" min="2" :value="optionValues.n" placeholder="请输入样本量" @input="$emit('option-change', 'n', $event.target.value)" /></td>
+              <td><input type="number" step="any" :value="optionValues.mean" placeholder="请输入平均值" @input="$emit('option-change', 'mean', $event.target.value)" /></td>
+              <td><input type="number" step="any" min="0" :value="optionValues.std" placeholder="请输入标准差" @input="$emit('option-change', 'std', $event.target.value)" /></td>
+            </tr>
+          </tbody>
+        </table>
 
-          <label>平均值</label>
-          <input type="number" step="any" :value="optionValues.group1_mean" placeholder="请输入" @input="$emit('option-change', 'group1_mean', $event.target.value)" />
-          <input type="number" step="any" :value="optionValues.group2_mean" placeholder="请输入" @input="$emit('option-change', 'group2_mean', $event.target.value)" />
+        <template v-else>
+          <table class="ap-summary-stat-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>样本量</th>
+                <th>平均值</th>
+                <th>标准差</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>样本1</td>
+                <td><input type="number" step="1" min="2" :value="optionValues.group1_n" placeholder="请输入样本量" @input="$emit('option-change', 'group1_n', $event.target.value)" /></td>
+                <td><input type="number" step="any" :value="optionValues.group1_mean" placeholder="请输入平均值" @input="$emit('option-change', 'group1_mean', $event.target.value)" /></td>
+                <td><input type="number" step="any" min="0" :value="optionValues.group1_std" placeholder="请输入标准差" @input="$emit('option-change', 'group1_std', $event.target.value)" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <table class="ap-summary-stat-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>样本量</th>
+                <th>平均值</th>
+                <th>标准差</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>样本1</td>
+                <td><input type="number" step="1" min="2" :value="optionValues.group2_n" placeholder="请输入样本量" @input="$emit('option-change', 'group2_n', $event.target.value)" /></td>
+                <td><input type="number" step="any" :value="optionValues.group2_mean" placeholder="请输入平均值" @input="$emit('option-change', 'group2_mean', $event.target.value)" /></td>
+                <td><input type="number" step="any" min="0" :value="optionValues.group2_std" placeholder="请输入标准差" @input="$emit('option-change', 'group2_std', $event.target.value)" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
 
-          <label>标准差</label>
-          <input type="number" step="any" min="0" :value="optionValues.group1_std" placeholder="请输入" @input="$emit('option-change', 'group1_std', $event.target.value)" />
-          <input type="number" step="any" min="0" :value="optionValues.group2_std" placeholder="请输入" @input="$emit('option-change', 'group2_std', $event.target.value)" />
-
-          <label>样本量</label>
-          <input type="number" step="1" min="2" :value="optionValues.group1_n" placeholder="请输入" @input="$emit('option-change', 'group1_n', $event.target.value)" />
-          <input type="number" step="1" min="2" :value="optionValues.group2_n" placeholder="请输入" @input="$emit('option-change', 'group2_n', $event.target.value)" />
-
-          <label>差值对比</label>
-          <input class="ap-summary-t-wide" type="number" step="any" :value="optionValues.diff_test_value" placeholder="默认0" @input="$emit('option-change', 'diff_test_value', $event.target.value)" />
-
-          <label>置信水平</label>
-          <select class="ap-summary-t-wide" :value="optionValues.confidence_level" @change="$emit('option-change', 'confidence_level', $event.target.value)">
-            <option value="90">90%</option>
-            <option value="95">95%</option>
-            <option value="99">99%</option>
-          </select>
-
-          <label>假设检验</label>
-          <select class="ap-summary-t-wide" :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
-            <option value="等于">等于</option>
-            <option value="大于">大于</option>
-            <option value="小于">小于</option>
-          </select>
-        </div>
-
-        <div v-else class="ap-summary-t-form">
-          <label>平均值</label>
-          <input type="number" step="any" :value="optionValues.mean" placeholder="请输入" @input="$emit('option-change', 'mean', $event.target.value)" />
-
-          <label>标准差</label>
-          <input type="number" step="any" min="0" :value="optionValues.std" placeholder="请输入" @input="$emit('option-change', 'std', $event.target.value)" />
-
-          <label>样本量</label>
-          <input type="number" step="1" min="2" :value="optionValues.n" placeholder="请输入" @input="$emit('option-change', 'n', $event.target.value)" />
-
-          <label>对比均值</label>
-          <input type="number" step="any" :value="optionValues.test_value" placeholder="默认0" @input="$emit('option-change', 'test_value', $event.target.value)" />
-
-          <label>置信水平</label>
+        <div class="ap-summary-t-options">
+          <label>置信度级别</label>
           <select :value="optionValues.confidence_level" @change="$emit('option-change', 'confidence_level', $event.target.value)">
-            <option value="90">90%</option>
-            <option value="95">95%</option>
             <option value="99">99%</option>
+            <option value="95">95%</option>
+            <option value="90">90%</option>
+          </select>
+          <label>检验值</label>
+          <input
+            type="number"
+            step="any"
+            :value="optionValues.test_type === 'independent' ? optionValues.diff_test_value : optionValues.test_value"
+            @input="$emit('option-change', optionValues.test_type === 'independent' ? 'diff_test_value' : 'test_value', $event.target.value)"
+          />
+        </div>
+      </div>
+    </template>
+    <template v-else-if="isSummaryOneWayAnovaMethod">
+      <div class="ap-summary-anova-card">
+        <table class="ap-summary-anova-table">
+          <thead>
+            <tr>
+              <th>组</th>
+              <th>样本量</th>
+              <th>平均值</th>
+              <th>标准差</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(group, index) in summaryOneWayGroups" :key="index">
+              <td>
+                <button
+                  type="button"
+                  class="ap-summary-anova-remove"
+                  :disabled="summaryOneWayGroups.length <= 3"
+                  @click="$emit('remove-summary-one-way-group', index)"
+                >
+                  −
+                </button>
+                <input
+                  class="ap-summary-anova-group-name"
+                  :value="group.label"
+                  @input="$emit('update-summary-one-way-group', index, 'label', $event.target.value)"
+                />
+              </td>
+              <td>
+                <input type="number" step="1" min="2" :value="group.n" placeholder="请输入样本量" @input="$emit('update-summary-one-way-group', index, 'n', $event.target.value)" />
+              </td>
+              <td>
+                <input type="number" step="any" :value="group.mean" placeholder="请输入平均值" @input="$emit('update-summary-one-way-group', index, 'mean', $event.target.value)" />
+              </td>
+              <td>
+                <input type="number" step="any" min="0" :value="group.std" placeholder="请输入标准差" @input="$emit('update-summary-one-way-group', index, 'std', $event.target.value)" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button type="button" class="ap-summary-anova-add" @click="$emit('add-summary-one-way-group')">+增加组</button>
+        <div class="ap-summary-anova-options">
+          <label>置信度级别</label>
+          <select :value="optionValues.confidence_level" @change="$emit('option-change', 'confidence_level', $event.target.value)">
+            <option value="99">99%</option>
+            <option value="95">95%</option>
+            <option value="90">90%</option>
+          </select>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="isOneWayAnovaMethod">
+      <div class="ap-one-way-card">
+        <div class="ap-one-way-options">
+          <label>检验数据形式：</label>
+          <select :value="optionValues.data_format" @change="$emit('option-change', 'data_format', $event.target.value)">
+            <option value="样本在同一列">样本在同一列</option>
+            <option value="样本在不同列">样本在不同列</option>
+          </select>
+        </div>
+
+        <template v-if="optionValues.data_format === '样本在不同列'">
+          <div v-for="slot in oneWayDifferentColumnSlots" :key="slot.key" class="ap-one-way-slot ap-one-way-slot--measure">
+            <div class="ap-slot-label">
+              放入
+              <span class="ap-accept-tag accept-numeric">[定量]</span>
+              {{ slot.label }}
+              <span class="ap-slot-constraint">（变量数≥3）</span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="slot.hint || '拖拽变量到此区域'"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              zone-class="ap-one-way-drop-zone ap-one-way-drop-zone--large"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <div
+            v-for="slot in oneWaySameColumnSlots"
+            :key="slot.key"
+            class="ap-one-way-slot"
+            :class="slot.key === 'group_var' ? 'ap-one-way-slot--group' : 'ap-one-way-slot--measure'"
+          >
+            <div class="ap-slot-label">
+              放入{{ slot.key === 'group_var' ? '分组' : '' }}
+              <span class="ap-accept-tag" :class="'accept-' + slot.accept">[{{ getAcceptLabel(slot) }}]</span>
+              {{ slot.label }}
+              <span class="ap-slot-constraint">（变量数{{ slot.key === 'group_var' ? '=1' : '≥1' }}）</span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="slot.hint || '拖拽变量到此区域'"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              :zone-class="slot.key === 'group_var' ? 'ap-one-way-drop-zone ap-one-way-drop-zone--small' : 'ap-one-way-drop-zone ap-one-way-drop-zone--large'"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+      </div>
+    </template>
+    <template v-else-if="isOneSampleEquivalenceMethod">
+      <div class="ap-one-eq-card">
+        <div v-if="displaySlots[0]" class="ap-slot-label">
+          放入
+          <span v-if="getAcceptLabel(displaySlots[0])" class="ap-accept-tag" :class="'accept-' + displaySlots[0].accept">
+            [{{ getAcceptLabel(displaySlots[0]) }}]
+          </span>
+          {{ displaySlots[0].label }}
+          <span class="ap-slot-constraint">（{{ slotConstraintText(displaySlots[0]) }}）</span>
+          <span v-if="slotValues[displaySlots[0].key]?.length" class="ap-slot-count">{{ slotValues[displaySlots[0].key].length }}</span>
+        </div>
+        <AnalysisDropZone
+          v-if="displaySlots[0]"
+          :drag-over-slot="dragOverSlot"
+          :drag-preview-count="dragPreviewCount"
+          :empty-text="displaySlots[0].hint || '拖入变量到此区域'"
+          :get-var-type="getVarType"
+          :get-var-type-class="getVarTypeClass"
+          :slot="displaySlots[0]"
+          :slot-key="displaySlots[0].key"
+          :values="slotValues[displaySlots[0].key] || []"
+          zone-class="ap-one-eq-drop-zone"
+          @drag-over="$emit('drag-over', $event)"
+          @drag-leave="$emit('drag-leave')"
+          @drop-slot="(...args) => $emit('drop-slot', ...args)"
+          @remove-var="(...args) => $emit('remove-var', ...args)"
+        />
+        <div class="ap-one-eq-options">
+          <label>备择假设：</label>
+          <select :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
+            <option value="下限<检验均值-目标值<上限">下限&lt;检验均值-目标值&lt;上限</option>
+            <option value="检验均值>目标值">检验均值&gt;目标值</option>
+            <option value="检验均值<目标值">检验均值&lt;目标值</option>
+            <option value="检验均值-目标值>下限">检验均值-目标值&gt;下限</option>
+            <option value="检验均值-目标值<上限">检验均值-目标值&lt;上限</option>
           </select>
 
-          <label>假设检验</label>
-          <select :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
-            <option value="等于">等于</option>
-            <option value="大于">大于</option>
-            <option value="小于">小于</option>
+          <label>目标值：</label>
+          <input
+            type="number"
+            step="any"
+            :value="optionValues.target_value"
+            placeholder="目标值"
+            @input="$emit('option-change', 'target_value', $event.target.value)"
+          />
+
+          <label>下限：</label>
+          <input
+            type="number"
+            step="any"
+            :value="optionValues.lower"
+            @input="$emit('option-change', 'lower', $event.target.value)"
+          />
+
+          <label>上限：</label>
+          <input
+            type="number"
+            step="any"
+            :value="optionValues.upper"
+            @input="$emit('option-change', 'upper', $event.target.value)"
+          />
+
+          <label class="ap-one-eq-check">
+            <input
+              type="checkbox"
+              :checked="!!optionValues.scale_by_target"
+              @change="$emit('option-change', 'scale_by_target', $event.target.checked)"
+            />
+            <span>乘以目标值</span>
+            <span class="ap-option-help" data-hint="勾选后，下限和上限按目标值比例换算，例如目标值为2、上下限为±0.1时，等价区间为±0.2。">?</span>
+          </label>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="isTwoSampleEquivalenceMethod">
+      <div class="ap-two-eq-card">
+        <template v-if="optionValues.data_format === '样本在不同列'">
+          <div v-for="slot in twoSampleDifferentColumnSlots" :key="slot.key" class="ap-two-eq-slot">
+            <div class="ap-slot-label">
+              放入
+              <span class="ap-accept-tag accept-numeric">[定量]</span>
+              {{ slot.label }}
+              <span class="ap-slot-constraint">（变量数=1）</span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="slot.hint || '拖入变量到此区域'"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              zone-class="ap-two-eq-drop-zone"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="slot in twoSampleSameColumnSlots" :key="slot.key" class="ap-two-eq-slot">
+            <div class="ap-slot-label">
+              放入{{ slot.key === 'test_var' ? '检验样本' : '二分类' }}
+              <span class="ap-accept-tag" :class="'accept-' + slot.accept">[{{ getAcceptLabel(slot) }}]</span>
+              变量
+              <span class="ap-slot-constraint">（变量数=1）</span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="slot.hint || '拖入变量到此区域'"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              zone-class="ap-two-eq-drop-zone"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+
+        <div class="ap-two-eq-options">
+          <label>检验数据形式：</label>
+          <select :value="optionValues.data_format" @change="$emit('option-change', 'data_format', $event.target.value)">
+            <option value="样本在同一列">样本在同一列</option>
+            <option value="样本在不同列">样本在不同列</option>
           </select>
+
+          <label>参考水平：</label>
+          <select :value="optionValues.reference_level" :disabled="optionValues.data_format === '样本在不同列'" @change="$emit('option-change', 'reference_level', $event.target.value)">
+            <option value="">请选择</option>
+            <option value="1">1.0</option>
+            <option value="2">2.0</option>
+            <option value="3">3.0</option>
+          </select>
+
+          <label>相关假设：</label>
+          <select :value="optionValues.relationship" @change="$emit('option-change', 'relationship', $event.target.value)">
+            <option value="检验均值 - 参考均值">检验均值 - 参考均值</option>
+            <option value="检验均值/参考均值">检验均值/参考均值</option>
+            <option value="检验均值/参考均值(通过对数变换)">检验均值/参考均值(通过对数变换)</option>
+          </select>
+
+          <label>备择假设：</label>
+          <select :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
+            <option value="下限<检验均值 - 参考均值<上限">下限&lt;检验均值 - 参考均值&lt;上限</option>
+            <option value="检验均值>参考均值">检验均值&gt;参考均值</option>
+            <option value="检验均值<参考均值">检验均值&lt;参考均值</option>
+            <option value="检验均值 - 参考均值>下限">检验均值 - 参考均值&gt;下限</option>
+            <option value="检验均值 - 参考均值<上限">检验均值 - 参考均值&lt;上限</option>
+          </select>
+
+          <label>下限：</label>
+          <input type="number" step="any" :value="optionValues.lower" @input="$emit('option-change', 'lower', $event.target.value)" />
+
+          <label>上限：</label>
+          <input type="number" step="any" :value="optionValues.upper" @input="$emit('option-change', 'upper', $event.target.value)" />
+
+          <label class="ap-two-eq-check">
+            <input type="checkbox" :checked="!!optionValues.scale_by_reference" @change="$emit('option-change', 'scale_by_reference', $event.target.checked)" />
+            <span>乘以参考均值</span>
+            <span class="ap-option-help" data-hint="将上下限的值乘以参考均值。适合把相对比例转换为绝对差值的场景。">?</span>
+          </label>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="isPairedEquivalenceMethod">
+      <div class="ap-two-eq-card">
+        <div v-for="slot in pairedEquivalenceSlots" :key="slot.key" class="ap-two-eq-slot">
+          <div class="ap-slot-label">
+            放入
+            <span class="ap-accept-tag accept-numeric">[定量]</span>
+            {{ slot.label }}
+            <span class="ap-slot-constraint">（变量数=1）</span>
+            <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+          </div>
+          <AnalysisDropZone
+            :drag-over-slot="dragOverSlot"
+            :drag-preview-count="dragPreviewCount"
+            :empty-text="slot.hint || '拖入变量到此区域'"
+            :get-var-type="getVarType"
+            :get-var-type-class="getVarTypeClass"
+            :slot="slot"
+            :slot-key="slot.key"
+            :values="slotValues[slot.key] || []"
+            zone-class="ap-two-eq-drop-zone"
+            @drag-over="$emit('drag-over', $event)"
+            @drag-leave="$emit('drag-leave')"
+            @drop-slot="(...args) => $emit('drop-slot', ...args)"
+            @remove-var="(...args) => $emit('remove-var', ...args)"
+          />
+        </div>
+
+        <div class="ap-two-eq-options">
+          <label>相关假设：</label>
+          <select :value="optionValues.relationship" @change="$emit('option-change', 'relationship', $event.target.value)">
+            <option value="检验均值 - 参考均值">检验均值 - 参考均值</option>
+            <option value="检验均值/参考均值">检验均值/参考均值</option>
+            <option value="检验均值/参考均值(通过对数变换)">检验均值/参考均值(通过对数变换)</option>
+          </select>
+
+          <label>备择假设：</label>
+          <select :value="optionValues.alternative" @change="$emit('option-change', 'alternative', $event.target.value)">
+            <option value="下限<检验均值 - 参考均值<上限">下限&lt;检验均值 - 参考均值&lt;上限</option>
+            <option value="检验均值>参考均值">检验均值&gt;参考均值</option>
+            <option value="检验均值<参考均值">检验均值&lt;参考均值</option>
+            <option value="检验均值 - 参考均值>下限">检验均值 - 参考均值&gt;下限</option>
+            <option value="检验均值 - 参考均值<上限">检验均值 - 参考均值&lt;上限</option>
+          </select>
+
+          <label>下限：</label>
+          <input type="number" step="any" :value="optionValues.lower" @input="$emit('option-change', 'lower', $event.target.value)" />
+
+          <label>上限：</label>
+          <input type="number" step="any" :value="optionValues.upper" @input="$emit('option-change', 'upper', $event.target.value)" />
+
+          <label class="ap-two-eq-check">
+            <input type="checkbox" :checked="!!optionValues.scale_by_reference" @change="$emit('option-change', 'scale_by_reference', $event.target.checked)" />
+            <span>乘以参考均值</span>
+            <span class="ap-option-help" data-hint="将上下限的值乘以参考均值。适合把相对比例转换为绝对差值的场景。">?</span>
+          </label>
         </div>
       </div>
     </template>
@@ -337,7 +704,7 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
-      <div v-if="method.options?.length && !isSummaryTMethod" class="ap-options ap-options--actions">
+      <div v-if="method.options?.length && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
         <div v-for="option in visibleOptions" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
@@ -413,7 +780,12 @@ const props = defineProps({
   getVarType: { type: Function, required: true },
   getVarTypeClass: { type: Function, required: true },
   isCfaMethod: { type: Boolean, default: false },
+  isOneSampleEquivalenceMethod: { type: Boolean, default: false },
+  isOneWayAnovaMethod: { type: Boolean, default: false },
+  isPairedEquivalenceMethod: { type: Boolean, default: false },
+  isSummaryOneWayAnovaMethod: { type: Boolean, default: false },
   isSummaryTMethod: { type: Boolean, default: false },
+  isTwoSampleEquivalenceMethod: { type: Boolean, default: false },
   maxDynamicFactors: { type: Number, default: 12 },
   maxSecondOrderModels: { type: Number, default: 8 },
   method: { type: Object, required: true },
@@ -429,6 +801,7 @@ const props = defineProps({
 const emit = defineEmits([
   'add-second-order-model',
   'add-factor',
+  'add-summary-one-way-group',
   'close-factor-menu',
   'delete-factor',
   'delete-second-order-model',
@@ -438,6 +811,7 @@ const emit = defineEmits([
   'execute',
   'option-change',
   'remove-var',
+  'remove-summary-one-way-group',
   'rename-second-order-factor',
   'rename-factor',
   'rename-factor-inline',
@@ -447,6 +821,7 @@ const emit = defineEmits([
   'show-report',
   'toggle-factor-menu',
   'toggle-second-order-member',
+  'update-summary-one-way-group',
 ])
 
 const equalSlotMethodLabels = new Set([
@@ -454,9 +829,38 @@ const equalSlotMethodLabels = new Set([
   '多选-多选（交叉分析）',
   '多选-单选（对比分析）',
   '单选-多选（对比分析）',
+  '多变量方差分析',
 ])
 const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
 const isNWayAnovaMethod = computed(() => props.method?.label === '多因素方差分析')
+const summaryOneWayGroups = computed(() => (
+  Array.isArray(props.optionValues.groups) ? props.optionValues.groups : []
+))
+function twoSampleSlot(key, fallback) {
+  return props.displaySlots.find(slot => slot.key === key) || fallback
+}
+function oneWaySlot(key, fallback) {
+  return { ...(props.displaySlots.find(slot => slot.key === key) || {}), ...fallback }
+}
+const twoSampleSameColumnSlots = computed(() => [
+  twoSampleSlot('test_var', { key: 'test_var', label: '检验样本', type: 'single', accept: 'numeric', hint: '拖入变量到此区域' }),
+  twoSampleSlot('group_var', { key: 'group_var', label: '二分类', type: 'single', accept: 'categorical', hint: '拖入变量到此区域' }),
+])
+const oneWaySameColumnSlots = computed(() => [
+  oneWaySlot('group_var', { key: 'group_var', label: '变量X', type: 'single', accept: 'categorical', hint: '拖拽变量到此区域' }),
+  oneWaySlot('test_vars', { key: 'test_vars', label: '变量Y', type: 'multiple', accept: 'numeric', min: 1, hint: '拖拽变量到此区域' }),
+])
+const oneWayDifferentColumnSlots = computed(() => [
+  twoSampleSlot('group_columns', { key: 'group_columns', label: '变量Y', type: 'multiple', accept: 'numeric', min: 3, hint: '拖拽变量到此区域' }),
+])
+const twoSampleDifferentColumnSlots = computed(() => [
+  twoSampleSlot('test_var', { key: 'test_var', label: '检验样本', type: 'single', accept: 'numeric', hint: '拖入变量到此区域' }),
+  twoSampleSlot('reference_var', { key: 'reference_var', label: '参考样本', type: 'single', accept: 'numeric', hint: '拖入变量到此区域' }),
+])
+const pairedEquivalenceSlots = computed(() => [
+  twoSampleSlot('test_var', { key: 'test_var', label: '检验变量', type: 'single', accept: 'numeric', hint: '拖入变量到此区域' }),
+  twoSampleSlot('reference_var', { key: 'reference_var', label: '参考变量', type: 'single', accept: 'numeric', hint: '拖入变量到此区域' }),
+])
 const nWaySlots = computed(() => {
   if (!isNWayAnovaMethod.value) return []
   const order = ['dependent', 'factors']

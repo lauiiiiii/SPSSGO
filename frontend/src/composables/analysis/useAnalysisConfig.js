@@ -3,6 +3,11 @@ import { computed, reactive, ref, watch } from 'vue'
 const CFA_METHOD_KEY = 'confirmatory_factor_analysis'
 const RELIABILITY_METHOD_KEY = 'reliability'
 const SUMMARY_T_METHOD_KEY = 'summary_t_test'
+const SUMMARY_ONEWAY_ANOVA_METHOD_KEY = 'summary_oneway_anova'
+const ONE_WAY_ANOVA_METHOD_KEY = 'anova_oneway'
+const ONE_SAMPLE_EQUIVALENCE_METHOD_KEY = 'one_sample_equivalence_test'
+const TWO_SAMPLE_EQUIVALENCE_METHOD_KEY = 'two_sample_equivalence_test'
+const PAIRED_EQUIVALENCE_METHOD_KEY = 'paired_equivalence_test'
 const DYNAMIC_GROUP_CONFIGS = {
   [CFA_METHOD_KEY]: {
     addText: '+ 新建因子',
@@ -48,6 +53,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const dynamicGroupConfig = computed(() => DYNAMIC_GROUP_CONFIGS[methodKey.value] || null)
   const isCfaMethod = computed(() => Boolean(dynamicGroupConfig.value))
   const isSummaryTMethod = computed(() => methodKey.value === SUMMARY_T_METHOD_KEY)
+  const isSummaryOneWayAnovaMethod = computed(() => methodKey.value === SUMMARY_ONEWAY_ANOVA_METHOD_KEY)
+  const isOneWayAnovaMethod = computed(() => methodKey.value === ONE_WAY_ANOVA_METHOD_KEY)
+  const isOneSampleEquivalenceMethod = computed(() => methodKey.value === ONE_SAMPLE_EQUIVALENCE_METHOD_KEY)
+  const isTwoSampleEquivalenceMethod = computed(() => methodKey.value === TWO_SAMPLE_EQUIVALENCE_METHOD_KEY)
+  const isPairedEquivalenceMethod = computed(() => methodKey.value === PAIRED_EQUIVALENCE_METHOD_KEY)
   const methodSlots = computed(() => method.value?.slots || [])
 
   const displaySlots = computed(() => {
@@ -105,6 +115,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const canExecute = computed(() => {
     if (!method.value) return false
     if (isSummaryTMethod.value) return summaryTReady()
+    if (isSummaryOneWayAnovaMethod.value) return summaryOneWayAnovaReady()
+    if (isOneWayAnovaMethod.value) return oneWayAnovaReady()
+    if (isOneSampleEquivalenceMethod.value) return oneSampleEquivalenceReady()
+    if (isTwoSampleEquivalenceMethod.value) return twoSampleEquivalenceReady()
+    if (isPairedEquivalenceMethod.value) return pairedEquivalenceReady()
     if (isCfaMethod.value) {
       const groupLengths = displaySlots.value.map(slot => (slotValues[slot.key] || []).length)
       const validGroupLengths = groupLengths.filter(length => length > 0)
@@ -147,6 +162,15 @@ export function useAnalysisConfig(method, methodKey, emit) {
       min: 0,
       hint: `放入${config.hintTarget}${index}对应的题项`,
     }
+  }
+
+  function buildSummaryOneWayGroups(count = 3) {
+    return Array.from({ length: count }, (_, index) => ({
+      label: `样本${index + 1}`,
+      n: '',
+      mean: '',
+      std: '',
+    }))
   }
 
   function syncCfaSlotValues() {
@@ -221,6 +245,55 @@ export function useAnalysisConfig(method, methodKey, emit) {
         confidence_level: '95',
         alternative: '等于',
       })
+    } else if (isSummaryOneWayAnovaMethod.value) {
+      Object.assign(optionValues, {
+        groups: buildSummaryOneWayGroups(),
+        confidence_level: '95',
+      })
+    } else if (isOneWayAnovaMethod.value) {
+      for (const slot of nextMethod.slots || []) {
+        slotValues[slot.key] = []
+      }
+      Object.assign(optionValues, {
+        data_format: '样本在同一列',
+        post_hoc: 'LSD',
+        include_effect_size: true,
+      })
+    } else if (isOneSampleEquivalenceMethod.value) {
+      for (const slot of nextMethod.slots || []) {
+        slotValues[slot.key] = []
+      }
+      Object.assign(optionValues, {
+        alternative: '下限<检验均值-目标值<上限',
+        target_value: '',
+        lower: '-0.1',
+        upper: '0.1',
+        scale_by_target: true,
+      })
+    } else if (isTwoSampleEquivalenceMethod.value) {
+      for (const slot of nextMethod.slots || []) {
+        slotValues[slot.key] = []
+      }
+      Object.assign(optionValues, {
+        data_format: '样本在同一列',
+        reference_level: '',
+        relationship: '检验均值 - 参考均值',
+        alternative: '下限<检验均值 - 参考均值<上限',
+        lower: '-0.1',
+        upper: '0.1',
+        scale_by_reference: true,
+      })
+    } else if (isPairedEquivalenceMethod.value) {
+      for (const slot of nextMethod.slots || []) {
+        slotValues[slot.key] = []
+      }
+      Object.assign(optionValues, {
+        relationship: '检验均值 - 参考均值',
+        alternative: '下限<检验均值 - 参考均值<上限',
+        lower: '-0.1',
+        upper: '0.1',
+        scale_by_reference: true,
+      })
     } else if (isCfaMethod.value) {
       dynamicFactorCount.value = 1
       activeFactorKey.value = slotKeyFor(1)
@@ -232,7 +305,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     }
 
     for (const option of (nextMethod.options || [])) {
-      if (isSummaryTMethod.value && Object.prototype.hasOwnProperty.call(optionValues, option.key)) {
+      if ((isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isOneWayAnovaMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value || isPairedEquivalenceMethod.value) && Object.prototype.hasOwnProperty.call(optionValues, option.key)) {
         continue
       }
       if (option.type === 'checkbox') {
@@ -374,7 +447,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
   }
 
   function resetSlots() {
-    if (isSummaryTMethod.value) {
+    if (isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value) {
       resetConfigState(method.value)
       return
     }
@@ -397,6 +470,22 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   function setOptionValue(key, value) {
     optionValues[key] = value
+    if (isTwoSampleEquivalenceMethod.value && key === 'data_format') {
+      if (value === '样本在不同列') {
+        slotValues.group_var = []
+        optionValues.reference_level = ''
+      } else {
+        slotValues.reference_var = []
+      }
+    }
+    if (isOneWayAnovaMethod.value && key === 'data_format') {
+      if (value === '样本在不同列') {
+        slotValues.group_var = []
+        slotValues.test_vars = []
+      } else {
+        slotValues.group_columns = []
+      }
+    }
     if (key === 'second_order_model') syncSecondOrderMembers()
   }
 
@@ -427,6 +516,93 @@ export function useAnalysisConfig(method, methodKey, emit) {
       && filledNumber(optionValues.n, 'positive')
       && filledNumber(optionValues.test_value)
     )
+  }
+
+  function summaryOneWayAnovaReady() {
+    const groups = Array.isArray(optionValues.groups) ? optionValues.groups : []
+    return groups.length >= 3 && groups.every(group => (
+      filledNumber(group.n, 'positive')
+      && Number(group.n) > 1
+      && filledNumber(group.mean)
+      && filledNumber(group.std, 'non_negative')
+    ))
+  }
+
+  function oneSampleEquivalenceReady() {
+    const variableSlot = displaySlots.value[0]
+    const selected = variableSlot ? (slotValues[variableSlot.key] || []) : []
+    return (
+      selected.length === 1
+      && filledNumber(optionValues.target_value)
+      && filledNumber(optionValues.lower)
+      && filledNumber(optionValues.upper)
+      && Number(optionValues.lower) < Number(optionValues.upper)
+    )
+  }
+
+  function twoSampleEquivalenceReady() {
+    const testSelected = slotValues.test_var || []
+    const groupSelected = slotValues.group_var || []
+    const refSelected = slotValues.reference_var || []
+    const slotsReady = optionValues.data_format === '样本在不同列'
+      ? testSelected.length === 1 && refSelected.length === 1
+      : testSelected.length === 1 && groupSelected.length === 1
+    return (
+      slotsReady
+      && filledNumber(optionValues.lower)
+      && filledNumber(optionValues.upper)
+      && Number(optionValues.lower) < Number(optionValues.upper)
+    )
+  }
+
+  function oneWayAnovaReady() {
+    if (optionValues.data_format === '样本在不同列') {
+      return (slotValues.group_columns || []).length >= 3
+    }
+    return (slotValues.group_var || []).length === 1 && (slotValues.test_vars || []).length >= 1
+  }
+
+  function pairedEquivalenceReady() {
+    const testSelected = slotValues.test_var || slotValues.var1 || []
+    const refSelected = slotValues.reference_var || slotValues.var2 || []
+    return (
+      testSelected.length === 1
+      && refSelected.length === 1
+      && filledNumber(optionValues.lower)
+      && filledNumber(optionValues.upper)
+      && Number(optionValues.lower) < Number(optionValues.upper)
+    )
+  }
+
+  function addSummaryOneWayGroup() {
+    const groups = Array.isArray(optionValues.groups) ? optionValues.groups : []
+    optionValues.groups = [
+      ...groups,
+      {
+        label: `样本${groups.length + 1}`,
+        n: '',
+        mean: '',
+        std: '',
+      },
+    ]
+  }
+
+  function removeSummaryOneWayGroup(index) {
+    const groups = Array.isArray(optionValues.groups) ? optionValues.groups : []
+    if (groups.length <= 3) return
+    optionValues.groups = groups
+      .filter((_, itemIndex) => itemIndex !== index)
+      .map((group, itemIndex) => ({
+        ...group,
+        label: group.label || `样本${itemIndex + 1}`,
+      }))
+  }
+
+  function updateSummaryOneWayGroup(index, key, value) {
+    const groups = Array.isArray(optionValues.groups) ? optionValues.groups : []
+    optionValues.groups = groups.map((group, itemIndex) => (
+      itemIndex === index ? { ...group, [key]: value } : group
+    ))
   }
 
   function setSecondOrderFactorName(value) {
@@ -528,6 +704,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     activeFactorTitle,
     addSecondOrderModel,
     addFactorSlot,
+    addSummaryOneWayGroup,
     addVar,
     canExecute,
     deleteFactor,
@@ -541,6 +718,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
     factorMenuKey,
     getFactorShortLabel,
     isCfaMethod,
+    isOneSampleEquivalenceMethod,
+    isOneWayAnovaMethod,
+    isPairedEquivalenceMethod,
+    isTwoSampleEquivalenceMethod,
+    isSummaryOneWayAnovaMethod,
     isSummaryTMethod,
     maxDynamicFactors,
     maxSecondOrderModels,
@@ -549,6 +731,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     onDrop,
     optionValues,
     removeFactorSlot,
+    removeSummaryOneWayGroup,
     removeVar,
     renameFactor,
     renameFactorInline,
@@ -564,5 +747,6 @@ export function useAnalysisConfig(method, methodKey, emit) {
     secondOrderFactorChoices,
     toggleFactorMenu,
     toggleSecondOrderMember,
+    updateSummaryOneWayGroup,
   }
 }
