@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import {
   calcBoxplotLayout,
+  calcGroupedBoxplotLayout,
   calcCategoryBarLayout,
   calcCategoryPieLayout,
   calcCorrespondenceMapLayout,
@@ -148,6 +149,10 @@ export function useAnalysisCharts() {
     return calcBoxplotLayout(data)
   }
 
+  function calcGroupedBox(data) {
+    return calcGroupedBoxplotLayout(data)
+  }
+
   function calcCategoryBar(data, horizontal = false) {
     return calcCategoryBarLayout(data, horizontal)
   }
@@ -195,6 +200,7 @@ export function useAnalysisCharts() {
 
   return {
     calcBox,
+    calcGroupedBox,
     calcCategoryBar,
     calcCategoryPie,
     calcCorrespondenceMap,

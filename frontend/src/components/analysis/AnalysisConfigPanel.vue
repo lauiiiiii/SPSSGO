@@ -159,6 +159,70 @@
         </div>
       </div>
     </template>
+    <template v-else-if="isIndependentTMethod">
+      <div class="ap-one-way-card">
+        <div class="ap-one-way-options">
+          <label>检验数据形式：</label>
+          <select :value="optionValues.data_format" @change="$emit('option-change', 'data_format', $event.target.value)">
+            <option value="样本在同一列">样本在同一列</option>
+            <option value="样本在不同列">样本在不同列</option>
+          </select>
+        </div>
+
+        <template v-if="optionValues.data_format === '样本在不同列'">
+          <div class="ap-one-way-slot ap-one-way-slot--measure">
+            <div class="ap-slot-label">
+              放入
+              <span class="ap-accept-tag accept-numeric">[定量]</span>
+              变量Y
+              <span class="ap-slot-constraint">（变量数=2）</span>
+              <span v-if="slotValues.test_vars?.length" class="ap-slot-count">{{ slotValues.test_vars.length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              empty-text="拖入两个样本列到此区域"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="independentDifferentColumnSlot"
+              slot-key="test_vars"
+              :values="slotValues.test_vars || []"
+              zone-class="ap-one-way-drop-zone ap-one-way-drop-zone--large"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="slot in independentSameColumnSlots" :key="slot.key" class="ap-one-way-slot" :class="slot.key === 'group_var' ? 'ap-one-way-slot--group' : 'ap-one-way-slot--measure'">
+            <div class="ap-slot-label">
+              放入{{ slot.key === 'group_var' ? '二分类' : '' }}
+              <span class="ap-accept-tag" :class="'accept-' + slot.accept">[{{ getAcceptLabel(slot) }}]</span>
+              {{ slot.label }}
+              <span class="ap-slot-constraint">（变量数{{ slot.key === 'group_var' ? '=1' : '≥1' }}）</span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="slot.hint || '拖拽变量到此区域'"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              :zone-class="slot.key === 'group_var' ? 'ap-one-way-drop-zone ap-one-way-drop-zone--small' : 'ap-one-way-drop-zone ap-one-way-drop-zone--large'"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
+          </div>
+        </template>
+      </div>
+    </template>
     <template v-else-if="isOneWayAnovaMethod">
       <div class="ap-one-way-card">
         <div class="ap-one-way-options">
@@ -704,7 +768,7 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
-      <div v-if="method.options?.length && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
+      <div v-if="method.options?.length && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isIndependentTMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
         <div v-for="option in visibleOptions" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
@@ -780,6 +844,7 @@ const props = defineProps({
   getVarType: { type: Function, required: true },
   getVarTypeClass: { type: Function, required: true },
   isCfaMethod: { type: Boolean, default: false },
+  isIndependentTMethod: { type: Boolean, default: false },
   isOneSampleEquivalenceMethod: { type: Boolean, default: false },
   isOneWayAnovaMethod: { type: Boolean, default: false },
   isPairedEquivalenceMethod: { type: Boolean, default: false },
@@ -850,6 +915,13 @@ const oneWaySameColumnSlots = computed(() => [
   oneWaySlot('group_var', { key: 'group_var', label: '变量X', type: 'single', accept: 'categorical', hint: '拖拽变量到此区域' }),
   oneWaySlot('test_vars', { key: 'test_vars', label: '变量Y', type: 'multiple', accept: 'numeric', min: 1, hint: '拖拽变量到此区域' }),
 ])
+const independentSameColumnSlots = computed(() => [
+  oneWaySlot('group_var', { key: 'group_var', label: '变量X', type: 'single', accept: 'categorical', hint: '拖入二分类变量到此区域' }),
+  oneWaySlot('test_vars', { key: 'test_vars', label: '变量Y', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入定量变量到此区域' }),
+])
+const independentDifferentColumnSlot = computed(() => (
+  oneWaySlot('test_vars', { key: 'test_vars', label: '变量Y', type: 'multiple', accept: 'numeric', min: 2, max: 2, hint: '拖入两个样本列到此区域' })
+))
 const oneWayDifferentColumnSlots = computed(() => [
   twoSampleSlot('group_columns', { key: 'group_columns', label: '变量Y', type: 'multiple', accept: 'numeric', min: 3, hint: '拖拽变量到此区域' }),
 ])

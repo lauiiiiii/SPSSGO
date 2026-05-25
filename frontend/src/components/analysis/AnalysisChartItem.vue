@@ -110,6 +110,40 @@
           </svg>
         </template>
       </template>
+      <template v-else-if="isGroupedBoxplotChart">
+        <template v-for="boxData in [calcGroupedBox(chart.data)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxData.W} ${boxData.H}`" :width="boxData.W" :height="boxData.H"
+            @mouseleave="$emit('hide-tip')">
+            <rect :x="boxData.ml" :y="boxData.mt" :width="boxData.pw" :height="boxData.ph" fill="white"/>
+            <line v-for="(tick, tickIndex) in boxData.yTicks" :key="'gbyg'+tickIndex"
+              :x1="boxData.ml" :y1="tick.y" :x2="boxData.ml+boxData.pw" :y2="tick.y"
+              stroke="#efefef" stroke-width="1"/>
+            <g v-for="(box, boxIndex) in boxData.marks" :key="'gb'+boxIndex">
+              <line :x1="box.cx" :y1="box.yWH" :x2="box.cx" :y2="box.yQ3" stroke="#5b8ff9" stroke-width="1.5"/>
+              <line :x1="box.cx" :y1="box.yQ1" :x2="box.cx" :y2="box.yWL" stroke="#5b8ff9" stroke-width="1.5"/>
+              <line :x1="box.cx-box.boxW*0.55" :y1="box.yWH" :x2="box.cx+box.boxW*0.55" :y2="box.yWH" stroke="#5b8ff9" stroke-width="1.5"/>
+              <line :x1="box.cx-box.boxW*0.55" :y1="box.yWL" :x2="box.cx+box.boxW*0.55" :y2="box.yWL" stroke="#5b8ff9" stroke-width="1.5"/>
+              <rect :x="box.cx-box.boxW" :y="box.yQ3" :width="box.boxW*2" :height="box.yQ1-box.yQ3"
+                fill="white" stroke="#5b8ff9" stroke-width="1.5"/>
+              <line :x1="box.cx-box.boxW" :y1="box.yMed" :x2="box.cx+box.boxW" :y2="box.yMed" stroke="#5b8ff9" stroke-width="2"/>
+              <circle v-for="(outlier, outlierIndex) in box.outlierPts" :key="'gbo'+outlierIndex"
+                :cx="box.cx" :cy="outlier.y" r="3.2" fill="#52c41a" stroke="white" stroke-width="1"/>
+              <rect :x="box.cx-box.boxW-8" :y="boxData.mt" :width="box.boxW*2+16" :height="boxData.ph"
+                fill="transparent" style="cursor:pointer"
+                @mouseenter="$emit('show-box-tip', $event, { title: chart.title, varName: box.label, data: box })"
+                @mousemove="$emit('move-tip', $event)"
+                @mouseleave="$emit('hide-tip')"/>
+              <text :x="box.cx" :y="boxData.mt+boxData.ph+18" text-anchor="middle" font-size="11" fill="#666">{{ box.label }}</text>
+            </g>
+            <line :x1="boxData.ml" :y1="boxData.mt+boxData.ph" :x2="boxData.ml+boxData.pw" :y2="boxData.mt+boxData.ph" stroke="#bbb" stroke-width="1"/>
+            <line :x1="boxData.ml" :y1="boxData.mt" :x2="boxData.ml" :y2="boxData.mt+boxData.ph" stroke="#bbb" stroke-width="1"/>
+            <text v-for="(tick, tickIndex) in boxData.yTicks" :key="'gby'+tickIndex"
+              :x="boxData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
+            <text :x="18" :y="boxData.mt+boxData.ph/2" text-anchor="middle" font-size="11" fill="#777"
+              :transform="`rotate(-90,18,${boxData.mt+boxData.ph/2})`">{{ chart.data?.variable || chart.varName || '' }}</text>
+          </svg>
+        </template>
+      </template>
       <template v-else-if="chart.chartType === 'pp_plot' || chart.chartType === 'qq_plot'">
         <template v-for="plotData in [calcProbabilityPlot(chart.data)]" :key="0">
           <svg class="ap-chart-svg ap-chart-svg--normality" :viewBox="`0 0 ${plotData.W} ${plotData.H}`" :width="plotData.W" :height="plotData.H"
@@ -274,7 +308,36 @@
           <svg class="ap-chart-svg ap-chart-svg--crosstab" :viewBox="`0 0 ${crossData.W} ${crossData.H}`" :width="crossData.W" :height="crossData.H"
             @mouseleave="$emit('hide-tip')">
             <rect :x="crossData.ml" :y="crossData.mt" :width="crossData.pw" :height="crossData.ph" fill="white"/>
-            <template v-if="crossData.horizontal">
+            <template v-if="crossData.heatmap">
+              <text v-for="(label, labelIndex) in crossData.groupLabels" :key="'chxl'+labelIndex"
+                :x="crossData.ml + labelIndex * crossData.cellW + crossData.cellW / 2"
+                :y="crossData.H - 30" text-anchor="middle" font-size="11" fill="#666">{{ label }}</text>
+              <text v-for="(label, labelIndex) in crossData.xLabels" :key="'chyl'+labelIndex"
+                :x="crossData.ml - 10"
+                :y="crossData.mt + labelIndex * crossData.cellH + crossData.cellH / 2 + 4"
+                text-anchor="end" font-size="11" fill="#666">{{ label }}</text>
+              <g v-for="(cell, cellIndex) in crossData.cells" :key="'chc'+cellIndex">
+                <rect class="ap-crosstab-mark" :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h" :fill="cell.color"
+                  @mouseenter="$emit('show-crosstab-tip', $event, chart, cell)"
+                  @mousemove="$emit('move-tip', $event)"
+                  @mouseleave="$emit('hide-tip')"/>
+                <text v-show="showDataLabels" :x="cell.labelX" :y="cell.labelY + 4" text-anchor="middle" font-size="11" :fill="cell.textFill">{{ cell.count }}</text>
+              </g>
+              <text :x="crossData.ml + crossData.pw / 2" :y="crossData.H - 10" text-anchor="middle" font-size="11" fill="#777">{{ chart.data?.groupVariable || '' }}</text>
+              <text :x="crossData.ml - 4" :y="crossData.mt - 10" text-anchor="end" font-size="11" fill="#777">{{ chart.data?.xVariable || '' }}</text>
+              <g :transform="`translate(${crossData.ml + crossData.pw / 2 - 80}, ${crossData.H - 46})`">
+                <defs>
+                  <linearGradient id="crosstabHeatGradient" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0%" stop-color="#f6ef9c"/>
+                    <stop offset="100%" stop-color="#c7434f"/>
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="160" height="9" rx="4" fill="url(#crosstabHeatGradient)"/>
+                <text x="0" y="-5" text-anchor="middle" font-size="10" fill="#777">{{ crossData.minValue }}</text>
+                <text x="160" y="-5" text-anchor="middle" font-size="10" fill="#777">{{ crossData.maxValue }}</text>
+              </g>
+            </template>
+            <template v-else-if="crossData.horizontal">
               <line v-for="(tick, tickIndex) in crossData.xTicks" :key="'cxg'+tickIndex"
                 :x1="tick.x" :y1="crossData.mt" :x2="tick.x" :y2="crossData.mt+crossData.ph" stroke="#eef1f5" stroke-width="1"/>
               <rect v-for="(mark, markIndex) in crossData.marks" :key="'cm'+markIndex"
@@ -324,7 +387,7 @@
             </template>
             <line :x1="crossData.ml" :y1="crossData.mt+crossData.ph" :x2="crossData.ml+crossData.pw" :y2="crossData.mt+crossData.ph" stroke="#bbb" stroke-width="1"/>
             <line :x1="crossData.ml" :y1="crossData.mt" :x2="crossData.ml" :y2="crossData.mt+crossData.ph" stroke="#bbb" stroke-width="1"/>
-            <g class="ap-crosstab-legend">
+            <g v-if="!crossData.heatmap" class="ap-crosstab-legend">
               <g v-for="(label, labelIndex) in crossData.xLabels" :key="'cl'+labelIndex" :transform="`translate(${crossData.ml + labelIndex * 62}, ${crossData.H - 22})`">
                 <rect width="10" height="10" :fill="crossData.marks.find(item => item.seriesLabel === label)?.color || '#2389e8'"/>
                 <text x="15" y="9" font-size="11" fill="#666">{{ label }}</text>
@@ -504,6 +567,22 @@
               <line v-for="(tick, tickIndex) in metricData.yTicks" :key="'myg'+tickIndex"
                 :x1="metricData.ml" :y1="tick.y" :x2="metricData.ml+metricData.pw" :y2="tick.y" stroke="#eef1f5" stroke-width="1"/>
               <template v-if="metricMode === 'bar'">
+                <template v-if="metricData.multiSeries && metricData.groupedBars">
+                  <rect v-for="(bar, barIndex) in metricData.groupedBars" :key="'mgb'+barIndex"
+                    class="ap-metric-mark"
+                    :x="bar.x" :y="bar.y" :width="bar.w" :height="bar.h" :fill="bar.color" rx="2"
+                    @mouseenter="$emit('show-metric-tip', $event, chart, bar)"
+                    @mousemove="$emit('move-tip', $event)"
+                    @mouseleave="$emit('hide-tip')"/>
+                  <text v-for="(bar, barIndex) in metricData.groupedBars" :key="'mgbv'+barIndex"
+                    v-show="showDataLabels"
+                    :x="bar.labelX" :y="Math.max(bar.labelY, 12)" text-anchor="middle" font-size="10" fill="#333">{{ metricValueLabel(bar.value) }}</text>
+                  <g v-for="(legend, legendIndex) in metricData.legend" :key="'mgbl'+legendIndex">
+                    <rect :x="legend.x" :y="legend.y - 8" width="10" height="10" :fill="legend.color" rx="2"/>
+                    <text :x="legend.x + 16" :y="legend.y + 1" font-size="11" fill="#333">{{ legend.name }}</text>
+                  </g>
+                </template>
+                <template v-else>
                 <rect v-for="(bar, barIndex) in metricData.bars" :key="'mvbar'+barIndex"
                   class="ap-metric-mark"
                   :x="bar.x" :y="bar.y" :width="bar.w" :height="bar.h" :fill="metricData.barFill || '#2389e8'" rx="2"
@@ -513,6 +592,7 @@
                 <text v-for="(bar, barIndex) in metricData.bars" :key="'mbv'+barIndex"
                   v-show="showDataLabels"
                   :x="bar.x + bar.w / 2" :y="Math.max(bar.y - 6, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(bar.value) }}</text>
+                </template>
                 <path v-if="metricData.paretoPath" :d="metricData.paretoPath" fill="none" :stroke="metricData.lineFill || '#3b78ff'" stroke-width="2"/>
                 <circle v-for="(point, pointIndex) in metricData.paretoPoints || []" :key="'pareto'+pointIndex"
                   class="ap-metric-mark"
@@ -733,6 +813,16 @@
           step="0.05"
         />
       </label>
+      <label v-if="isCrosstabChart" class="ap-chart-size-control">
+        <span>缩放：</span>
+        <input
+          v-model.number="crosstabChartZoom"
+          type="range"
+          min="0.6"
+          max="2.4"
+          step="0.05"
+        />
+      </label>
       <label v-if="isMetricComparisonChart" class="ap-chart-size-control">
         <span>尺寸：</span>
         <input
@@ -895,6 +985,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   calcBox: { type: Function, required: true },
+  calcGroupedBox: { type: Function, required: true },
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
   calcCorrespondenceMap: { type: Function, required: true },
@@ -915,6 +1006,7 @@ const props = defineProps({
 const categoryChartTypes = new Set(['category_distribution', 'category', 'categorical', 'categorical_distribution', 'frequency'])
 const categoryMode = ref(props.chart.data?.defaultMode || 'bar')
 const crosstabMode = ref(props.chart.data?.defaultMode || 'stackedColumn')
+const crosstabChartZoom = ref(1)
 const heatmapSize = ref(1)
 const kanoChartZoom = ref(1)
 const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
@@ -931,6 +1023,7 @@ const categoryModeOptions = [
 const isCategoryChart = computed(() => categoryChartTypes.has(props.chart.chartType))
 const isCorrespondenceMap = computed(() => props.chart.chartType === 'correspondence_map')
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
+const isGroupedBoxplotChart = computed(() => props.chart.chartType === 'grouped_boxplot')
 const isEquivalenceIntervalChart = computed(() => props.chart.chartType === 'equivalence_interval')
 const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
 const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
@@ -1000,6 +1093,12 @@ const chartWrapStyle = computed(() => {
       height: `${Math.round(baseHeight * metricChartZoom.value)}px`,
     }
   }
+  if (isCrosstabChart.value) {
+    return {
+      width: `${Math.round(660 * crosstabChartZoom.value)}px`,
+      height: `${Math.round(330 * crosstabChartZoom.value)}px`,
+    }
+  }
   if (!isKanoBetterWorseChart.value) return {}
   return {
     width: `${Math.round(760 * kanoChartZoom.value)}px`,
@@ -1013,6 +1112,7 @@ const metricComparisonTitle = computed(() => {
   return `${data?.metric || props.chart.title}${option?.label || '柱形图'}`
 })
 const crosstabModeOptions = [
+  { value: 'heatmap', label: '热力图' },
   { value: 'stackedColumn', label: '堆积柱形图' },
   { value: 'column', label: '柱形图' },
   { value: 'stackedBar', label: '堆积条形图' },
@@ -1020,6 +1120,9 @@ const crosstabModeOptions = [
 ]
 const crosstabTitle = computed(() => {
   const option = crosstabModeOptions.find(item => item.value === crosstabMode.value)
+  if (crosstabMode.value === 'heatmap' && String(props.chart.title || '').includes('热力图')) {
+    return props.chart.title
+  }
   return `${props.chart.title || '交叉图'}${option?.label || ''}`
 })
 const displayTitle = computed(() => {

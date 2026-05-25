@@ -142,7 +142,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   cellClass: { type: Function, required: true },
@@ -151,24 +151,24 @@ const props = defineProps({
 })
 
 const CopyIcon = {
-  template: `
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-      <rect
-        x="5"
-        y="5"
-        width="9"
-        height="9"
-        rx="1.5"
-        stroke="currentColor"
-        stroke-width="1.2"
-      />
-      <path
-        d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"
-        stroke="currentColor"
-        stroke-width="1.2"
-      />
-    </svg>
-  `,
+  render() {
+    return h('svg', { width: 13, height: 13, viewBox: '0 0 16 16', fill: 'none' }, [
+      h('rect', {
+        x: 5,
+        y: 5,
+        width: 9,
+        height: 9,
+        rx: 1.5,
+        stroke: 'currentColor',
+        'stroke-width': 1.2,
+      }),
+      h('path', {
+        d: 'M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5',
+        stroke: 'currentColor',
+        'stroke-width': 1.2,
+      }),
+    ])
+  },
 }
 
 const emit = defineEmits(['copy-table'])

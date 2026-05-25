@@ -15,6 +15,7 @@
         :ai-result="aiResult"
         :allow-ai-request="true"
         :calc-box="calcBox"
+        :calc-grouped-box="calcGroupedBox"
         :calc-category-bar="calcCategoryBar"
         :calc-category-pie="calcCategoryPie"
         :calc-correspondence-map="calcCorrespondenceMap"
@@ -79,6 +80,7 @@
         :get-var-type="getVarType"
         :get-var-type-class="getVarTypeClass"
         :is-cfa-method="isCfaMethod"
+        :is-independent-t-method="isIndependentTMethod"
         :is-one-sample-equivalence-method="isOneSampleEquivalenceMethod"
         :is-one-way-anova-method="isOneWayAnovaMethod"
         :is-paired-equivalence-method="isPairedEquivalenceMethod"
@@ -200,6 +202,7 @@ const {
   firstOrderFactorChoices,
   getFactorShortLabel,
   isCfaMethod,
+  isIndependentTMethod,
   isOneSampleEquivalenceMethod,
   isOneWayAnovaMethod,
   isPairedEquivalenceMethod,
@@ -231,6 +234,7 @@ const {
 } = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
 const {
   calcBox,
+  calcGroupedBox,
   calcCategoryBar,
   calcCategoryPie,
   calcCorrespondenceMap,

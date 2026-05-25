@@ -2636,7 +2636,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   justify-content: center;
 }
 .ap-chart-svg--crosstab {
-  max-width: 720px;
+  max-width: none;
   width: 100%;
   height: 100%;
 }

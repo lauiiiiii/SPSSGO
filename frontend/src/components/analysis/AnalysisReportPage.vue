@@ -44,6 +44,7 @@
             <AnalysisChartsSection
               v-else-if="section.type === 'charts'"
               :calc-box="calcBox"
+              :calc-grouped-box="calcGroupedBox"
               :calc-category-bar="calcCategoryBar"
               :calc-category-pie="calcCategoryPie"
               :calc-correspondence-map="calcCorrespondenceMap"
@@ -98,6 +99,7 @@ const props = defineProps({
   aiResult: { type: String, default: '' },
   allowAiRequest: { type: Boolean, default: true },
   calcBox: { type: Function, required: true },
+  calcGroupedBox: { type: Function, required: true },
   calcCategoryBar: { type: Function, required: true },
   calcCategoryPie: { type: Function, required: true },
   calcCorrespondenceMap: { type: Function, required: true },

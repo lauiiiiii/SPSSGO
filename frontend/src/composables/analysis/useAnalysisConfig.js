@@ -3,6 +3,8 @@ import { computed, reactive, ref, watch } from 'vue'
 const CFA_METHOD_KEY = 'confirmatory_factor_analysis'
 const RELIABILITY_METHOD_KEY = 'reliability'
 const SUMMARY_T_METHOD_KEY = 'summary_t_test'
+const INDEPENDENT_T_METHOD_KEY = 'independent_t_test'
+const PAIRED_T_METHOD_KEY = 'paired_t_test'
 const SUMMARY_ONEWAY_ANOVA_METHOD_KEY = 'summary_oneway_anova'
 const ONE_WAY_ANOVA_METHOD_KEY = 'anova_oneway'
 const ONE_SAMPLE_EQUIVALENCE_METHOD_KEY = 'one_sample_equivalence_test'
@@ -53,6 +55,8 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const dynamicGroupConfig = computed(() => DYNAMIC_GROUP_CONFIGS[methodKey.value] || null)
   const isCfaMethod = computed(() => Boolean(dynamicGroupConfig.value))
   const isSummaryTMethod = computed(() => methodKey.value === SUMMARY_T_METHOD_KEY)
+  const isIndependentTMethod = computed(() => methodKey.value === INDEPENDENT_T_METHOD_KEY)
+  const isPairedTMethod = computed(() => methodKey.value === PAIRED_T_METHOD_KEY)
   const isSummaryOneWayAnovaMethod = computed(() => methodKey.value === SUMMARY_ONEWAY_ANOVA_METHOD_KEY)
   const isOneWayAnovaMethod = computed(() => methodKey.value === ONE_WAY_ANOVA_METHOD_KEY)
   const isOneSampleEquivalenceMethod = computed(() => methodKey.value === ONE_SAMPLE_EQUIVALENCE_METHOD_KEY)
@@ -114,6 +118,8 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   const canExecute = computed(() => {
     if (!method.value) return false
+    if (isIndependentTMethod.value) return independentTReady()
+    if (isPairedTMethod.value) return pairedTReady()
     if (isSummaryTMethod.value) return summaryTReady()
     if (isSummaryOneWayAnovaMethod.value) return summaryOneWayAnovaReady()
     if (isOneWayAnovaMethod.value) return oneWayAnovaReady()
@@ -250,6 +256,13 @@ export function useAnalysisConfig(method, methodKey, emit) {
         groups: buildSummaryOneWayGroups(),
         confidence_level: '95',
       })
+    } else if (isIndependentTMethod.value) {
+      for (const slot of nextMethod.slots || []) {
+        slotValues[slot.key] = []
+      }
+      Object.assign(optionValues, {
+        data_format: '样本在同一列',
+      })
     } else if (isOneWayAnovaMethod.value) {
       for (const slot of nextMethod.slots || []) {
         slotValues[slot.key] = []
@@ -305,7 +318,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     }
 
     for (const option of (nextMethod.options || [])) {
-      if ((isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isOneWayAnovaMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value || isPairedEquivalenceMethod.value) && Object.prototype.hasOwnProperty.call(optionValues, option.key)) {
+      if ((isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isIndependentTMethod.value || isOneWayAnovaMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value || isPairedEquivalenceMethod.value) && Object.prototype.hasOwnProperty.call(optionValues, option.key)) {
         continue
       }
       if (option.type === 'checkbox') {
@@ -447,7 +460,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
   }
 
   function resetSlots() {
-    if (isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value) {
+    if (isSummaryTMethod.value || isSummaryOneWayAnovaMethod.value || isIndependentTMethod.value || isPairedTMethod.value || isOneSampleEquivalenceMethod.value || isTwoSampleEquivalenceMethod.value) {
       resetConfigState(method.value)
       return
     }
@@ -476,6 +489,11 @@ export function useAnalysisConfig(method, methodKey, emit) {
         optionValues.reference_level = ''
       } else {
         slotValues.reference_var = []
+      }
+    }
+    if (isIndependentTMethod.value && key === 'data_format') {
+      if (value === '样本在不同列') {
+        slotValues.group_var = []
       }
     }
     if (isOneWayAnovaMethod.value && key === 'data_format') {
@@ -516,6 +534,20 @@ export function useAnalysisConfig(method, methodKey, emit) {
       && filledNumber(optionValues.n, 'positive')
       && filledNumber(optionValues.test_value)
     )
+  }
+
+  function independentTReady() {
+    const testSelected = slotValues.test_vars || []
+    if (optionValues.data_format === '样本在不同列') {
+      return testSelected.length === 2
+    }
+    return (slotValues.group_var || []).length === 1 && testSelected.length >= 1
+  }
+
+  function pairedTReady() {
+    const firstSelected = slotValues.var1 || []
+    const secondSelected = slotValues.var2 || []
+    return firstSelected.length >= 1 && firstSelected.length === secondSelected.length
   }
 
   function summaryOneWayAnovaReady() {
@@ -718,6 +750,8 @@ export function useAnalysisConfig(method, methodKey, emit) {
     factorMenuKey,
     getFactorShortLabel,
     isCfaMethod,
+    isIndependentTMethod,
+    isPairedTMethod,
     isOneSampleEquivalenceMethod,
     isOneWayAnovaMethod,
     isPairedEquivalenceMethod,

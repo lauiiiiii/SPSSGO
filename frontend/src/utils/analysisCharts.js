@@ -98,9 +98,71 @@ export function calcBoxplotLayout(data) {
   return { W, H, ml, mt, ph, cx, bw, yQ1, yQ3, yMed, yWL, yWH, outlierPts, yTicks }
 }
 
+export function calcGroupedBoxplotLayout(data) {
+  const boxes = data?.boxes || []
+  const W = 640, H = 340
+  const ml = 62, mr = 38, mt = 28, mb = 62
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const allVals = boxes.flatMap(box => [
+    box.whiskerLow,
+    box.q1,
+    box.median,
+    box.q3,
+    box.whiskerHigh,
+    ...(box.outliers || []),
+  ]).map(Number).filter(Number.isFinite)
+  const vmin = Math.min(...allVals, 0)
+  const vmax = Math.max(...allVals, 1)
+  const pad = Math.max((vmax - vmin) * 0.12, 0.5)
+  const low = vmin - pad
+  const high = vmax + pad
+  const toY = value => mt + ph * (1 - (Number(value || 0) - low) / (high - low || 1))
+  const slotW = pw / Math.max(boxes.length, 1)
+  const boxW = Math.min(Math.max(slotW * 0.28, 24), 42)
+  const marks = boxes.map((box, index) => {
+    const cx = ml + index * slotW + slotW / 2
+    return {
+      ...box,
+      cx,
+      boxW,
+      yQ1: toY(box.q1),
+      yQ3: toY(box.q3),
+      yMed: toY(box.median),
+      yWL: toY(box.whiskerLow),
+      yWH: toY(box.whiskerHigh),
+      outlierPts: (box.outliers || []).map(value => ({ value, y: toY(value) })),
+    }
+  })
+  const yTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = low + (index / 5) * (high - low)
+    return {
+      y: toY(value),
+      label: Math.abs(value) >= 100 ? Math.round(value) : Number(value.toFixed(1)),
+    }
+  })
+  return { W, H, ml, mt, mb, pw, ph, marks, yTicks }
+}
+
 const CATEGORY_COLORS = ['#2389e8', '#45d0bf', '#31c260', '#ffcf1a', '#eb9450', '#7a6ff0', '#f36ca2', '#8bc34a']
 const CATEGORY_MAX_COLUMN_WIDTH = 72
 const CATEGORY_MAX_BAR_HEIGHT = 34
+
+function heatmapColor(intensity) {
+  const clamped = Math.min(Math.max(Number(intensity || 0), 0), 1)
+  const stops = [
+    [246, 239, 156],
+    [232, 154, 129],
+    [199, 67, 79],
+  ]
+  const scaled = clamped * (stops.length - 1)
+  const index = Math.min(Math.floor(scaled), stops.length - 2)
+  const local = scaled - index
+  const from = stops[index]
+  const to = stops[index + 1]
+  const rgb = from.map((value, channel) => Math.round(value + (to[channel] - value) * local))
+  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+}
 
 function shortLabel(value, maxLength = 10) {
   const text = String(value ?? '')
@@ -233,6 +295,60 @@ export function calcCrosstabLayout(data, mode = 'stackedColumn') {
   const groupLabels = data?.groupLabels || []
   const xLabels = data?.xLabels || []
   const matrix = data?.matrix || []
+  if (mode === 'heatmap') {
+    const cellW = 138
+    const cellH = 42
+    const ml = Math.max(82, Math.min(150, Math.max(...xLabels.map(label => String(label).length), 2) * 10 + 26))
+    const mt = 34
+    const mr = 34
+    const mb = 58
+    const pw = Math.max(groupLabels.length, 1) * cellW
+    const ph = Math.max(xLabels.length, 1) * cellH
+    const W = ml + pw + mr
+    const H = mt + ph + mb
+    const flat = matrix.flat().map(value => Number(value || 0))
+    const minValue = Math.min(...flat, 0)
+    const maxValue = Math.max(...flat, 1)
+    const span = maxValue - minValue || 1
+    const cells = []
+    xLabels.forEach((seriesLabel, rowIndex) => {
+      groupLabels.forEach((groupLabel, groupIndex) => {
+        const count = Number(matrix[rowIndex]?.[groupIndex] || 0)
+        const intensity = (count - minValue) / span
+        cells.push({
+          groupLabel,
+          seriesLabel,
+          count,
+          percent: 0,
+          color: heatmapColor(intensity),
+          textFill: intensity > 0.62 ? '#fff' : '#222',
+          x: ml + groupIndex * cellW,
+          y: mt + rowIndex * cellH,
+          w: cellW,
+          h: cellH,
+          labelX: ml + groupIndex * cellW + cellW / 2,
+          labelY: mt + rowIndex * cellH + cellH / 2,
+        })
+      })
+    })
+    return {
+      W,
+      H,
+      ml,
+      mt,
+      mb,
+      pw,
+      ph,
+      cellW,
+      cellH,
+      cells,
+      groupLabels,
+      xLabels,
+      minValue,
+      maxValue,
+      heatmap: true,
+    }
+  }
   const W = 720, H = 360
   const horizontal = mode === 'stackedBar' || mode === 'bar'
   const stacked = mode === 'stackedColumn' || mode === 'stackedBar'
@@ -380,7 +496,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
   const labels = data?.labels || []
   const values = (data?.values || []).map(value => Number(value || 0))
   const metric = data?.metric || '指标'
-  const multiSeries = data?.multiSeries && data?.metrics && Object.keys(data.metrics).length > 1 && mode === 'line'
+  const multiSeries = data?.multiSeries && data?.metrics && Object.keys(data.metrics).length > 1
   const W = multiSeries ? 760 : 640
   const H = multiSeries ? 390 : 340
   const ml = mode === 'horizontalBar' ? 96 : 62
@@ -414,6 +530,44 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
     const seriesNames = Object.keys(data.metrics)
     const colors = ['#2f7cff', '#00b96b', '#f6bd16', '#ff654f', '#7367ff', '#14c9c9', '#f759ab', '#722ed1', '#165dff']
     const dashStyles = ['', '6 4', '2 4', '', '5 3', '8 3 2 3']
+    if (mode === 'bar') {
+      const groupW = pw / Math.max(labels.length, 1)
+      const barW = Math.min(Math.max(groupW * 0.68 / seriesNames.length, 6), 30)
+      const groupedBars = []
+      labels.forEach((label, labelIndex) => {
+        const groupStart = ml + labelIndex * groupW + (groupW - barW * seriesNames.length) / 2
+        seriesNames.forEach((name, seriesIndex) => {
+          const value = Number(data.metrics[name]?.[labelIndex] || 0)
+          const y = toY(Math.max(0, value))
+          const y0 = toY(0)
+          groupedBars.push({
+            label,
+            metric: name,
+            value,
+            color: colors[seriesIndex % colors.length],
+            x: groupStart + seriesIndex * barW,
+            y,
+            w: Math.max(barW - 2, 4),
+            h: Math.max(y0 - y, 1),
+            labelX: groupStart + seriesIndex * barW + barW / 2,
+            labelY: y - 6,
+          })
+        })
+      })
+      const legend = seriesNames.map((name, index) => ({
+        name,
+        color: colors[index % colors.length],
+        x: ml + pw + 22,
+        y: mt + 42 + index * 18,
+      }))
+      const pointsForTicks = labels.map((label, index) => ({
+        label,
+        value: values[index],
+        x: ml + index * groupW + groupW / 2,
+        y: toY(values[index]),
+      }))
+      return { W, H, ml, mr, mt, mb, pw, ph, metric, points: pointsForTicks, groupedBars, legend, yTicks, shortLabel, mode, multiSeries: true }
+    }
     const series = seriesNames.map((name, seriesIndex) => {
       const seriesValues = (data.metrics[name] || []).map(value => Number(value || 0))
       const seriesPoints = labels.map((label, index) => ({

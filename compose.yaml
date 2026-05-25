@@ -1,7 +1,14 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+    logging: *default-logging
     command:
       - --max_connections=${MYSQL_MAX_CONNECTIONS:-200}
     environment:
@@ -22,6 +29,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "6379:6379"
     volumes:
@@ -38,6 +46,7 @@ services:
       context: .
       target: runtime
     restart: unless-stopped
+    logging: *default-logging
     command: >
       sh -c "alembic upgrade head &&
       uvicorn backend.app:app --host 0.0.0.0 --port 8000"
@@ -93,6 +102,7 @@ services:
       context: .
       target: runtime
     restart: unless-stopped
+    logging: *default-logging
     command: >
       celery -A backend.worker_tasks:celery_app worker
       --loglevel=info
@@ -146,6 +156,7 @@ services:
       context: .
       target: runtime
     restart: unless-stopped
+    logging: *default-logging
     command: >
       celery -A backend.worker_tasks:celery_app worker
       --loglevel=info
@@ -199,6 +210,7 @@ services:
       context: .
       target: runtime
     restart: unless-stopped
+    logging: *default-logging
     command: >
       celery -A backend.worker_tasks:celery_app worker
       --loglevel=info
@@ -252,6 +264,7 @@ services:
       context: .
       target: worker-runtime
     restart: unless-stopped
+    logging: *default-logging
     command: >
       celery -A backend.worker_tasks:celery_app worker
       --loglevel=info
@@ -314,6 +327,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.1
     restart: unless-stopped
+    logging: *default-logging
     profiles: ["monitoring"]
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -331,6 +345,7 @@ services:
   grafana:
     image: grafana/grafana:11.2.2
     restart: unless-stopped
+    logging: *default-logging
     profiles: ["monitoring"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
