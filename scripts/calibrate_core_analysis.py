@@ -105,10 +105,10 @@ def main():
 
     # 配对样本 t 检验
     paired = METHOD_REGISTRY["paired_t_test"](df, {"var1": "paired1", "var2": "paired2"})
-    paired_section = next(sec for sec in paired["sections"] if sec["title"] == "配对样本t检验")
+    paired_section = next(sec for sec in paired["sections"] if sec["title"] == "输出结果3：配对样本T检验结果")
     t_expected, p_expected = ttest_rel(df["paired1"], df["paired2"])
-    assert_close(float(paired_section["rows"][0][5]), float(t_expected), 1e-2, "paired t")
-    assert_close(float(paired_section["rows"][0][7]), float(p_expected), 1e-3, "paired p")
+    assert_close(float(paired_section["rows"][0][4]), float(t_expected), 1e-2, "paired t")
+    assert_close(float(str(paired_section["rows"][0][6]).rstrip("*")), float(p_expected), 1e-3, "paired p")
 
     # 单因素方差分析
     anova = METHOD_REGISTRY["anova_oneway"](df, build_execute_params("anova_oneway", {"group_var": "group3", "test_vars": ["x2"], "post_hoc": "Bonferroni"}))
@@ -120,11 +120,11 @@ def main():
 
     # 卡方检验
     chi = METHOD_REGISTRY["chi_square"](df, {"var1": "cat1", "var2": "cat2"})
-    chi_section = next(sec for sec in chi["sections"] if sec["title"] == "卡方检验结果")
+    chi_section = next(sec for sec in chi["sections"] if sec["title"] == "输出结果1：卡方检验分析结果")
     ct = pd.crosstab(df["cat1"], df["cat2"])
     chi2, p, _, _ = chi2_contingency(ct, correction=False)
-    assert_close(float(chi_section["rows"][0][1]), float(chi2), 1e-3, "chi-square")
-    assert_close(float(chi_section["rows"][0][3]), float(p), 1e-3, "chi-square p")
+    assert_close(float(chi_section["rows"][0][-2]["text"]), float(chi2), 1e-3, "chi-square")
+    assert_close(float(chi_section["rows"][0][-1]["text"].replace("*", "")), float(p), 1e-3, "chi-square p")
 
     # Pearson 相关
     corr = METHOD_REGISTRY["pearson_correlation"](df, {"variables": ["x1", "x2"]})

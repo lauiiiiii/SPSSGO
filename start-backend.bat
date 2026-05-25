@@ -19,10 +19,25 @@ if not defined RSCRIPT_BIN set "RSCRIPT_BIN=C:\Program Files\R\R-4.5.3\bin\Rscri
 if not defined R_LIBS_USER set "R_LIBS_USER=%APPDATA%\R\win-library\4.5"
 if not exist "%~dp0.tmp\rtemp" mkdir "%~dp0.tmp\rtemp"
 if not defined R_TEMP_DIR set "R_TEMP_DIR=%~dp0.tmp\rtemp"
+set "BACKEND_LOG_MAX_BYTES=10485760"
+for %%F in ("%~dp0.tmp\backend*.log") do (
+    if exist "%%~fF" (
+        if %%~zF GEQ %BACKEND_LOG_MAX_BYTES% move /Y "%%~fF" "%%~fF.old" >nul
+    )
+)
+set "BACKEND_MODE=stable"
+if "%BACKEND_RELOAD%"=="1" (
+    set "BACKEND_MODE=dev-restart"
+)
 echo ========================================
 echo   Starting backend service...
+echo   Mode: %BACKEND_MODE%
 echo   URL: http://localhost:8000
 echo   Press Ctrl+C to stop
 echo ========================================
-python -m uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload
+if "%BACKEND_RELOAD%"=="1" (
+    python scripts\run_backend_dev.py
+) else (
+    python -m uvicorn backend.app:app --host 0.0.0.0 --port 8000
+)
 pause

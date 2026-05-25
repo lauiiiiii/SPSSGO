@@ -18,13 +18,15 @@ cp .env.example .env
 alembic upgrade head
 
 # 4. 启动后端
-uvicorn backend.app:app --host 127.0.0.1 --port 8000 --reload
+uvicorn backend.app:app --host 127.0.0.1 --port 8000
 
 # 5. 启动前端（新终端）
 cd frontend && npm run dev
 ```
 
 前端默认 `http://localhost:5173`，后端 `http://127.0.0.1:8000`，接口文档 `http://127.0.0.1:8000/docs`。
+
+Windows 本地开发默认不启用后端热重载，避免 `uvicorn --reload` 的 reloader 异常刷满 `.tmp/*.log`。需要自动重启时设置 `BACKEND_RELOAD=1` 后使用 `start-backend.bat`，脚本只监听 `backend/` 下的 Python 文件，并会在启动前轮转超过 10MB 的后端临时错误日志。
 
 Docker Compose 一键部署：
 
