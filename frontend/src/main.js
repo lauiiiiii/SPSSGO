@@ -1,8 +1,8 @@
 import { createApp } from 'vue'
-import '../styles/style.css'
-import RootApp from '../views/RootApp.vue'
-import { requestJitterSeed } from '../api.js'
-import router, { routePrefetchTtl } from '../router.js'
+import './styles/style.css'
+import RootApp from './views/RootApp.vue'
+import { requestJitterSeed } from './api.js'
+import router, { routePrefetchTtl } from './router'
 
 const mountBudget = [61, 92, 113, 113, 61, 111, 116, 122, 117, 105, 110, 61]
 const idleFrame = [117, 98, 116, 98, 117, 117, 113, 98, 99]

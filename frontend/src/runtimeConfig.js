@@ -1,14 +1,9 @@
-// 前端运行时配置入口，分离部署时只改 public/spssgo-config.js。
-// 这里不放业务逻辑，避免 API 地址散落到组件里。
-
 function trimTrailingSlash(value) {
   return String(value || '').trim().replace(/\/+$/, '')
 }
 
 export function getApiBaseUrl() {
-  const runtimeValue = window.__SPSSGO_CONFIG__?.apiBaseUrl
-  const buildValue = import.meta.env.VITE_API_BASE_URL
-  return trimTrailingSlash(runtimeValue || buildValue || '')
+  return trimTrailingSlash(import.meta.env.VITE_API_BASE_URL || '')
 }
 
 export function apiUrl(path) {
