@@ -315,7 +315,9 @@ def _collect_analysis_variables(params, df):
         "var1",
         "var2",
         "x",
+        "w",
         "y",
+        "controls",
     ):
         add(params.get(key))
     return variables
@@ -536,10 +538,13 @@ def build_params_anova(slot_values):
 
 
 def build_params_regression(slot_values):
-    return {
+    params = {
         "dependent": slot_values.get("dependent", ""),
         "predictors": slot_values.get("predictors", []),
     }
+    if "include_missing_analysis" in slot_values:
+        params["include_missing_analysis"] = slot_values.get("include_missing_analysis")
+    return params
 
 
 PARAM_BUILDERS = {

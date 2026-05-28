@@ -46,6 +46,16 @@ class RRunnerTests(unittest.TestCase):
         self.assertEqual(command[0], r_runner.RSCRIPT_BIN)
         self.assertEqual(Path(command[1]).name, "health_check.R")
 
+    def test_run_r_script_decodes_r_unicode_markers(self):
+        completed = Mock(returncode=0, stdout=json.dumps({"success": True, "title": "<U+8C03><U+8282>"}), stderr="")
+        with patch("backend.r_runner.R_ENABLED", True):
+            with patch("backend.r_runner._create_temp_dir", return_value=Path(__file__).resolve().parent):
+                with patch("backend.r_runner._cleanup_temp_dir"):
+                    with patch("backend.r_runner.subprocess.run", return_value=completed):
+                        result = r_runner.run_r_script("health_check.R")
+
+        self.assertEqual(result["title"], "调节")
+
     def test_run_r_script_accepts_relative_temp_dir(self):
         completed = Mock(returncode=0, stdout=json.dumps({"success": True}), stderr="")
         temp_path = (Path(".tmp") / "r-runner-test").resolve()
@@ -70,6 +80,15 @@ class RRunnerTests(unittest.TestCase):
                     temp_path = r_runner._create_temp_dir()
 
         self.assertTrue(temp_path.is_absolute())
+        self.assertEqual(temp_path.name, "spssgo-r-abcdef1234")
+
+    def test_create_temp_dir_falls_back_for_non_ascii_base(self):
+        with patch("backend.r_runner.R_TEMP_DIR", ".tmp/中文-rtemp"):
+            with patch("backend.r_runner.uuid.uuid4", return_value=Mock(hex="abcdef123456")):
+                with patch.object(Path, "mkdir"):
+                    temp_path = r_runner._create_temp_dir()
+
+        self.assertIn("spssgo-r", str(temp_path.parent))
         self.assertEqual(temp_path.name, "spssgo-r-abcdef1234")
 
     def test_run_r_script_raises_on_non_zero_exit(self):

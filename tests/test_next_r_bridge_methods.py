@@ -9,6 +9,7 @@ from backend.analysis.methods import (
     intraclass_correlation,
     mediation,
     moderation,
+    multiple_regression,
     parallel_mediation,
     path_analysis,
     serial_mediation,
@@ -24,6 +25,7 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 "m2": [1, 3, 3, 5, 5, 7, 7, 9, 9, 11],
                 "w": [5, 4, 6, 5, 7, 6, 8, 7, 9, 8],
                 "y": [3, 4, 5, 7, 8, 9, 10, 12, 13, 14],
+                "group": ["A", "B", "A", "B", "A", "C", "C", "B", "A", "C"],
                 "r1": [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
                 "r2": [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
             }
@@ -68,11 +70,33 @@ class NextRBridgeMethodsTests(unittest.TestCase):
             {
                 "module": moderation,
                 "call": moderation.moderation_analysis,
-                "params": {"x": "x", "w": "w", "y": "y"},
+                "params": {"x": "x", "w": "w", "y": "y", "controls": ["r1"], "data_process": "标准化"},
                 "script": "moderation.R",
                 "temp_file": "moderation_input.csv",
                 "failure_text": "R 调节效应分析执行失败",
                 "unavailable_text": "调节效应分析需要 R 引擎执行",
+            },
+            {
+                "module": multiple_regression,
+                "call": multiple_regression.multiple_regression,
+                "params": {
+                    "dependent": "y",
+                    "predictors": ["x", "group"],
+                    "include_missing_analysis": True,
+                    "variable_meta": {
+                        "x": {"display_name": "X值", "var_type": "numeric", "value_labels": {}},
+                        "y": {"display_name": "Y值", "var_type": "numeric", "value_labels": {}},
+                        "group": {
+                            "display_name": "分组",
+                            "var_type": "categorical",
+                            "value_labels": {"A": "A组", "B": "B组", "C": "C组"},
+                        },
+                    },
+                },
+                "script": "multiple_regression.R",
+                "temp_file": "multiple_regression_input.csv",
+                "failure_text": "R 线性回归执行失败",
+                "unavailable_text": "线性回归需要 R 引擎执行",
             },
             {
                 "module": intraclass_correlation,
@@ -113,6 +137,21 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 self.assertEqual(result["description"], "R bridge result")
                 self.assertEqual(run_r.call_args.args[0], case["script"])
                 self.assertIn(case["temp_file"], run_r.call_args.kwargs["temp_files"])
+                if case["script"] == "moderation.R":
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["controls"], ["r1"])
+                    self.assertEqual(payload["data_process"], "标准化")
+                if case["script"] == "multiple_regression.R":
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["dependent"], "y")
+                    self.assertEqual(payload["predictors"], ["x", "group"])
+                    self.assertTrue(payload["include_missing_analysis"])
+                    self.assertEqual(payload["variable_meta"]["group"]["display_name"], "分组")
+                    self.assertEqual(payload["variable_meta"]["group"]["var_type"], "categorical")
+                    self.assertEqual(
+                        run_r.call_args.kwargs["temp_files"]["multiple_regression_input.csv"].splitlines()[0],
+                        "y,x,group",
+                    )
 
     def test_methods_return_error_when_r_fails(self):
         for case in self.cases:
