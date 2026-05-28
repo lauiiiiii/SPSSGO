@@ -1,5 +1,6 @@
+@import "tailwindcss";
+
 /* Reset */
-* { margin: 0; padding: 0; box-sizing: border-box; }
 html, body, #app { height: 100%; }
 body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; color: #333; background: #f5f6f8; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }

@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from 'node:url'
 
 function manualChunks(id) {
   if (!id.includes('node_modules')) return undefined
@@ -12,7 +14,12 @@ function manualChunks(id) {
 }
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    },
+  },
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: {

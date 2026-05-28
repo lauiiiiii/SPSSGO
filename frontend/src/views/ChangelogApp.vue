@@ -76,6 +76,21 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
+    date: '2026-05-28',
+    type: 'refactor',
+    title: '首页全面重构 — 拆分为独立组件并迁移至 TailwindCSS',
+    items: [
+      '将 HomeApp.vue 各区块拆分为 9 个独立组件至 src/components/home/（NavBar、Hero、Generation、Workflow、TrustGuarantee、Deliverables、FAQ、CTA、Footer）',
+      '全部改用 TailwindCSS 内置类，移除冗余自定义样式',
+      '配置 @ 路径别名，统一 import 路径',
+      '集成 @tailwindcss/vite 插件',
+      'main.js 从 src/entries/ 移至 src/',
+      'router.js 移至 src/router/index.js，移除冗余 route meta 字段',
+      '移除 public/spssgo-config.js，改用 .env 管理 API 地址',
+      '清理死代码：移除 * reset、useHomeHero composable 等',
+    ],
+  },
+  {
     date: '2026-05-26',
     type: 'feat',
     title: '回归分析、调节效应与报告导出增强',
@@ -839,7 +854,7 @@ const activeEntryIndex = ref(0)
 const entryRefs = ref({})
 
 function tagLabel(type) {
-  const map = { feat: '功能更新', fix: '问题修复', docs: '文档改进', init: '初始版本' }
+  const map = { feat: '功能更新', fix: '问题修复', refactor: '代码重构', docs: '文档改进', init: '初始版本' }
   return map[type] || type
 }
 
@@ -1218,6 +1233,11 @@ onUnmounted(() => {
 .changelog-entry-tag--init {
   background: #f5f3ff;
   color: #7c3aed;
+}
+
+.changelog-entry-tag--refactor {
+  background: #fff7ed;
+  color: #c2410c;
 }
 
 .changelog-entry-title {

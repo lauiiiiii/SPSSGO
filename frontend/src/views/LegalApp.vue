@@ -972,7 +972,6 @@ onMounted(() => {
 </script>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
   color: #1f2937; background: #f8f9fb;
