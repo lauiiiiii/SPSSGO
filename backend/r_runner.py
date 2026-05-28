@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -18,8 +19,24 @@ class RExecutionError(RuntimeError):
     pass
 
 
+_R_UNICODE_MARKER_RE = re.compile(r"<U\+([0-9A-Fa-f]{4,6})>")
+
+
+def _decode_r_unicode_markers(value):
+    if isinstance(value, str):
+        return _R_UNICODE_MARKER_RE.sub(lambda match: chr(int(match.group(1), 16)), value)
+    if isinstance(value, list):
+        return [_decode_r_unicode_markers(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _decode_r_unicode_markers(item) for key, item in value.items()}
+    return value
+
+
 def _create_temp_dir() -> Path:
     base_dir = Path(R_TEMP_DIR).expanduser().resolve()
+    if any(ord(ch) > 127 for ch in str(base_dir)):
+        # Windows Rscript 在非 UTF-8 locale 下读中文临时路径会丢 --input，别让主流程挂。
+        base_dir = Path(tempfile.gettempdir()).resolve() / "spssgo-r"
     base_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = base_dir / f"spssgo-r-{uuid.uuid4().hex[:10]}"
     temp_dir.mkdir(parents=True, exist_ok=False)
@@ -114,8 +131,8 @@ def run_r_script(
             "stderr": stderr,
         }
     if isinstance(parsed, dict):
-        return parsed
-    return {"success": True, "data": parsed, "stderr": stderr}
+        return _decode_r_unicode_markers(parsed)
+    return {"success": True, "data": _decode_r_unicode_markers(parsed), "stderr": stderr}
 
 
 def run_r_health_check() -> dict:

@@ -37,16 +37,18 @@
         @toggle-chart-data="(sectionArg, chartArg) => $emit('toggle-chart-data', sectionArg, chartArg)"
       />
     </div>
-    <div v-if="section.description" class="ap-chart-desc">
-      <span class="ap-chart-desc-icon">图表说明：</span>{{ section.description }}
+    <div v-if="chartDescription" class="ap-chart-desc">
+      <span class="ap-chart-desc-icon">图表说明：</span>{{ chartDescription }}
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import AnalysisChartItem from './AnalysisChartItem.vue'
+import { describeAnalysisChartSection } from '../../utils/analysisCharts.js'
 
-defineProps({
+const props = defineProps({
   calcBox: { type: Function, required: true },
   calcGroupedBox: { type: Function, required: true },
   calcCategoryBar: { type: Function, required: true },
@@ -64,6 +66,8 @@ defineProps({
   sectionIndex: { type: Number, required: true },
   setChartRef: { type: Function, required: true },
 })
+
+const chartDescription = computed(() => describeAnalysisChartSection(props.section))
 
 defineEmits([
   'copy-chart',

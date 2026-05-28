@@ -1,6 +1,11 @@
 // 这里只放分析结果导出和复制的富文本组装，别把页面交互塞进来。
 // 复制链路要优先兼容 Word/WPS，别再回到“网页表格看着像，粘过去就变形”的老路。
 
+import {
+  describeAnalysisChartSection,
+  describeRegressionPredictionSection,
+} from './analysisCharts.js'
+
 const TABLE_COPY_STYLE = 'padding:8px 12px;text-align:center;vertical-align:middle;font-size:10.5pt;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif;color:#000'
 const EXPORT_CELL_STYLE = 'padding:6px 10px;text-align:center;font-size:10.5pt;font-family:"Times New Roman","宋体",serif;border:1px solid #ccc'
 const RTF_TABLE_WIDTH = 9000
@@ -244,6 +249,10 @@ function headerCellSpan(cell, key) {
   return Number.isFinite(value) && value > 1 ? value : 1
 }
 
+function headerCellClass(cell) {
+  return cell && typeof cell === 'object' ? String(cell.class || '') : ''
+}
+
 function buildOfficeTableHtml(section) {
   const headers = section.headers || []
   const rows = section.rows || []
@@ -256,7 +265,7 @@ function buildOfficeTableHtml(section) {
     html += '<tr>'
     headerRow.forEach(cell => {
       const topBorder = rowIndex === 0 ? '2px solid #000' : 'none'
-      const isGroupedHeader = headerCellSpan(cell, 'colspan') > 1
+      const isGroupedHeader = headerCellSpan(cell, 'colspan') > 1 || headerCellClass(cell).includes('tlt-head-group')
       const bottomBorder = (isGroupedHeader || rowIndex === headerRows.length - 1) && rows.length ? '1px solid #000' : 'none'
       html += `<th align="center" valign="middle" colspan="${headerCellSpan(cell, 'colspan')}" rowspan="${headerCellSpan(cell, 'rowspan')}" style="${buildOfficeCellStyle({ bold: true, topBorder, bottomBorder })}">${escapeHtml(headerCellText(cell))}</th>`
     })
@@ -324,6 +333,7 @@ export function buildAllResultsCopyPayload(results) {
 }
 
 function appendSection(builder, section) {
+  if (isIntermediateProcessSection(section)) return
   if (section.type === 'table' && section.headers?.length) {
     if (section.title && !section.inlineTitle) {
       appendPlainParagraph(builder, section.title, '\n')
@@ -366,6 +376,11 @@ function appendSection(builder, section) {
     return
   }
 
+  if (section.type === 'regression_prediction') {
+    appendRegressionPredictionSection(builder, section)
+    return
+  }
+
   if (section.type === 'charts' && section.charts?.length) {
     appendHtmlParagraph(builder, section.title, 'margin:10px 0 6px;font-size:12pt;font-weight:700;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
     appendPlainParagraph(builder, section.title, '\n')
@@ -382,13 +397,46 @@ function appendSection(builder, section) {
         builder.rtf += dataTable.rtf
       }
     }
-    if (section.description) {
-      appendHtmlParagraph(builder, section.description, 'text-indent:2em;line-height:1.8;font-size:12pt;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif;margin:8px 0')
-      appendPlainParagraph(builder, section.description, '\n')
-      appendRtfParagraph(builder, section.description, { firstLineIndent: true, size: RTF_BODY_FONT_SIZE })
+    const chartDescription = describeAnalysisChartSection(section)
+    if (chartDescription) {
+      appendHtmlParagraph(builder, chartDescription, 'text-indent:2em;line-height:1.8;font-size:12pt;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif;margin:8px 0')
+      appendPlainParagraph(builder, chartDescription, '\n')
+      appendRtfParagraph(builder, chartDescription, { firstLineIndent: true, size: RTF_BODY_FONT_SIZE })
     }
     builder.plain += '\n'
   }
+}
+
+function appendRegressionPredictionSection(builder, section) {
+  if (section.title) {
+    appendPlainParagraph(builder, section.title, '\n')
+    appendHtmlParagraph(builder, section.title, 'margin:10px 0 6px;font-size:12pt;font-weight:700;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
+    appendRtfParagraph(builder, section.title, { bold: true, size: RTF_SECTION_TITLE_SIZE, spacingBefore: 80, spacingAfter: 60 })
+  }
+  const description = describeRegressionPredictionSection(section)
+  if (description) {
+    appendHtmlParagraph(builder, description, 'text-indent:2em;line-height:1.8;font-size:12pt;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif;margin:8px 0')
+    appendPlainParagraph(builder, description, '\n')
+    appendRtfParagraph(builder, description, { firstLineIndent: true, size: RTF_BODY_FONT_SIZE })
+  }
+  const predicted = formatExportNumber(section.defaultPrediction ?? section.intercept)
+  const dependent = section.dependent || '预测值'
+  appendHtmlParagraph(builder, `${dependent}（默认输入）：${predicted}`, 'line-height:1.8;font-size:12pt;color:#000;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
+  appendPlainParagraph(builder, `${dependent}（默认输入）：${predicted}`, '\n')
+  appendRtfParagraph(builder, `${dependent}（默认输入）：${predicted}`, { size: RTF_BODY_FONT_SIZE, spacingAfter: 60 })
+  if (section.equation) {
+    appendHtmlParagraph(builder, section.equation, 'line-height:1.8;font-size:11pt;color:#333;font-family:&quot;Times New Roman&quot;,&quot;宋体&quot;,serif')
+    appendPlainParagraph(builder, section.equation, '\n')
+    appendRtfParagraph(builder, section.equation, { size: RTF_NOTE_FONT_SIZE, spacingAfter: 60 })
+  }
+  const rows = buildRegressionPredictionRows(section)
+  if (rows.length) {
+    appendTableSection(builder, {
+      headers: ['变量', '系数', '测试值'],
+      rows,
+    })
+  }
+  builder.plain += '\n'
 }
 
 function appendSimpleResult(builder, result) {
@@ -428,6 +476,7 @@ export function buildReportExportHtml(title, results) {
 }
 
 function buildExportSectionHtml(section) {
+  if (isIntermediateProcessSection(section)) return ''
   if (section.type === 'table') {
     const rows = section.exportRows || section.rows
     let html = section.inlineTitle ? '' : `<h3>${section.title}</h3>`
@@ -445,6 +494,9 @@ function buildExportSectionHtml(section) {
     html += '</ul>'
     return html
   }
+  if (section.type === 'regression_prediction') {
+    return buildRegressionPredictionExportHtml(section)
+  }
   if (section.type === 'charts' && section.charts?.length) {
     let html = `<h3>${section.title}</h3>`
     for (const chart of section.charts) {
@@ -453,10 +505,50 @@ function buildExportSectionHtml(section) {
       const dataTable = buildChartDataTable(chart)
       if (dataTable) html += dataTable.html
     }
-    if (section.description) html += `<p>${section.description}</p>`
+    const chartDescription = describeAnalysisChartSection(section)
+    if (chartDescription) html += `<p>${escapeHtml(chartDescription)}</p>`
     return html
   }
   return ''
+}
+
+function isIntermediateProcessSection(section = {}) {
+  return Boolean(section.skipReportExport || String(section.title || '').includes('中间过程'))
+}
+
+function buildRegressionPredictionExportHtml(section) {
+  let html = `<h3>${escapeHtml(section.title || '模型结果预测')}</h3>`
+  const description = describeRegressionPredictionSection(section)
+  if (description) html += `<p>${escapeHtml(description)}</p>`
+  const dependent = section.dependent || '预测值'
+  html += `<p>${escapeHtml(`${dependent}（默认输入）：${formatExportNumber(section.defaultPrediction ?? section.intercept)}`)}</p>`
+  if (section.equation) html += `<p>${escapeHtml(section.equation)}</p>`
+  html += buildExportTableHtml(['变量', '系数', '测试值'], buildRegressionPredictionRows(section))
+  return html
+}
+
+function buildRegressionPredictionRows(section) {
+  const rows = [
+    ['常数', formatExportNumber(section.intercept ?? section.defaultPrediction), '1'],
+  ]
+  for (const input of (section.inputs || [])) {
+    if (input.type === 'numeric') {
+      rows.push([
+        input.label,
+        formatExportNumber(input.coefficient),
+        formatExportNumber(input.defaultValue ?? 0),
+      ])
+      continue
+    }
+    const selected = (input.options || []).find(option => option.value === input.defaultValue) || input.options?.[0]
+    rows.push([
+      input.label,
+      formatExportNumber(selected?.coefficient ?? 0),
+      selected?.label ?? input.defaultValue ?? '—',
+    ])
+  }
+  rows.push(['预测结果 -', '', formatExportNumber(section.defaultPrediction ?? section.intercept)])
+  return rows
 }
 
 function buildExportTableHtml(headers, rows, headerRows = null, bodyRowspanColumns = 0) {
@@ -495,6 +587,23 @@ export function downloadWordHtml(title, html) {
 function buildChartDataTable(chart) {
   const data = chart.data
   if (!data) return null
+  if (chart.chartType === 'coefficient_interval') {
+    const rows = (data.labels || []).map((label, index) => [
+      label,
+      formatExportNumber(data.estimates?.[index]),
+      formatExportNumber(data.lower?.[index]),
+      formatExportNumber(data.upper?.[index]),
+    ])
+    return buildInlineDataTable(['项', '估计值', 'CI下限', 'CI上限'], rows)
+  }
+  if (data.multiSeries && data.metrics && Object.keys(data.metrics).length) {
+    const seriesNames = Object.keys(data.metrics)
+    const rows = (data.labels || []).map((label, index) => [
+      label,
+      ...seriesNames.map(name => formatExportNumber(data.metrics[name]?.[index])),
+    ])
+    return buildInlineDataTable(['名称', ...seriesNames], rows)
+  }
   const labels = data.labels || []
   const values = data.values || []
   const metric = data.metric || '值'
@@ -533,6 +642,23 @@ function buildChartDataTable(chart) {
   rtf += '\\pard\\sa40\\par'
 
   return { html, plain, rtf }
+}
+
+function buildInlineDataTable(headers, rows) {
+  if (!headers?.length || !rows?.length) return null
+  const builder = createRichPayloadBuilder()
+  appendTableSection(builder, { headers, rows })
+  return {
+    html: builder.html,
+    plain: builder.plain,
+    rtf: builder.rtf,
+  }
+}
+
+function formatExportNumber(value) {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue)) return String(value ?? '—')
+  return numberValue.toFixed(3)
 }
 
 export function printHtml(html) {

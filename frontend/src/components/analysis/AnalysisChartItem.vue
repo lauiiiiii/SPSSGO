@@ -1,7 +1,7 @@
 <template>
   <div class="ap-chart-item">
     <div class="ap-chart-caption">{{ displayTitle }}</div>
-    <div v-if="supportsDataLabels || hasMetricSwitcher" class="ap-chart-label-toolbar">
+    <div v-if="supportsLabelMode || hasMetricSwitcher" class="ap-chart-label-toolbar">
       <select
         v-if="hasMetricSwitcher"
         v-model="selectedMetric"
@@ -614,7 +614,7 @@
                     @mouseenter="$emit('show-metric-tip', $event, chart, point)"
                     @mousemove="$emit('move-tip', $event)"
                     @mouseleave="$emit('hide-tip')"/>
-                  <text v-for="(point, pointIndex) in multiMetricPoints(metricData)" :key="'mspv'+pointIndex"
+                  <text v-for="(point, pointIndex) in multiMetricLabelPoints(metricData)" :key="'mspv'+pointIndex"
                     v-show="showDataLabels"
                     :x="point.x" :y="Math.max(point.y - 9, 12)" text-anchor="middle" font-size="10" :fill="point.color">{{ metricValueLabel(point.value) }}</text>
                   <rect v-for="(hit, hitIndex) in metricData.hitAreas" :key="'mshit'+hitIndex"
@@ -623,8 +623,8 @@
                     @mouseenter="$emit('show-metric-tip', $event, chart, hit)"
                     @mousemove="$emit('move-tip', $event)"
                     @mouseleave="$emit('hide-tip')"/>
-                  <line v-for="(hit, hitIndex) in metricData.hitAreas" :key="'msvx'+hitIndex"
-                    :x1="hit.x" :y1="metricData.mt" :x2="hit.x" :y2="metricData.mt+metricData.ph"
+                  <line v-for="(guide, guideIndex) in (metricData.guideLines || metricData.hitAreas)" :key="'msvx'+guideIndex"
+                    :x1="guide.x" :y1="metricData.mt" :x2="guide.x" :y2="metricData.mt+metricData.ph"
                     stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3" opacity=".28"/>
                   <g v-for="(legend, legendIndex) in metricData.legend" :key="'mslg'+legendIndex">
                     <line :x1="legend.x" :y1="legend.y" :x2="legend.x + 18" :y2="legend.y" :stroke="legend.color" stroke-width="2" :stroke-dasharray="legend.dash"/>
@@ -634,21 +634,21 @@
                 </template>
                 <template v-else>
                   <path :d="metricData.path" fill="none" stroke="#2389e8" stroke-width="2"/>
-                  <circle v-for="(point, pointIndex) in metricData.points" :key="'mp'+pointIndex"
+                  <circle v-for="(point, pointIndex) in (metricData.markerPoints || metricData.points)" :key="'mp'+pointIndex"
                     class="ap-metric-mark"
                     :cx="point.x" :cy="point.y" r="4" fill="#2389e8"
                     @mouseenter="$emit('show-metric-tip', $event, chart, point)"
                     @mousemove="$emit('move-tip', $event)"
                     @mouseleave="$emit('hide-tip')"/>
-                  <text v-for="(point, pointIndex) in metricData.points" :key="'mpv'+pointIndex"
+                  <text v-for="(point, pointIndex) in (metricData.labelPoints || metricData.points)" :key="'mpv'+pointIndex"
                     v-show="showDataLabels"
                     :x="point.x" :y="Math.max(point.y - 10, 12)" text-anchor="middle" font-size="11" fill="#333">{{ metricValueLabel(point.value) }}</text>
                 </template>
               </template>
               <line :x1="metricData.ml" :y1="metricData.mt+metricData.ph" :x2="metricData.ml+metricData.pw" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
               <line :x1="metricData.ml" :y1="metricData.mt" :x2="metricData.ml" :y2="metricData.mt+metricData.ph" stroke="#bbb" stroke-width="1"/>
-              <text v-for="(point, pointIndex) in metricData.points" :key="'mx'+pointIndex"
-                :x="point.x" :y="metricData.mt+metricData.ph+18" text-anchor="middle" font-size="11" fill="#666">{{ metricData.shortLabel(point.label) }}</text>
+              <text v-for="(tick, tickIndex) in (metricData.xTicks || metricData.points)" :key="'mx'+tickIndex"
+                :x="tick.x" :y="metricData.mt+metricData.ph+18" text-anchor="middle" font-size="11" fill="#666">{{ metricData.shortLabel(tick.label) }}</text>
               <text v-for="(tick, tickIndex) in metricData.yTicks" :key="'my'+tickIndex"
                 :x="metricData.ml-6" :y="tick.y+4" text-anchor="end" font-size="11" fill="#888">{{ tick.label }}</text>
               <template v-if="metricData.rightTicks">
@@ -657,6 +657,129 @@
                   :x="metricData.ml+metricData.pw+8" :y="tick.y+4" text-anchor="start" font-size="11" fill="#888">{{ tick.label }}</text>
               </template>
             </template>
+          </svg>
+        </template>
+      </template>
+      <template v-else-if="isModelPathChart">
+        <template v-for="pathData in [modelPathData]" :key="0">
+          <svg
+            class="ap-chart-svg ap-chart-svg--model-path"
+            :viewBox="`0 0 ${pathData.W} ${pathData.H}`"
+            :width="pathData.W"
+            :height="pathData.H">
+            <defs>
+              <marker id="modelPathArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+              </marker>
+              <marker id="modelPathArrowSig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
+              </marker>
+            </defs>
+            <rect x="0" y="0" :width="pathData.W" :height="pathData.H" fill="white"/>
+            <g v-for="node in pathData.nodes" :key="node.key">
+              <rect :x="node.x" :y="node.y" :width="node.w" :height="node.h" rx="4" fill="#fff" stroke="#334155" stroke-width="1.2"/>
+              <text :x="node.x + node.w / 2" :y="node.y + node.h / 2 + 4" text-anchor="middle" font-size="12" fill="#111827">{{ node.label }}</text>
+            </g>
+            <rect :x="pathData.target.x" :y="pathData.target.y" :width="pathData.target.w" :height="pathData.target.h" rx="4" fill="#fff" stroke="#334155" stroke-width="1.3"/>
+            <text :x="pathData.target.x + pathData.target.w / 2" :y="pathData.target.y + pathData.target.h / 2 + 4" text-anchor="middle" font-size="12" fill="#111827">{{ pathData.target.label }}</text>
+            <g v-for="edge in pathData.edges" :key="edge.key">
+              <line
+                :x1="edge.x1"
+                :y1="edge.y1"
+                :x2="edge.x2"
+                :y2="edge.y2"
+                :stroke="edge.significant ? '#111827' : '#64748b'"
+                :stroke-width="edge.significant ? 2 : 1.2"
+                :marker-end="edge.significant ? 'url(#modelPathArrowSig)' : 'url(#modelPathArrow)'"
+              />
+              <text
+                v-show="showDataLabels"
+                :x="edge.labelX"
+                :y="edge.labelY"
+                text-anchor="middle"
+                font-size="10.5"
+                :fill="edge.significant ? '#111827' : '#64748b'"
+              >{{ edge.value }}</text>
+            </g>
+          </svg>
+        </template>
+      </template>
+      <template v-else-if="isCoefficientIntervalChart">
+        <template v-for="ciData in [calcCoefficientInterval(chart.data)]" :key="0">
+          <svg
+            class="ap-chart-svg ap-chart-svg--coefficient-interval"
+            :viewBox="`0 0 ${ciData.W} ${ciData.H}`"
+            :width="ciData.W"
+            :height="ciData.H">
+            <rect :x="ciData.ml" :y="ciData.mt" :width="ciData.pw" :height="ciData.ph" fill="white"/>
+            <line
+              :x1="ciData.zeroX"
+              :y1="ciData.mt"
+              :x2="ciData.zeroX"
+              :y2="ciData.mt + ciData.ph"
+              stroke="#111827"
+              stroke-width="1"
+              stroke-dasharray="4 4"
+            />
+            <g v-for="mark in ciData.marks" :key="mark.label">
+              <line :x1="ciData.ml - 4" :y1="mark.y" :x2="ciData.ml" :y2="mark.y" stroke="#111827" stroke-width="1"/>
+              <text :x="ciData.ml - 14" :y="mark.y + 4" text-anchor="end" font-size="11" fill="#00345c">{{ mark.label }}</text>
+              <line :x1="mark.lowX" :y1="mark.y" :x2="mark.highX" :y2="mark.y" stroke="#111827" stroke-width="1.6"/>
+              <line :x1="mark.lowX" :y1="mark.y - 4" :x2="mark.lowX" :y2="mark.y + 4" stroke="#111827" stroke-width="1.2"/>
+              <line :x1="mark.highX" :y1="mark.y - 4" :x2="mark.highX" :y2="mark.y + 4" stroke="#111827" stroke-width="1.2"/>
+              <circle :cx="mark.estimateX" :cy="mark.y" r="3.8" fill="#1687d9"/>
+              <text
+                v-show="showDataLabels"
+                :x="mark.lowLabelX"
+                :y="mark.y + 4"
+                text-anchor="end"
+                font-size="10.5"
+                fill="#111827"
+                font-weight="600"
+              >{{ mark.lowLabel }}</text>
+              <text
+                v-show="showDataLabels"
+                :x="mark.highLabelX"
+                :y="mark.y + 4"
+                text-anchor="start"
+                font-size="10.5"
+                fill="#111827"
+                font-weight="600"
+              >{{ mark.highLabel }}</text>
+              <rect
+                :x="ciData.ml"
+                :y="mark.y - 15"
+                :width="ciData.pw"
+                :height="30"
+                fill="transparent"
+                style="cursor:pointer"
+                @mouseenter="$emit('show-metric-tip', $event, chart, mark)"
+                @mousemove="$emit('move-tip', $event)"
+                @mouseleave="$emit('hide-tip')"
+              />
+            </g>
+            <line :x1="ciData.ml" :y1="ciData.mt" :x2="ciData.ml" :y2="ciData.mt + ciData.ph" stroke="#111827" stroke-width="1"/>
+            <line :x1="ciData.ml" :y1="ciData.mt + ciData.ph" :x2="ciData.ml + ciData.pw" :y2="ciData.mt + ciData.ph" stroke="#111827" stroke-width="1"/>
+            <line
+              v-for="(tick, tickIndex) in ciData.xTicks"
+              :key="'cixmark'+tickIndex"
+              :x1="tick.x"
+              :y1="ciData.mt + ciData.ph"
+              :x2="tick.x"
+              :y2="ciData.mt + ciData.ph + 4"
+              stroke="#111827"
+              stroke-width="1"
+            />
+            <text
+              v-for="(tick, tickIndex) in ciData.xTicks"
+              :key="'cixt'+tickIndex"
+              :x="tick.x"
+              :y="ciData.mt + ciData.ph + 22"
+              text-anchor="middle"
+              font-size="11"
+              fill="#00345c"
+            >{{ tick.label }}</text>
+            <text :x="ciData.ml + ciData.pw / 2" :y="ciData.H - 14" text-anchor="middle" font-size="12" fill="#00345c">{{ chart.data?.xLabel || '回归系数' }}</text>
           </svg>
         </template>
       </template>
@@ -833,6 +956,10 @@
           step="0.05"
         />
       </label>
+      <label v-if="supportsDataLabels" class="ap-chart-size-control">
+        <input v-model="showDataLabels" type="checkbox" />
+        <span>显示数值</span>
+      </label>
       <button class="ap-chart-act-btn" @click="$emit('download-chart', sectionIndex, chartIndex, displayTitle)" title="保存图片">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         保存
@@ -885,11 +1012,22 @@
     </div>
     <div v-if="dataVisible && isMetricComparisonChart" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
-        <thead><tr><th>名称</th><th>{{ chart.data.metric || '指标' }}</th></tr></thead>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <template v-if="metricSeriesNames(chart.data).length">
+              <th v-for="name in metricSeriesNames(chart.data)" :key="name">{{ name }}</th>
+            </template>
+            <th v-else>{{ chart.data.metric || '指标' }}</th>
+          </tr>
+        </thead>
         <tbody>
           <tr v-for="(label, rowIndex) in chart.data.labels" :key="rowIndex">
             <td>{{ label }}</td>
-            <td>{{ Number(chart.data.values[rowIndex] || 0).toFixed(3) }}</td>
+            <template v-if="metricSeriesNames(chart.data).length">
+              <td v-for="name in metricSeriesNames(chart.data)" :key="name">{{ formatChartNumber(chart.data.metrics?.[name]?.[rowIndex]) }}</td>
+            </template>
+            <td v-else>{{ formatChartNumber(chart.data.values?.[rowIndex]) }}</td>
           </tr>
         </tbody>
       </table>
@@ -903,6 +1041,19 @@
           <tr><td>CI上限</td><td>{{ Number(chart.data.ciHigh || 0).toFixed(3) }}</td></tr>
           <tr><td>等价下限</td><td>{{ Number(chart.data.lower || 0).toFixed(3) }}</td></tr>
           <tr><td>等价上限</td><td>{{ Number(chart.data.upper || 0).toFixed(3) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="dataVisible && isCoefficientIntervalChart" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>项</th><th>估计值</th><th>CI下限</th><th>CI上限</th></tr></thead>
+        <tbody>
+          <tr v-for="(label, rowIndex) in chart.data.labels" :key="rowIndex">
+            <td>{{ label }}</td>
+            <td>{{ formatChartNumber(chart.data.estimates?.[rowIndex]) }}</td>
+            <td>{{ formatChartNumber(chart.data.lower?.[rowIndex]) }}</td>
+            <td>{{ formatChartNumber(chart.data.upper?.[rowIndex]) }}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -1012,7 +1163,7 @@ const kanoChartZoom = ref(1)
 const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
-const showDataLabels = ref(true)
+const showDataLabels = ref(defaultShowDataLabels(props.chart))
 const selectedMetric = ref(props.chart.data?.metric || '')
 const categoryModeOptions = [
   { value: 'bar', label: '柱状图' },
@@ -1025,12 +1176,16 @@ const isCorrespondenceMap = computed(() => props.chart.chartType === 'correspond
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
 const isGroupedBoxplotChart = computed(() => props.chart.chartType === 'grouped_boxplot')
 const isEquivalenceIntervalChart = computed(() => props.chart.chartType === 'equivalence_interval')
+const isCoefficientIntervalChart = computed(() => props.chart.chartType === 'coefficient_interval')
 const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
 const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
+const isModelPathChart = computed(() => props.chart.chartType === 'model_path')
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
   || isMetricComparisonChart.value
+  || isCoefficientIntervalChart.value
+  || isModelPathChart.value
   || (isCategoryChart.value && ['bar', 'horizontalBar'].includes(categoryMode.value))
 ))
 const supportsLabelMode = computed(() => (
@@ -1093,6 +1248,19 @@ const chartWrapStyle = computed(() => {
       height: `${Math.round(baseHeight * metricChartZoom.value)}px`,
     }
   }
+  if (isCoefficientIntervalChart.value) {
+    const layout = calcCoefficientInterval(props.chart.data)
+    return {
+      width: `${layout.W}px`,
+      height: `${layout.H}px`,
+    }
+  }
+  if (isModelPathChart.value) {
+    return {
+      width: '760px',
+      height: '360px',
+    }
+  }
   if (isCrosstabChart.value) {
     return {
       width: `${Math.round(660 * crosstabChartZoom.value)}px`,
@@ -1130,9 +1298,63 @@ const displayTitle = computed(() => {
   if (isCrosstabChart.value) return crosstabTitle.value
   if (isKanoBetterWorseChart.value) return props.chart.title || 'Better-Worse系数图'
   if (isMetricComparisonChart.value) return metricComparisonTitle.value
+  if (isModelPathChart.value) return props.chart.title || '模型结果图'
+  if (isCoefficientIntervalChart.value) return props.chart.title || '回归系数95% CI'
   if (isEquivalenceIntervalChart.value) return props.chart.title || '等价检验可视化'
   return props.chart.title
 })
+
+const modelPathData = computed(() => {
+  const rawEdges = Array.isArray(props.chart.data?.edges) ? props.chart.data.edges : []
+  const W = 760
+  const H = 360
+  const nodeW = 124
+  const nodeH = 38
+  const leftX = 112
+  const target = {
+    x: 560,
+    y: H / 2 - nodeH / 2,
+    w: nodeW,
+    h: nodeH,
+    label: props.chart.data?.target || 'Y',
+  }
+  const edgeCount = Math.max(rawEdges.length, 1)
+  const top = Math.max(38, 170 - (edgeCount - 1) * 24)
+  const step = edgeCount <= 1 ? 0 : Math.min(50, 240 / (edgeCount - 1))
+  const nodes = rawEdges.map((edge, index) => ({
+    key: `node-${index}`,
+    label: edge.label || `变量${index + 1}`,
+    x: leftX,
+    y: top + index * step,
+    w: nodeW,
+    h: nodeH,
+  }))
+  const edges = rawEdges.map((edge, index) => {
+    const node = nodes[index]
+    const y1 = node.y + node.h / 2
+    const y2 = target.y + target.h / 2
+    return {
+      key: `edge-${index}`,
+      significant: !!edge.significant,
+      value: edge.value || '',
+      x1: node.x + node.w,
+      y1,
+      x2: target.x,
+      y2,
+      labelX: (node.x + node.w + target.x) / 2,
+      labelY: (y1 + y2) / 2 - 5,
+    }
+  })
+  return { W, H, nodes, target, edges }
+})
+
+function defaultShowDataLabels(chart = {}) {
+  if (chart.data?.defaultShowDataLabels != null) return !!chart.data.defaultShowDataLabels
+  if (chart.chartType !== 'metric_comparison') return true
+  const labels = chart.data?.labels || []
+  const seriesCount = chart.data?.multiSeries && chart.data?.metrics ? Object.keys(chart.data.metrics).length : 1
+  return labels.length <= 24 && labels.length * seriesCount <= 80
+}
 
 function percentLabel(value) {
   const numberValue = Number(value || 0)
@@ -1155,7 +1377,16 @@ function metricValueLabel(value) {
 }
 
 function multiMetricPoints(metricData) {
-  return (metricData.series || []).flatMap(series => series.points || [])
+  return (metricData.series || []).flatMap(series => series.markerPoints || series.points || [])
+}
+
+function multiMetricLabelPoints(metricData) {
+  return (metricData.series || []).flatMap(series => series.labelPoints || series.markerPoints || series.points || [])
+}
+
+function metricSeriesNames(data = {}) {
+  if (!data.multiSeries || !data.metrics) return []
+  return Object.keys(data.metrics)
 }
 
 function chartMean(values) {
@@ -1168,6 +1399,95 @@ function compactNumber(value) {
   const num = Number(value || 0)
   if (Math.abs(num) >= 10) return num.toFixed(2).replace(/\.?0+$/, '')
   return num.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function compactFiniteNumber(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '—'
+  return compactNumber(num)
+}
+
+function niceTickStep(span, targetCount = 7) {
+  const rawStep = Math.abs(span || 1) / Math.max(targetCount - 1, 1)
+  const base = 10 ** Math.floor(Math.log10(rawStep))
+  const ratio = rawStep / base
+  const factor = ratio <= 1 ? 1 : (ratio <= 2 ? 2 : (ratio <= 5 ? 5 : 10))
+  return factor * base
+}
+
+function niceAxisTicks(minValue, maxValue, targetCount = 7) {
+  const min = Number.isFinite(minValue) ? minValue : -1
+  const max = Number.isFinite(maxValue) ? maxValue : 1
+  const step = niceTickStep(max - min || 1, targetCount)
+  const start = Math.floor(min / step) * step
+  const end = Math.ceil(max / step) * step
+  const ticks = []
+  for (let value = start; value <= end + step * 0.5; value += step) {
+    ticks.push(Math.abs(value) < step / 1000 ? 0 : value)
+  }
+  return ticks
+}
+
+function formatChartNumber(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '—'
+  return num.toFixed(3)
+}
+
+function calcCoefficientInterval(data = {}) {
+  const labels = data.labels || []
+  const estimates = (data.estimates || data.values || []).map(value => Number(value))
+  const lower = (data.lower || data.ciLow || []).map(value => Number(value))
+  const upper = (data.upper || data.ciHigh || []).map(value => Number(value))
+  const rowCount = Math.max(labels.length, 1)
+  const W = 760
+  const H = Math.max(300, rowCount * 48 + 96)
+  const ml = Math.max(74, Math.min(150, Math.max(...labels.map(label => String(label).length), 4) * 8 + 38))
+  const mr = 54
+  const mt = 34
+  const mb = 58
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const allValues = [...estimates, ...lower, ...upper, 0].filter(Number.isFinite)
+  const minV = Math.min(...allValues, -1)
+  const maxV = Math.max(...allValues, 1)
+  const span = maxV - minV || 1
+  const pad = Math.max(span * 0.18, 0.08)
+  const tickValues = niceAxisTicks(minV - pad, maxV + pad, 7)
+  const axisLow = tickValues[0] ?? (minV - pad)
+  const axisHigh = tickValues[tickValues.length - 1] ?? (maxV + pad)
+  const toX = value => ml + ((Number(value || 0) - axisLow) / (axisHigh - axisLow || 1)) * pw
+  const rowStep = ph / rowCount
+  const marks = labels.map((label, index) => {
+    const estimate = estimates[index]
+    const lowValue = lower[index]
+    const highValue = upper[index]
+    const hasInterval = Number.isFinite(lowValue) && Number.isFinite(highValue)
+    const significant = hasInterval && (lowValue > 0 || highValue < 0)
+    const estimateX = toX(Number.isFinite(estimate) ? estimate : 0)
+    return {
+      label,
+      metric: data.metric || '非标准化系数B',
+      value: estimate,
+      estimate,
+      ciLow: lowValue,
+      ciHigh: highValue,
+      low: lowValue,
+      high: highValue,
+      significant,
+      estimateLabel: compactFiniteNumber(estimate),
+      lowLabel: compactFiniteNumber(lowValue),
+      highLabel: compactFiniteNumber(highValue),
+      estimateX,
+      lowX: toX(Number.isFinite(lowValue) ? lowValue : estimate),
+      highX: toX(Number.isFinite(highValue) ? highValue : estimate),
+      y: mt + rowStep * index + rowStep / 2,
+      lowLabelX: toX(Number.isFinite(lowValue) ? lowValue : estimate) - 6,
+      highLabelX: toX(Number.isFinite(highValue) ? highValue : estimate) + 6,
+    }
+  })
+  const xTicks = tickValues.map(value => ({ x: toX(value), label: compactNumber(value) }))
+  return { W, H, ml, mr, mt, mb, pw, ph, zeroX: toX(0), marks, xTicks }
 }
 
 function calcEquivalenceInterval(data = {}) {

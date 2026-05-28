@@ -367,6 +367,13 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
   position: relative;
 }
+.ap-scroll-body--report {
+  overflow: hidden;
+}
+.ap-scroll-body--report .ap-report-page {
+  height: 100%;
+  max-height: 100%;
+}
 
 /* ===== 报告页骨架 ===== */
 .ap-report-page {
@@ -615,6 +622,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .ap-report-body {
   flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 40px;
   background: #fff;
+  overscroll-behavior: contain;
 }
 .ap-report-card-wrap {
   max-width: 100%;
@@ -2193,6 +2201,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .tlt tbody td.tlt-cell--danger { color: #ff6d56; font-weight: 600; }
 .tlt tbody td.tlt-cell--success { color: #00bf6f; font-weight: 600; }
 .tlt tbody td.tlt-cell--accent { color: #1677ff; }
+.tlt tbody td.tlt-cell--model-divider { border-top: 1px solid #222; }
 .tlt--kano-matrix {
   table-layout: fixed;
 }
@@ -2436,6 +2445,12 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   gap: 8px;
   min-width: 0;
 }
+.ap-sec-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .ap-sec-head-title {
   font-size: 16px; font-weight: 700; color: #1a1a1a;
   position: relative; padding-left: 14px;
@@ -2484,8 +2499,20 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   transition: all .15s; font-family: inherit; flex-shrink: 0;
 }
 .ap-sec-copy:hover { border-color: #3b82f6; color: #3b82f6; background: #f0f7ff; }
+.ap-sec-toggle {
+  color: #2563eb;
+  background: #f8fbff;
+  border-color: #cfe0ff;
+}
+.ap-sec-collapsed-hint {
+  margin: -2px 0 4px 14px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+}
 .ap-sec-note {
-  font-size: 13px; color: #999; margin: 10px 0 0; padding: 0;
+  font-size: 13px; color: #999; margin: 10px 0 0; padding: 0 16px;
+  text-align: left;
 }
 .ap-sec-desc {
   font-size: 14px; color: #666; line-height: 1.85; padding: 14px 0 0;
@@ -2617,6 +2644,18 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   width: auto;
   height: auto;
 }
+.ap-chart-item:has(.ap-chart-svg--coefficient-interval) .ap-chart-wrap {
+  width: 760px;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ap-chart-svg--coefficient-interval {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+}
 .ap-chart-item:has(.ap-chart-svg--kano-bw) .ap-chart-wrap {
   width: 760px;
   height: 420px;
@@ -2727,8 +2766,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   font-size: 12px;
   color: #666;
 }
-.ap-chart-size-control input {
+.ap-chart-size-control input[type="range"] {
   width: 110px;
+  accent-color: #1677ff;
+}
+.ap-chart-size-control input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  margin: 0;
   accent-color: #1677ff;
 }
 .ap-chart-label-select {
@@ -2790,6 +2835,103 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .tlt--sm td {
   padding: 5px 10px;
   font-size: 12px;
+}
+
+/* -- regression prediction section -- */
+.ap-sec--prediction {
+  padding: 16px 0 18px;
+}
+.ap-prediction-table-wrap {
+  margin-top: 4px;
+}
+.tlt--prediction {
+  table-layout: fixed;
+}
+.tlt--prediction th:nth-child(1),
+.tlt--prediction td:nth-child(1) {
+  width: 22%;
+}
+.tlt--prediction th:nth-child(2),
+.tlt--prediction td:nth-child(2) {
+  width: 38%;
+}
+.tlt--prediction th:nth-child(3),
+.tlt--prediction td:nth-child(3) {
+  width: 40%;
+}
+.tlt--prediction tbody td {
+  padding: 6px 12px;
+  vertical-align: middle;
+}
+.ap-prediction-cell-field {
+  display: block;
+  width: 100%;
+}
+.ap-prediction-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d7dfeb;
+  border-radius: 2px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.ap-prediction-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, .12);
+}
+.ap-prediction-total-row td {
+  border-top: 1px solid #d9dfe8;
+  font-weight: 600;
+}
+.ap-prediction-equation {
+  margin: 12px 0 4px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #edf0f4;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+.ap-prediction-live {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid #2563eb;
+  background: #f8fbff;
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.ap-prediction-live-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.ap-prediction-live-headline {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+.ap-prediction-live-points {
+  display: grid;
+  gap: 6px;
+}
+.ap-prediction-live-point {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+}
+.ap-prediction-live-label {
+  color: #2563eb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ap-prediction-live-text {
+  min-width: 0;
 }
 /* Chart tooltip */
 .ap-chart-tip {
@@ -4043,6 +4185,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .md-library-pane .md-card-label {
   width: 100%;
   font-size: 11px;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 .md-library-pane .md-card--folder .md-card-label {
@@ -4110,7 +4253,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .md-card-label {
   font-size: 12px; font-weight: 600; color: #1f2937; line-height: 1.35;
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   word-break: break-all; max-width: 100%;
 }
 .md-card-meta {

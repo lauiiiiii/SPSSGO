@@ -66,7 +66,7 @@
 | 文件 | METHOD_KEY | 方法 |
 | --- | --- | --- |
 | `multiple_regression.py` | `multiple_regression` | 多元线性回归 |
-| `vif.py` | `vif` | 多重共线性 VIF |
+| `vif.py` | `vif` | 共线性分析 |
 | `mediation.py` | `mediation` | 中介效应分析 |
 | `moderation.py` | `moderation` | 调节作用 |
 

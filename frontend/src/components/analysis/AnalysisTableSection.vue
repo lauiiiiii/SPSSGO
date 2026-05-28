@@ -8,22 +8,34 @@
       <div class="ap-sec-head-main">
         <span class="ap-sec-head-title">{{ title }}</span>
       </div>
-      <button
-        v-if="copyable"
-        class="ap-sec-copy"
-        @click="copyActiveTable($event)"
-      >
-        <CopyIcon />
-        <span class="ap-sec-copy-txt">复制</span>
-      </button>
+      <div class="ap-sec-head-actions">
+        <button
+          v-if="canCollapse"
+          class="ap-sec-copy ap-sec-toggle"
+          @click="isCollapsed = !isCollapsed"
+        >
+          {{ isCollapsed ? '展开' : '收起' }}
+        </button>
+        <button
+          v-if="copyable && !isCollapsed"
+          class="ap-sec-copy"
+          @click="copyActiveTable($event)"
+        >
+          <CopyIcon />
+          <span class="ap-sec-copy-txt">复制</span>
+        </button>
+      </div>
     </div>
-    <div v-if="hasInlineTitle && copyable" class="ap-sec-inline-copy-bar">
+    <div v-if="hasInlineTitle && copyable && !isCollapsed" class="ap-sec-inline-copy-bar">
       <button class="ap-sec-copy" @click="copyActiveTable($event)">
         <CopyIcon />
         <span class="ap-sec-copy-txt">复制</span>
       </button>
     </div>
-    <div class="ap-table-wrap" v-if="activeHeaders.length || activeHeaderRows.length">
+    <div v-if="canCollapse && isCollapsed" class="ap-sec-collapsed-hint">
+      该表属于统计复核明细，默认收起；需要核对完整计算过程时再展开查看。
+    </div>
+    <div class="ap-table-wrap" v-if="!isCollapsed && (activeHeaders.length || activeHeaderRows.length)">
       <div v-if="hasTableToolbar" class="ap-table-mode-toolbar">
         <div class="ap-table-mode-center">
           <span class="ap-table-mode-title">{{ displayModeTitle }}</span>
@@ -113,7 +125,7 @@
             <th
               v-for="(header, headerIndex) in headerRow"
               :key="headerIndex"
-              :class="{ 'tlt-head-group': headerColspan(header) > 1 }"
+              :class="[{ 'tlt-head-group': headerColspan(header) > 1 }, cellExtraClass(header)]"
               :colspan="headerColspan(header)"
               :rowspan="headerRowspan(header)"
             >
@@ -136,8 +148,8 @@
         </tbody>
       </table>
     </div>
-    <p v-if="section.note" class="ap-sec-note">{{ section.note }}</p>
-    <div v-if="section.description" class="ap-sec-desc">{{ section.description }}</div>
+    <p v-if="section.note && !isCollapsed" class="ap-sec-note">{{ section.note }}</p>
+    <div v-if="section.description && !isCollapsed" class="ap-sec-desc">{{ section.description }}</div>
   </div>
 </template>
 
@@ -210,6 +222,10 @@ const activeTableView = computed(() => (
 ))
 const activeHeaders = computed(() => activeTableView.value?.headers || props.section.headers || [])
 const activeHeaderRows = computed(() => activeTableView.value?.headerRows || props.section.headerRows || [])
+const canCollapse = computed(() => (
+  !!props.section.collapsedByDefault || String(title.value || '').includes('中间过程')
+))
+const isCollapsed = ref(canCollapse.value)
 const tableHeaderRows = computed(() => (
   activeHeaderRows.value?.length ? activeHeaderRows.value : [activeHeaders.value]
 ))
@@ -237,6 +253,10 @@ watch(defaultMode, (nextMode) => {
 
 watch(defaultTableView, (nextView) => {
   selectedTableView.value = nextView
+})
+
+watch(canCollapse, (nextCanCollapse) => {
+  isCollapsed.value = nextCanCollapse
 })
 
 watch(rowFilter, (nextFilter) => {

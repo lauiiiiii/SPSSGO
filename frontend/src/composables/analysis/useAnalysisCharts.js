@@ -97,6 +97,21 @@ export function useAnalysisCharts() {
       return
     }
     const metric = dataPoint.metric || chart.data?.metric || '指标'
+    if (dataPoint.ciLow != null || dataPoint.ciHigh != null) {
+      const fmt = value => {
+        const num = Number(value)
+        return Number.isFinite(num) ? num.toFixed(3) : '—'
+      }
+      tip.lines = [
+        { text: chart.title || '回归系数95% CI', dot: null },
+        { text: `项：${dataPoint.label}`, dot: '#1687d9' },
+        { text: `${metric}：${fmt(dataPoint.value)}`, dot: '#1687d9' },
+        { text: `95% CI：[${fmt(dataPoint.ciLow)}, ${fmt(dataPoint.ciHigh)}]`, dot: '#111827' },
+      ]
+      moveTip(event)
+      tip.show = true
+      return
+    }
     tip.lines = [
       { text: chart.title || `${metric}对比图`, dot: null },
       { text: `名称：${dataPoint.label}`, dot: '#2389e8' },

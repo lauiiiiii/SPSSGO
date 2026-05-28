@@ -169,6 +169,25 @@ function shortLabel(value, maxLength = 10) {
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
 }
 
+function sampleIndexes(length, maxCount = 10) {
+  if (length <= 0) return []
+  if (length <= maxCount) return Array.from({ length }, (_, index) => index)
+  const step = Math.ceil((length - 1) / Math.max(maxCount - 1, 1))
+  const indexes = []
+  for (let index = 0; index < length; index += step) indexes.push(index)
+  if (indexes[indexes.length - 1] !== length - 1) indexes.push(length - 1)
+  return [...new Set(indexes)]
+}
+
+function metricAxisTicks(labels, toX, multiSeries = false) {
+  const maxTicks = multiSeries ? 10 : 12
+  return sampleIndexes(labels.length, maxTicks).map(index => ({
+    index,
+    label: labels[index],
+    x: toX(index),
+  }))
+}
+
 export function calcCategoryBarLayout(data, horizontal = false) {
   const labels = data?.labels || []
   const counts = data?.counts || []
@@ -526,6 +545,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
     x: toX(index),
     y: toY(values[index]),
   }))
+  const xTicks = metricAxisTicks(labels, toX, multiSeries)
   if (multiSeries) {
     const seriesNames = Object.keys(data.metrics)
     const colors = ['#2f7cff', '#00b96b', '#f6bd16', '#ff654f', '#7367ff', '#14c9c9', '#f759ab', '#722ed1', '#165dff']
@@ -566,8 +586,11 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
         x: ml + index * groupW + groupW / 2,
         y: toY(values[index]),
       }))
-      return { W, H, ml, mr, mt, mb, pw, ph, metric, points: pointsForTicks, groupedBars, legend, yTicks, shortLabel, mode, multiSeries: true }
+      const groupedXTicks = metricAxisTicks(labels, index => ml + index * groupW + groupW / 2, true)
+      return { W, H, ml, mr, mt, mb, pw, ph, metric, points: pointsForTicks, xTicks: groupedXTicks, groupedBars, legend, yTicks, shortLabel, mode, multiSeries: true }
     }
+    const denseLine = labels.length > 24 || labels.length * seriesNames.length > 80
+    const visibleIndexSet = new Set(denseLine ? xTicks.map(item => item.index) : labels.map((_, index) => index))
     const series = seriesNames.map((name, seriesIndex) => {
       const seriesValues = (data.metrics[name] || []).map(value => Number(value || 0))
       const seriesPoints = labels.map((label, index) => ({
@@ -583,6 +606,8 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
         color: colors[seriesIndex % colors.length],
         dash: dashStyles[seriesIndex % dashStyles.length],
         points: seriesPoints,
+        markerPoints: denseLine ? seriesPoints.filter((_, index) => visibleIndexSet.has(index)) : seriesPoints,
+        labelPoints: denseLine ? seriesPoints.filter((_, index) => visibleIndexSet.has(index)) : seriesPoints,
         path: seriesPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' '),
       }
     })
@@ -605,7 +630,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
       x: ml + pw + 22,
       y: mt + 42 + index * 18,
     }))
-    return { W, H, ml, mr, mt, mb, pw, ph, metric, points, series, legend, hitAreas, yTicks, shortLabel, mode, multiSeries: true }
+    return { W, H, ml, mr, mt, mb, pw, ph, metric, points, xTicks, series, legend, hitAreas, guideLines: xTicks, yTicks, shortLabel, mode, multiSeries: true, denseLine }
   }
   if (mode === 'horizontalBar') {
     const rowH = ph / Math.max(labels.length, 1)
@@ -659,6 +684,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
     return { W, H, cx, cy, r, metric, vertices, polygon, rings, mode }
   }
   const bw = pw / Math.max(labels.length, 1)
+  const barXTicks = metricAxisTicks(labels, index => ml + index * bw + bw / 2, false)
   const bars = labels.map((label, index) => {
     const value = values[index]
     const y = toY(Math.max(0, value))
@@ -702,6 +728,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
       points,
       bars,
       yTicks,
+      xTicks: barXTicks,
       rightTicks,
       shortLabel,
       path,
@@ -712,7 +739,7 @@ export function calcMetricComparisonLayout(data, mode = 'line') {
       mode,
     }
   }
-  return { W, H, ml, mr, mt, mb, pw, ph, metric, points, bars, yTicks, shortLabel, path, mode }
+  return { W, H, ml, mr, mt, mb, pw, ph, metric, points, xTicks: mode === 'bar' ? barXTicks : xTicks, bars, yTicks, shortLabel, path, mode }
 }
 
 export function calcFactorHeatmapLayout(data) {
@@ -872,6 +899,79 @@ export function calcCorrespondenceMapLayout(data) {
     yLabel: data?.yLabel || '维度2',
     legend,
   }
+}
+
+function textValue(value) {
+  return String(value ?? '').trim()
+}
+
+function chartLabelsCount(data = {}) {
+  return Array.isArray(data.labels) ? data.labels.length : 0
+}
+
+export function describeAnalysisChart(chart = {}) {
+  const data = chart.data || {}
+  const labelCount = chartLabelsCount(data)
+  if (chart.chartType === 'coefficient_interval') {
+    return '图中线段表示回归系数的95%置信区间，蓝点表示系数估计值；若置信区间跨过0，说明该系数方向和显著性需要谨慎解释。'
+  }
+  if (chart.chartType === 'model_path') {
+    const target = textValue(data.target) || '因变量'
+    const edgeCount = Array.isArray(data.edges) ? data.edges.length : 0
+    const sigCount = (data.edges || []).filter(edge => edge.significant).length
+    return `图中箭头表示各自变量对${target}的影响路径，路径标签为标准化Beta；带星号的路径表示p<0.05。共展示${edgeCount}条路径，其中${sigCount}条达到0.05显著性水平。`
+  }
+  if (chart.chartType === 'metric_comparison') {
+    const seriesNames = data.metrics ? Object.keys(data.metrics) : []
+    const hasActualPredicted = seriesNames.includes('真实值') && seriesNames.includes('预测值')
+    if (hasActualPredicted) {
+      return `图中对比${labelCount ? `前 ${labelCount} 条样本` : '样本'}的真实值和预测值；两条线越接近，说明模型拟合越好，局部偏离较大时需要结合残差和异常样本进一步判断。`
+    }
+    if (data.multiSeries && seriesNames.length) {
+      return `图中对比${seriesNames.join('、')}等${seriesNames.length}个序列在不同类别上的变化，用于观察不同组别或指标之间的相对差异。`
+    }
+    return `图中展示${data.metric || chart.title || '指标'}在${labelCount || '各'}个类别上的变化，用于比较不同类别的高低和趋势。`
+  }
+  if (chart.chartType === 'category_distribution') {
+    const variable = data.variable || chart.varName || chart.title || '变量'
+    return `图中展示${variable}各类别的频数和百分比分布，柱形越高或扇区越大，说明该类别样本占比越高。`
+  }
+  if (chart.chartType === 'crosstab_distribution') {
+    return '图中展示两个分类变量的交叉分布，用于观察不同组别下类别构成是否存在明显差异。'
+  }
+  if (chart.chartType === 'histogram' || chart.chartType === 'normality_histogram') {
+    return '图中展示变量取值的分布形态，可用于观察集中趋势、离散程度、偏态和异常区间。'
+  }
+  if (chart.chartType === 'boxplot' || chart.chartType === 'grouped_boxplot') {
+    return '图中展示中位数、四分位范围、须线和异常值，可用于比较变量分布差异和识别离群点。'
+  }
+  if (chart.chartType === 'correlation_heatmap' || chart.chartType === 'factor_loading_heatmap') {
+    return '图中通过颜色深浅展示矩阵数值大小，颜色越深表示绝对值越大，适合快速定位强关联或高载荷项。'
+  }
+  if (chart.chartType === 'equivalence_interval') {
+    return '图中展示置信区间与预设等价界值的位置关系；置信区间完全落在等价区间内时，才支持等价结论。'
+  }
+  if (chart.chartType === 'qq_plot' || chart.chartType === 'pp_plot') {
+    return '图中点越接近参考线，说明样本分布越接近理论分布；明显偏离参考线时需要谨慎使用正态假设。'
+  }
+  return '图中展示该分析结果的可视化信息，请结合对应结果表、显著性水平和样本量共同解释。'
+}
+
+export function describeAnalysisChartSection(section = {}) {
+  if (textValue(section.description)) return section.description
+  const descriptions = (section.charts || []).map(describeAnalysisChart).filter(Boolean)
+  if (!descriptions.length) return ''
+  return [...new Set(descriptions)].join(' ')
+}
+
+export function describeRegressionPredictionSection(section = {}) {
+  const plainDescription = '预测值就是模型按公式算出来的“预计得分”，它能帮你看趋势和模拟情况，但不能当成确定结论。'
+  const sectionDescription = textValue(section.description)
+  if (sectionDescription) {
+    return sectionDescription.includes('预测值就是模型按公式算出来') ? sectionDescription : `${plainDescription}${sectionDescription}`
+  }
+  const dependent = textValue(section.dependent) || '因变量'
+  return `${plainDescription}本表把回归方程转换为可调预测器：在“测试值”中输入各自变量取值，系统会按常数项和各变量系数计算${dependent}的预测值。预测是否可靠仍需结合模型R²、F检验、残差情况和样本适用范围判断。`
 }
 
 export function svgToCanvas(svgEl) {

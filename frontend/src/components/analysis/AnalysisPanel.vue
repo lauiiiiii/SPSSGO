@@ -7,7 +7,11 @@
     <AnalysisMethodPlaceholder v-else-if="!method && !(results && results.length)" />
 
     <!-- Method selected OR has results from history -->
-    <div v-else class="ap-scroll-body">
+    <div
+      v-else
+      class="ap-scroll-body"
+      :class="{ 'ap-scroll-body--report': results.length && !executing && !editingConfig }"
+    >
       <!-- 有结果且未选择「返回配置」时：独立报告页（类 SPSSPRO） -->
       <AnalysisReportPage
         v-if="results.length && !executing && !editingConfig"

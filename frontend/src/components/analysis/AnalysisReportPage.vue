@@ -71,6 +71,11 @@
               @copy-chart="(sectionArg, chartArg) => $emit('copy-chart', sectionArg, chartArg)"
               @toggle-chart-data="(sectionArg, chartArg) => $emit('toggle-chart-data', sectionArg, chartArg)"
             />
+
+            <RegressionPredictionSection
+              v-else-if="section.type === 'regression_prediction'"
+              :section="section"
+            />
           </template>
         </template>
 
@@ -93,6 +98,7 @@ import AnalysisReferencesSection from './AnalysisReferencesSection.vue'
 import AnalysisReportToolbar from './AnalysisReportToolbar.vue'
 import AnalysisSmartSection from './AnalysisSmartSection.vue'
 import AnalysisTableSection from './AnalysisTableSection.vue'
+import RegressionPredictionSection from './RegressionPredictionSection.vue'
 
 const props = defineProps({
   aiLoading: { type: Boolean, default: false },
