@@ -76,6 +76,20 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
+    date: '2026-05-29',
+    type: 'refactor',
+    title: '前端目录结构重构 — 统一资源归集与路径规范',
+    items: [
+      '删除 src/entries/ 目录下 5 个废弃独立入口文件（admin-main.js、help-main.js、home-main.js、legal-main.js、login-main.js）',
+      'AdminApp.vue 移至 src/views/admin/AdminHomeView.vue，统一 View 后缀命名',
+      'src/admin/ 下全部组件移入 src/components/admin/，composables 移入 src/composables/admin/',
+      '受影响文件的 import 路径改用 @/ 别名并在移动后修正路径，废弃 src/admin/api.js 中转文件',
+      'src/styles/ 和 src/assets/ 合并为 src/assets/styles/，CSS 资源统一归集',
+      'admin.css 改为 main.js 全局引入（原为组件内 import），并移至 assets/styles 目录',
+      '删除已清空的 src/admin/ 目录',
+    ],
+  },
+  {
     date: '2026-05-28',
     type: 'refactor',
     title: '首页全面重构 — 拆分为独立组件并迁移至 TailwindCSS',

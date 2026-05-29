@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
-import './styles/style.css'
+import './assets/styles/style.css'
+import './assets/styles/admin.css'
 import RootApp from './views/RootApp.vue'
 import { requestJitterSeed } from './api.js'
 import router, { routePrefetchTtl } from './router'

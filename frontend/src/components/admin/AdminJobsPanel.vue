@@ -152,7 +152,7 @@
 </template>
 
 <script setup>
-import AdminStatCard from './AdminStatCard.vue'
+import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 
 defineProps({
   operationsSummary: { type: Object, default: () => ({}) },

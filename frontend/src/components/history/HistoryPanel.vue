@@ -34,7 +34,7 @@ import { ref } from 'vue'
 import HistoryChipList from './HistoryChipList.vue'
 import HistoryContextMenu from './HistoryContextMenu.vue'
 import { useHistoryContextMenu } from '../../composables/history/useHistoryContextMenu.js'
-import '../../styles/history-panel.css'
+import '@/assets/styles/history-panel.css'
 
 const props = defineProps({
   items: { type: Array, default: () => [] },

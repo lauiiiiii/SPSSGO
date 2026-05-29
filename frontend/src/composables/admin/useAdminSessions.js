@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { cleanupAdminSessions, deleteAdminSession, getAdminSessions } from '../api.js'
+import { cleanupAdminSessions, deleteAdminSession, getAdminSessions } from '@/api.js'
 
 export function useAdminSessions() {
   const sessions = ref([])

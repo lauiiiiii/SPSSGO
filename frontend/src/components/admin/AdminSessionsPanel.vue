@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { getSessionStatusLabel } from '../../constants/sessionStatus.js'
+import { getSessionStatusLabel } from '@/constants/sessionStatus.js'
 
 defineProps({
   sessions: { type: Array, default: () => [] },

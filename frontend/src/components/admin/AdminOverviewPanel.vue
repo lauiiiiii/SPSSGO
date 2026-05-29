@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import AdminStatCard from './AdminStatCard.vue'
+import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 
 const props = defineProps({
   dashboard: { type: Object, default: () => ({}) },
