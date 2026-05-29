@@ -5,7 +5,7 @@ import {
   resetAdminUserPassword,
   toggleAdminUserActive,
   updateAdminUser,
-} from '../api.js'
+} from '@/api.js'
 
 export function useAdminUsers() {
   const users = ref([])

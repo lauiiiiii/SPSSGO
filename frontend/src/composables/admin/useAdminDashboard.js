@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getAdminDashboard } from '../api.js'
+import { getAdminDashboard } from '@/api.js'
 
 export function useAdminDashboard() {
   const dashboard = ref({})

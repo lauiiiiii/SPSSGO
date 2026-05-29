@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { getAdminJobs, getAdminOperations, getAdminSandboxExecutions } from '../api.js'
+import { getAdminJobs, getAdminOperations, getAdminSandboxExecutions } from '@/api.js'
 
 export function useAdminOperations() {
   const operationsSummary = ref({})

@@ -1,5 +1,5 @@
 import { reactive, ref } from 'vue'
-import { getAdminAiConfig, getAdminSystemInfo, saveAdminAiConfig } from '../api.js'
+import { getAdminAiConfig, getAdminSystemInfo, saveAdminAiConfig } from '@/api.js'
 
 export function useAdminAiConfig() {
   const systemInfo = ref({})
