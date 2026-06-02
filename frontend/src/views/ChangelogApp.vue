@@ -76,7 +76,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
-    date: '2026-05-30',
+    date: '2026-06-02',
     type: 'feat',
     title: '中介效应体系重构与方法导航增强',
     items: [
