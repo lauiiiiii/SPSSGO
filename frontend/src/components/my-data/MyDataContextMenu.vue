@@ -14,6 +14,10 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V6l3-4h6l3 4v8H2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         数据分析
       </div>
+      <div class="md-ctx-item" @click="$emit('go-visualization', contextMenu.target.sessionId)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12.5h12M3.5 12.5V7.5M7 12.5V4.5M10.5 12.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 14h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        可视化绘图
+      </div>
       <div class="md-ctx-sep"></div>
       <div class="md-ctx-item" @click="$emit('export-dataset', contextMenu.target.sessionId)">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12v2h12v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -65,6 +69,7 @@ defineEmits([
   'export-dataset',
   'go-analysis',
   'go-processing',
+  'go-visualization',
   'move-ds-to-folder',
   'start-rename-ds',
   'start-rename-folder',

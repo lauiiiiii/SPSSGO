@@ -18,6 +18,7 @@
         @update:view-mode="viewMode = $event"
         @open-version="openVersionDialog"
         @go-analysis="$emit('go-analysis')"
+        @go-visualization="$emit('go-visualization')"
         @export-current="exportCurrent"
       />
 
@@ -135,7 +136,7 @@ const props = defineProps({
   hasData: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['variables-updated', 'go-analysis'])
+const emit = defineEmits(['variables-updated', 'go-analysis', 'go-visualization'])
 const previewDiff = ref(null)
 const previewColumnWidth = 70
 const previewLimitOptions = computed(() => buildPreviewLimitOptions(props.totalRows))

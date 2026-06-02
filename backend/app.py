@@ -31,6 +31,7 @@ from backend.routes.jobs import router as jobs_router
 from backend.routes.processing import router as processing_router
 from backend.routes.share import router as share_router
 from backend.routes.session import router as session_router
+from backend.routes.visualization import router as visualization_router
 
 app = create_app()
 logger = logging.getLogger("spssgo.http")
@@ -99,6 +100,7 @@ app.include_router(datasets_router, dependencies=secure_dependencies)
 app.include_router(files_router, dependencies=secure_dependencies)
 app.include_router(processing_router, dependencies=secure_dependencies)
 app.include_router(analysis_router, dependencies=secure_dependencies)
+app.include_router(visualization_router, dependencies=secure_dependencies)
 app.include_router(jobs_router, dependencies=secure_dependencies)
 app.include_router(admin_router, dependencies=secure_dependencies + [Depends(admin_required)])
 app.include_router(share_router)

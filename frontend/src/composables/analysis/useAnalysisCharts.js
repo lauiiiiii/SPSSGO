@@ -11,6 +11,7 @@ import {
   calcMetricComparisonLayout,
   calcNormalityHistogramLayout,
   calcProbabilityPlotLayout,
+  calcScatterPlotLayout,
   copyChartPng,
   downloadChartPng,
   formatBin,
@@ -196,6 +197,20 @@ export function useAnalysisCharts() {
     return calcCorrespondenceMapLayout(data)
   }
 
+  function calcScatterPlot(data) {
+    return calcScatterPlotLayout(data)
+  }
+
+  function showScatterTip(event, chart, dataPoint) {
+    tip.lines = [
+      { text: chart.title || '散点图', dot: null },
+      { text: `${chart.data?.xLabel || 'X'}：${Number(dataPoint.rawX || 0).toFixed(3)}`, dot: '#2389e8' },
+      { text: `${chart.data?.yLabel || 'Y'}：${Number(dataPoint.rawY || 0).toFixed(3)}`, dot: '#10b981' },
+    ]
+    moveTip(event)
+    tip.show = true
+  }
+
   function showCrosstabTip(event, chart, dataPoint) {
     tip.lines = [
       { text: chart.title || '交叉图', dot: null },
@@ -225,6 +240,7 @@ export function useAnalysisCharts() {
     calcMetricComparison,
     calcNormalityHist,
     calcProbabilityPlot,
+    calcScatterPlot,
     chartDataVisible,
     copyChart,
     downloadChart,
@@ -239,6 +255,7 @@ export function useAnalysisCharts() {
     showHistTip,
     showMetricTip,
     showProbabilityTip,
+    showScatterTip,
     tip,
     toggleChartData,
   }

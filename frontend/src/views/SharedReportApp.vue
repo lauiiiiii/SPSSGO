@@ -74,6 +74,7 @@
             :ai-result="aiResult"
             :allow-ai-request="false"
             :calc-box="calcBox"
+            :calc-grouped-box="calcGroupedBox"
             :calc-category-bar="calcCategoryBar"
             :calc-category-pie="calcCategoryPie"
             :calc-correspondence-map="calcCorrespondenceMap"
@@ -83,6 +84,7 @@
             :calc-metric-comparison="calcMetricComparison"
             :calc-normality-hist="calcNormalityHist"
             :calc-probability-plot="calcProbabilityPlot"
+            :calc-scatter-plot="calcScatterPlot"
             :cell-class="cellClass"
             :chart-data-visible="chartDataVisible"
             :display-results="displayResults"
@@ -103,6 +105,8 @@
             @show-category-tip="showCategoryTip"
             @show-crosstab-tip="showCrosstabTip"
             @show-metric-tip="showMetricTip"
+            @show-probability-tip="showProbabilityTip"
+            @show-scatter-tip="showScatterTip"
             @download-chart="downloadChart"
             @copy-chart="copyChart"
             @toggle-chart-data="toggleChartData"
@@ -151,6 +155,7 @@ function normalizeShareAccessMessage(message, fallback = '分享报告加载失�
 
 const {
   calcBox,
+  calcGroupedBox,
   calcCategoryBar,
   calcCategoryPie,
   calcCorrespondenceMap,
@@ -160,6 +165,7 @@ const {
   calcMetricComparison,
   calcNormalityHist,
   calcProbabilityPlot,
+  calcScatterPlot,
   chartDataVisible,
   copyChart,
   downloadChart,
@@ -172,6 +178,8 @@ const {
   showCrosstabTip,
   showHistTip,
   showMetricTip,
+  showProbabilityTip,
+  showScatterTip,
   toggleChartData,
 } = useAnalysisCharts()
 

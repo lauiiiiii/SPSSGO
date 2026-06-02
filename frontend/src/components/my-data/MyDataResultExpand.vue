@@ -34,6 +34,7 @@
             <AnalysisChartsSection
               v-else-if="sec.type === 'charts'"
               :calc-box="calcBox"
+              :calc-grouped-box="calcGroupedBox"
               :calc-category-bar="calcCategoryBar"
               :calc-category-pie="calcCategoryPie"
               :calc-correspondence-map="calcCorrespondenceMap"
@@ -43,6 +44,7 @@
               :calc-metric-comparison="calcMetricComparison"
               :calc-normality-hist="calcNormalityHist"
               :calc-probability-plot="calcProbabilityPlot"
+              :calc-scatter-plot="calcScatterPlot"
               :chart-data-visible="chartDataVisible"
               :fmt-bin="fmtBin"
               :section="sec"
@@ -73,6 +75,7 @@ import { reactive } from 'vue'
 import AnalysisChartsSection from '../analysis/AnalysisChartsSection.vue'
 import {
   calcBoxplotLayout,
+  calcGroupedBoxplotLayout,
   calcCategoryBarLayout,
   calcCategoryPieLayout,
   calcCorrespondenceMapLayout,
@@ -82,6 +85,7 @@ import {
   calcMetricComparisonLayout,
   calcNormalityHistogramLayout,
   calcProbabilityPlotLayout,
+  calcScatterPlotLayout,
   formatBin,
 } from '../../utils/analysisCharts.js'
 
@@ -109,6 +113,10 @@ function calcBox(data) {
   return calcBoxplotLayout(data)
 }
 
+function calcGroupedBox(data) {
+  return calcGroupedBoxplotLayout(data)
+}
+
 function calcCategoryBar(data, horizontal = false) {
   return calcCategoryBarLayout(data, horizontal)
 }
@@ -131,6 +139,10 @@ function calcNormalityHist(data) {
 
 function calcProbabilityPlot(data) {
   return calcProbabilityPlotLayout(data)
+}
+
+function calcScatterPlot(data) {
+  return calcScatterPlotLayout(data)
 }
 
 function calcCorrespondenceMap(data) {

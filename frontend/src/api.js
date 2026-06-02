@@ -24,6 +24,7 @@ export function handleAuthError() {
   localStorage.removeItem('spssgo_user')
   localStorage.removeItem('spssgo_role')
   localStorage.removeItem('spssgo_session_id')
+  localStorage.removeItem('spssgo_visualization_session_id')
   const next = current && current !== '/login' ? `/login?redirect=${encodeURIComponent(current)}` : '/login'
   window.location.href = next
 }
@@ -566,6 +567,14 @@ export async function processData(sessionId, method, params, options = {}) {
     return { success: false, error: job.error_message || '数据处理失败', job }
   }
   return { success: true, ...(job.result || {}), job_id: accepted.job_id, job }
+}
+
+export function previewVisualization(sessionId, payload) {
+  return request(`/api/visualizations/${sessionId}/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
 
 export function renameVariable(sessionId, columnName, newName) {

@@ -203,6 +203,10 @@
                   <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 14V6l3-4h6l3 4v8H2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
                   数据分析
                 </button>
+                <button class="md-bar-btn md-bar-btn--blue" @click="$emit('go-visualization', currentSessionId)">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 12.5h12M3.5 12.5V7.5M7 12.5V4.5M10.5 12.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 14h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  可视化绘图
+                </button>
                 <button class="md-page-btn md-page-btn--ghost" @click.stop="showDatasetDetail = true">
                   <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 7.2v4M8 4.6h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
                   数据集详情
@@ -375,6 +379,7 @@
                     <div v-else class="md-empty md-empty--history-detail">
                       <div>{{ visibleHistoryItems.length ? '选择一条分析记录查看结果' : '暂无可查看的分析结果' }}</div>
                       <button class="md-empty-action" @click.stop="$emit('go-analysis', currentSessionId)">去数据分析</button>
+                      <button class="md-empty-action" @click.stop="$emit('go-visualization', currentSessionId)">去可视化绘图</button>
                     </div>
                   </section>
                 </div>
@@ -399,6 +404,7 @@
       @move-ds-to-folder="moveDsToFolder"
       @go-processing="emitDsAction('go-processing', $event)"
       @go-analysis="emitDsAction('go-analysis', $event)"
+      @go-visualization="emitDsAction('go-visualization', $event)"
       @export-dataset="emitDsAction('export-dataset', $event)"
       @copy-dataset="emitDsAction('copy-dataset', $event)"
       @delete-dataset="emitDsAction('delete-dataset', $event)"
@@ -605,7 +611,7 @@ const props = defineProps({
 const emit = defineEmits([
   'open-result', 'switch-session', 'create-folder', 'delete-folder',
   'rename-folder', 'move-to-folder', 'rename-dataset',
-  'go-analysis', 'go-processing', 'delete-dataset',
+  'go-analysis', 'go-processing', 'go-visualization', 'delete-dataset',
   'export-dataset', 'copy-dataset', 'upload', 'activate-version',
   'refresh-datasets', 'version-copied', 'version-deleted', 'change-page',
 ])

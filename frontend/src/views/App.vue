@@ -1,25 +1,14 @@
 <template>
   <div class="sp-app">
-    <input ref="dataInputRef" type="file" accept=".xlsx,.xls,.csv,.sav,.zsav,.dta,.sas7bdat,.xpt,.tsv,.txt,.json,.parquet" class="sr-only" @change="onDataFile" />
+    <input ref="dataInputRef" type="file" accept=".xlsx,.xls,.csv,.sav,.zsav,.dta,.sas7bdat,.xpt,.tsv,.txt,.json,.parquet" class="sr-only" @change="onDataFileByTarget" />
 
     <TopBar
       :has-results="historyItems.length > 0"
       :active-tab="currentTab"
-      :active-job-count="activeJobCount"
-      @upload="showUploadModal = true"
+      @upload="openUploadModal('workspace')"
       @export="downloadWord"
       @toggle-ai="toggleAi"
-      @toggle-tasks="toggleTaskCenter"
       @tab-change="onTabChange"
-    />
-
-    <TaskCenter
-      :open="taskCenterOpen"
-      :jobs="taskJobs"
-      @close="taskCenterOpen = false"
-      @clear-completed="clearCompletedTaskJobs"
-      @cancel-job="onCancelTaskJob"
-      @retry-job="onRetryTaskJob"
     />
 
     <div class="sp-body">
@@ -73,7 +62,7 @@
                 :session-id="sessionId"
                 :current-dataset-version-id="currentDatasetVersionId"
                 :current-dataset-version-no="currentDatasetVersionNo"
-                @upload="showUploadModal = true"
+                @upload="openUploadModal('workspace')"
                 @execute="executeCurrentMethod"
                 @update:slotValues="sv => currentSlotValues = sv"
                 @update:optionValues="ov => currentOptionValues = ov"
@@ -94,6 +83,24 @@
         :has-data="hasData"
         @variables-updated="loadVariables"
         @go-analysis="sid => { onGoAnalysis(resolveAnalysisSessionId(sid)) }"
+        @go-visualization="sid => { onGoVisualization(resolveAnalysisSessionId(sid)) }"
+      />
+
+      <VisualizationWorkbench
+        v-else-if="currentTab === 'visualization'"
+        :session-id="visualizationSessionId"
+        :data-file-name="visualizationDataFileName"
+        :variables="visualizationVariables"
+        :total-rows="visualizationTotalRows"
+        :has-data="visualizationHasData"
+        :selected-vars="visualizationSelectedVars"
+        @upload="openUploadModal('visualization')"
+        @go-mydata="currentTab = 'mydata'"
+        @select-variable="onVisualizationVarSelect"
+        @deselect-variable="onVisualizationVarDeselect"
+        @select-range="onVisualizationVarSelectRange"
+        @drag-start="onVariableDragStart"
+        @drag-end="onVariableDragEnd"
       />
 
       <MyDataPanel
@@ -121,10 +128,11 @@
         @rename-dataset="onRenameDataSet"
         @go-analysis="onGoAnalysis"
         @go-processing="onGoProcessing"
+        @go-visualization="onGoVisualization"
         @delete-dataset="onDeleteDataSet"
         @export-dataset="onExportDataSet"
         @copy-dataset="onCopyDataSet"
-        @upload="showUploadModal = true"
+        @upload="openUploadModal('workspace')"
         @version-copied="onDatasetVersionCopied"
         @version-deleted="onDatasetVersionDeleted"
         @refresh-datasets="() => { loadAllDataSets(); loadFolderDataSets() }"
@@ -139,7 +147,7 @@
       :drag-hover="dragHover"
       @close="showUploadModal = false"
       @choose-file="dataInputRef?.click()"
-      @drop-file="onDropFile"
+      @drop-file="onDropFileByTarget"
       @update:drag-hover="dragHover = $event"
     />
 
@@ -170,10 +178,9 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, ref, computed } from 'vue'
+import { defineAsyncComponent, ref, computed, onMounted } from 'vue'
 import { useGlobalTooltip } from '../composables/useGlobalTooltip.js'
 import TopBar from '../components/layout/TopBar.vue'
-import TaskCenter from '../components/layout/TaskCenter.vue'
 import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
 import HistoryPanel from '../components/history/HistoryPanel.vue'
 import MethodNav from '../components/analysis/MethodNav.vue'
@@ -199,20 +206,22 @@ import * as api from '../api.js'
 const AnalysisPanel = defineAsyncComponent(() => import('../components/analysis/AnalysisPanel.vue'))
 const MyDataPanel = defineAsyncComponent(() => import('../components/my-data/MyDataPanel.vue'))
 const DataProcessingPanel = defineAsyncComponent(() => import('../data-processing/DataProcessingPanel.vue'))
+const VisualizationWorkbench = defineAsyncComponent(() => import('../components/visualization/VisualizationWorkbench.vue'))
 const ProfilePanel = defineAsyncComponent(() => import('../components/profile/ProfilePanel.vue'))
 const AiAssistant = defineAsyncComponent(() => import('../components/AiAssistant.vue'))
 
 const dataInputRef = ref(null)
 const aiRef = ref(null)
 const { tooltip } = useGlobalTooltip()
+const VISUALIZATION_SESSION_KEY = 'spssgo_visualization_session_id'
 
 const currentTab = ref('analysis')
 const sessionId = ref('')
 const hasData = ref(false)
 const dataFileName = ref('')
 const showUploadModal = ref(false)
+const uploadTarget = ref('workspace')
 const dragHover = ref(false)
-const taskCenterOpen = ref(false)
 const taskJobs = ref([])
 const {
   closeConfirmDialog,
@@ -229,6 +238,13 @@ const activeMethodKey = ref('')
 const variables = ref([])
 const totalRows = ref(0)
 const selectedVars = ref([])
+const visualizationSessionId = ref('')
+const visualizationHasData = ref(false)
+const visualizationDataFileName = ref('')
+const visualizationVariables = ref([])
+const visualizationTotalRows = ref(0)
+const visualizationSelectedVars = ref([])
+const visualizationSlotValues = ref({})
 const dragPreviewCount = ref(0)
 
 const executing = ref(false)
@@ -340,13 +356,18 @@ const {
   currentSlotValues,
   selectedVars,
 })
+const {
+  onVarDeselect: onVisualizationVarDeselect,
+  onVarSelect: onVisualizationVarSelect,
+  onVarSelectRange: onVisualizationVarSelectRange,
+} = useVariableSelection({
+  currentSlotValues: visualizationSlotValues,
+  selectedVars: visualizationSelectedVars,
+})
 
 const {
-  activeJobCount,
-  clearCompletedTaskJobs,
   handleTrackedJobProgress,
-  onCancelTaskJob,
-  onRetryTaskJob,
+  refreshTaskJobs,
   startTaskJobPolling,
   syncResultContext,
 } = useTaskJobs({
@@ -489,7 +510,6 @@ const {
   onNewAnalysis,
   onSelectMethod,
   toggleAi,
-  toggleTaskCenter,
 } = useWorkspaceUiState({
   activeHistoryIdx,
   activeMethodKey,
@@ -498,13 +518,102 @@ const {
   clearCurrentAnalysis,
   currentResults,
   selectedVars,
-  taskCenterOpen,
 })
 
 const onChangeVariableType = variableActions.changeType
 const onDeleteVariable = variableActions.deleteVariable
 const onRenameVariable = variableActions.renameVariable
 const onRenameVariablesBatch = variableActions.renameBatch
+
+function openUploadModal(target = 'workspace') {
+  uploadTarget.value = target
+  showUploadModal.value = true
+}
+
+async function onDataFileByTarget(event) {
+  const file = event.target.files[0]
+  if (!file) {
+    event.target.value = ''
+    return
+  }
+  if (uploadTarget.value === 'visualization') {
+    showUploadModal.value = false
+    await uploadVisualizationData(file)
+    event.target.value = ''
+    return
+  }
+  onDataFile(event)
+}
+
+async function onDropFileByTarget(event) {
+  if (uploadTarget.value === 'visualization') {
+    dragHover.value = false
+    const file = event.dataTransfer?.files?.[0]
+    if (file) {
+      showUploadModal.value = false
+      await uploadVisualizationData(file)
+    }
+    return
+  }
+  onDropFile(event)
+}
+
+async function uploadVisualizationData(file) {
+  try {
+    const session = await api.createSession()
+    const sid = session.session_id
+    const uploaded = await api.uploadFile(sid, file, { onProgress: handleTrackedJobProgress })
+    if (uploaded.job) handleTrackedJobProgress(uploaded.job)
+    await loadVisualizationSession(sid, { persist: true })
+    await Promise.all([loadAllDataSets(), loadFolderDataSets()])
+    currentTab.value = 'visualization'
+  } catch (e) {
+    alert('上传失败: ' + e.message)
+  }
+}
+
+async function loadVisualizationSession(sid, options = {}) {
+  const { persist = false, switchTab = false } = options
+  if (!sid) return false
+
+  try {
+    const [files, varsData] = await Promise.all([
+      api.getFiles(sid),
+      api.getVariables(sid).catch(() => ({ variables: [], total_rows: 0 })),
+    ])
+    const dataFiles = files.data_files || []
+    if (!dataFiles.length) {
+      if (persist) localStorage.removeItem(VISUALIZATION_SESSION_KEY)
+      return false
+    }
+
+    visualizationSessionId.value = sid
+    visualizationHasData.value = true
+    visualizationDataFileName.value = dataFiles[0].name
+    visualizationVariables.value = varsData.variables || []
+    visualizationTotalRows.value = varsData.total_rows || 0
+    visualizationSelectedVars.value = []
+    visualizationSlotValues.value = {}
+    if (persist) localStorage.setItem(VISUALIZATION_SESSION_KEY, sid)
+    if (switchTab) currentTab.value = 'visualization'
+    return true
+  } catch (_) {
+    if (persist) localStorage.removeItem(VISUALIZATION_SESSION_KEY)
+    return false
+  }
+}
+
+async function onGoVisualization(sid) {
+  const loaded = await loadVisualizationSession(sid, { persist: true, switchTab: true })
+  if (!loaded) alert('加载可视化数据失败，请重新选择或上传数据')
+}
+
+onMounted(() => {
+  const savedVisualizationSessionId = localStorage.getItem(VISUALIZATION_SESSION_KEY)
+  if (savedVisualizationSessionId) {
+    loadVisualizationSession(savedVisualizationSessionId).catch(() => {})
+  }
+})
 
 function onVariableDragStart(names) {
   dragPreviewCount.value = Array.isArray(names) && names.length ? names.length : 1

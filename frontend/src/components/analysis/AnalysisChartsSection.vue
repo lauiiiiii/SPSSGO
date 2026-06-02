@@ -18,6 +18,7 @@
         :calc-metric-comparison="calcMetricComparison"
         :calc-normality-hist="calcNormalityHist"
         :calc-probability-plot="calcProbabilityPlot"
+        :calc-scatter-plot="calcScatterPlot"
         :chart="chart"
         :chart-index="chartIndex"
         :data-visible="!!chartDataVisible[sectionIndex+'_'+chartIndex]"
@@ -31,6 +32,7 @@
         @show-category-tip="(eventArg, chartArg, dataPointArg) => $emit('show-category-tip', eventArg, chartArg, dataPointArg)"
         @show-crosstab-tip="(eventArg, chartArg, dataPointArg) => $emit('show-crosstab-tip', eventArg, chartArg, dataPointArg)"
         @show-probability-tip="(eventArg, chartArg, dataPointArg) => $emit('show-probability-tip', eventArg, chartArg, dataPointArg)"
+        @show-scatter-tip="(eventArg, chartArg, dataPointArg) => $emit('show-scatter-tip', eventArg, chartArg, dataPointArg)"
         @show-metric-tip="(eventArg, chartArg, dataPointArg) => $emit('show-metric-tip', eventArg, chartArg, dataPointArg)"
         @download-chart="(sectionArg, chartArg, titleArg) => $emit('download-chart', sectionArg, chartArg, titleArg)"
         @copy-chart="(sectionArg, chartArg) => $emit('copy-chart', sectionArg, chartArg)"
@@ -60,6 +62,7 @@ const props = defineProps({
   calcMetricComparison: { type: Function, required: true },
   calcNormalityHist: { type: Function, required: true },
   calcProbabilityPlot: { type: Function, required: true },
+  calcScatterPlot: { type: Function, required: true },
   chartDataVisible: { type: Object, required: true },
   fmtBin: { type: Function, required: true },
   section: { type: Object, required: true },
@@ -80,6 +83,7 @@ defineEmits([
   'show-hist-tip',
   'show-metric-tip',
   'show-probability-tip',
+  'show-scatter-tip',
   'toggle-chart-data',
 ])
 </script>

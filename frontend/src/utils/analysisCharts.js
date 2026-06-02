@@ -901,6 +901,62 @@ export function calcCorrespondenceMapLayout(data) {
   }
 }
 
+export function calcScatterPlotLayout(data) {
+  const points = data?.points || []
+  const W = 680
+  const H = 390
+  const ml = 64
+  const mr = 34
+  const mt = 28
+  const mb = 58
+  const pw = W - ml - mr
+  const ph = H - mt - mb
+  const xs = points.map(point => Number(point.x)).filter(Number.isFinite)
+  const ys = points.map(point => Number(point.y)).filter(Number.isFinite)
+  const xMinRaw = Math.min(...xs, 0)
+  const xMaxRaw = Math.max(...xs, 1)
+  const yMinRaw = Math.min(...ys, 0)
+  const yMaxRaw = Math.max(...ys, 1)
+  const xPad = Math.max((xMaxRaw - xMinRaw) * 0.08, 0.5)
+  const yPad = Math.max((yMaxRaw - yMinRaw) * 0.08, 0.5)
+  const xMin = xMinRaw - xPad
+  const xMax = xMaxRaw + xPad
+  const yMin = yMinRaw - yPad
+  const yMax = yMaxRaw + yPad
+  const toX = value => ml + ((Number(value || 0) - xMin) / (xMax - xMin || 1)) * pw
+  const toY = value => mt + ph - ((Number(value || 0) - yMin) / (yMax - yMin || 1)) * ph
+  const marks = points
+    .map(point => ({
+      rawX: Number(point.x),
+      rawY: Number(point.y),
+      x: toX(point.x),
+      y: toY(point.y),
+    }))
+    .filter(point => Number.isFinite(point.rawX) && Number.isFinite(point.rawY))
+  const xTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = xMin + (index / 5) * (xMax - xMin)
+    return { x: toX(value), label: compactNumber(value) }
+  })
+  const yTicks = Array.from({ length: 6 }, (_, index) => {
+    const value = yMin + (index / 5) * (yMax - yMin)
+    return { y: toY(value), label: compactNumber(value) }
+  })
+  return {
+    W,
+    H,
+    ml,
+    mt,
+    mb,
+    pw,
+    ph,
+    marks,
+    xTicks,
+    yTicks,
+    xLabel: data?.xLabel || 'X',
+    yLabel: data?.yLabel || 'Y',
+  }
+}
+
 function textValue(value) {
   return String(value ?? '').trim()
 }
@@ -938,6 +994,9 @@ export function describeAnalysisChart(chart = {}) {
   }
   if (chart.chartType === 'crosstab_distribution') {
     return '图中展示两个分类变量的交叉分布，用于观察不同组别下类别构成是否存在明显差异。'
+  }
+  if (chart.chartType === 'scatter_plot') {
+    return '图中每个点表示一条有效样本，用于观察两个定量变量之间的关系、离群点和可能的趋势。'
   }
   if (chart.chartType === 'histogram' || chart.chartType === 'normality_histogram') {
     return '图中展示变量取值的分布形态，可用于观察集中趋势、离散程度、偏态和异常区间。'

@@ -1,5 +1,12 @@
 export function normalizeMethodMetaMap(rawMethods) {
   const methods = { ...(rawMethods || {}) }
+  const pendingAlignmentCategories = new Set([
+    '数据检验',
+    '综合评价',
+    '高级问卷分析包',
+    '高级回归 & 因果分析包',
+    '高级回归&因果分析包',
+  ])
   const ensureSlotMethod = (key, patch) => {
     if (!methods[key]) {
       methods[key] = patch
@@ -303,6 +310,7 @@ export function normalizeMethodMetaMap(rawMethods) {
       label: '链式中介',
       category: '回归&因果分析包',
       order: 50,
+      statusLabel: '待对齐',
       aliases: [...(methods.serial_mediation.aliases || []), '链式中介效应'],
     }
   }
@@ -315,6 +323,11 @@ export function normalizeMethodMetaMap(rawMethods) {
     options: [],
     reserved: true,
     statusLabel: '待对齐',
+  }
+
+  for (const [key, method] of Object.entries(methods)) {
+    if (!pendingAlignmentCategories.has(method?.category)) continue
+    methods[key] = { ...method, statusLabel: method.statusLabel || '待对齐' }
   }
 
   return methods

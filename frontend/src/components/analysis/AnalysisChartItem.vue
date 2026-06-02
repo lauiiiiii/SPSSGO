@@ -870,6 +870,35 @@
           </svg>
         </template>
       </template>
+      <template v-else-if="isScatterPlotChart">
+        <template v-for="scatterData in [calcScatterPlot(chart.data)]" :key="0">
+          <svg class="ap-chart-svg ap-chart-svg--scatter" :viewBox="`0 0 ${scatterData.W} ${scatterData.H}`" :width="scatterData.W" :height="scatterData.H"
+            @mouseleave="$emit('hide-tip')">
+            <rect :x="scatterData.ml" :y="scatterData.mt" :width="scatterData.pw" :height="scatterData.ph" fill="white"/>
+            <line v-for="(tick, tickIndex) in scatterData.xTicks" :key="'sxg'+tickIndex"
+              :x1="tick.x" :y1="scatterData.mt" :x2="tick.x" :y2="scatterData.mt+scatterData.ph"
+              stroke="#f1f5f9" stroke-width="1"/>
+            <line v-for="(tick, tickIndex) in scatterData.yTicks" :key="'syg'+tickIndex"
+              :x1="scatterData.ml" :y1="tick.y" :x2="scatterData.ml+scatterData.pw" :y2="tick.y"
+              stroke="#eef2f7" stroke-width="1"/>
+            <circle v-for="(point, pointIndex) in scatterData.marks" :key="'sp'+pointIndex"
+              class="ap-scatter-mark"
+              :cx="point.x" :cy="point.y" r="3.2" fill="#2389e8" fill-opacity=".72"
+              @mouseenter="$emit('show-scatter-tip', $event, chart, point)"
+              @mousemove="$emit('move-tip', $event)"
+              @mouseleave="$emit('hide-tip')"/>
+            <line :x1="scatterData.ml" :y1="scatterData.mt+scatterData.ph" :x2="scatterData.ml+scatterData.pw" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
+            <line :x1="scatterData.ml" :y1="scatterData.mt" :x2="scatterData.ml" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
+            <text v-for="(tick, tickIndex) in scatterData.xTicks" :key="'sxt'+tickIndex"
+              :x="tick.x" :y="scatterData.mt+scatterData.ph+18" text-anchor="middle" font-size="11" fill="#64748b">{{ tick.label }}</text>
+            <text v-for="(tick, tickIndex) in scatterData.yTicks" :key="'syt'+tickIndex"
+              :x="scatterData.ml-7" :y="tick.y+4" text-anchor="end" font-size="11" fill="#64748b">{{ tick.label }}</text>
+            <text :x="scatterData.ml+scatterData.pw/2" :y="scatterData.H-13" text-anchor="middle" font-size="12" fill="#475569">{{ scatterData.xLabel }}</text>
+            <text :x="18" :y="scatterData.mt+scatterData.ph/2" text-anchor="middle" font-size="12" fill="#475569"
+              :transform="`rotate(-90,18,${scatterData.mt+scatterData.ph/2})`">{{ scatterData.yLabel }}</text>
+          </svg>
+        </template>
+      </template>
     </div>
     <div v-if="isCategoryChart" class="ap-chart-mode-bar">
       <button
@@ -1046,6 +1075,17 @@
         </tbody>
       </table>
     </div>
+    <div v-if="dataVisible && isScatterPlotChart" class="ap-chart-data-table">
+      <table class="tlt tlt--sm">
+        <thead><tr><th>{{ chart.data.xLabel || 'X' }}</th><th>{{ chart.data.yLabel || 'Y' }}</th></tr></thead>
+        <tbody>
+          <tr v-for="(point, rowIndex) in chart.data.points" :key="rowIndex">
+            <td>{{ formatChartNumber(point.x) }}</td>
+            <td>{{ formatChartNumber(point.y) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div v-if="dataVisible && isEquivalenceIntervalChart" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
         <thead><tr><th>指标</th><th>值</th></tr></thead>
@@ -1160,6 +1200,7 @@ const props = defineProps({
   calcMetricComparison: { type: Function, required: true },
   calcNormalityHist: { type: Function, required: true },
   calcProbabilityPlot: { type: Function, required: true },
+  calcScatterPlot: { type: Function, required: true },
   chart: { type: Object, required: true },
   chartIndex: { type: Number, required: true },
   dataVisible: { type: Boolean, default: false },
@@ -1199,6 +1240,7 @@ const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_he
 const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
 const isModelPathChart = computed(() => props.chart.chartType === 'model_path')
+const isScatterPlotChart = computed(() => props.chart.chartType === 'scatter_plot')
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
   || isMetricComparisonChart.value
@@ -1286,6 +1328,12 @@ const chartWrapStyle = computed(() => {
       height: `${Math.round(330 * crosstabChartZoom.value)}px`,
     }
   }
+  if (isScatterPlotChart.value) {
+    return {
+      width: '680px',
+      height: '390px',
+    }
+  }
   if (!isKanoBetterWorseChart.value) return {}
   return {
     width: `${Math.round(760 * kanoChartZoom.value)}px`,
@@ -1318,6 +1366,7 @@ const displayTitle = computed(() => {
   if (isKanoBetterWorseChart.value) return props.chart.title || 'Better-Worse系数图'
   if (isMetricComparisonChart.value) return metricComparisonTitle.value
   if (isModelPathChart.value) return props.chart.title || '模型结果图'
+  if (isScatterPlotChart.value) return props.chart.title || '散点图'
   if (isCoefficientIntervalChart.value) return props.chart.title || '回归系数95% CI'
   if (isEquivalenceIntervalChart.value) return props.chart.title || '等价检验可视化'
   return props.chart.title
@@ -1795,6 +1844,7 @@ defineEmits([
   'show-hist-tip',
   'show-metric-tip',
   'show-probability-tip',
+  'show-scatter-tip',
   'toggle-chart-data',
 ])
 </script>

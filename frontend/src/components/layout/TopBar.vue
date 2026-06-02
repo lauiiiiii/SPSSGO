@@ -7,15 +7,10 @@
       <button class="topbar-tab" :class="{ active: activeTab === 'mydata' }" @click="$emit('tab-change', 'mydata')">我的数据</button>
       <button class="topbar-tab" :class="{ active: activeTab === 'processing' }" @click="$emit('tab-change', 'processing')">数据处理</button>
       <button class="topbar-tab" :class="{ active: activeTab === 'analysis' }" @click="$emit('tab-change', 'analysis')">数据分析</button>
-      <button class="topbar-tab disabled">可视化绘图</button>
+      <button class="topbar-tab" :class="{ active: activeTab === 'visualization' }" @click="$emit('tab-change', 'visualization')">可视化绘图</button>
       <button class="topbar-tab disabled">文本分析</button>
     </nav>
     <div class="topbar-actions">
-      <button class="topbar-btn" @click="$emit('toggle-tasks')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h10M3 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        任务
-        <span v-if="activeJobCount" class="topbar-badge">{{ activeJobCount }}</span>
-      </button>
       <button class="topbar-btn primary" @click="$emit('toggle-ai')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L1 5l7 3.5L15 5 8 1zM1 11l7 3.5L15 11M1 8l7 3.5L15 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         AI 助手
@@ -60,9 +55,8 @@ import { logout, getUsername } from '../../api.js'
 defineProps({
   hasResults: { type: Boolean, default: false },
   activeTab: { type: String, default: 'analysis' },
-  activeJobCount: { type: Number, default: 0 },
 })
-defineEmits(['upload', 'export', 'toggle-ai', 'toggle-tasks', 'tab-change'])
+defineEmits(['upload', 'export', 'toggle-ai', 'tab-change'])
 
 const username = computed(() => getUsername())
 const avatarChar = computed(() => (username.value || 'U')[0].toUpperCase())
@@ -73,20 +67,3 @@ function handleLogout() {
   if (confirm('确认退出登录？')) logout()
 }
 </script>
-
-<style scoped>
-.topbar-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-}
-</style>

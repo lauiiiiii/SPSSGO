@@ -187,7 +187,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 
 /* ===== Variable Panel (左3) ===== */
 .variable-panel {
-  width: 330px; min-width: 330px; background: #fff; border-right: 1px solid #e2e5ea;
+  width: 280px; min-width: 280px; background: #fff; border-right: 1px solid #e2e5ea;
   display: flex; flex-direction: column; flex-shrink: 0;
 }
 .vp-header {
@@ -369,6 +369,250 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .vp-footer {
   padding: 8px 12px; border-top: 1px solid #f0f1f3; flex-shrink: 0;
   font-size: 11px; color: #9ca3af; text-align: center;
+}
+
+/* ===== Visualization Workbench ===== */
+.viz-workbench {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  background: #f5f6f8;
+  overflow: hidden;
+}
+.viz-chart-nav {
+  width: 220px;
+  min-width: 220px;
+  background: #fff;
+  border-right: 1px solid #e2e5ea;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  user-select: none;
+}
+.viz-canvas-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f6f7f9;
+}
+.viz-canvas-head {
+  height: 56px;
+  flex-shrink: 0;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e5ea;
+  background: #fff;
+}
+.viz-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+.viz-subtitle {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.viz-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+.viz-chart-stage {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+.viz-empty {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px dashed #d6dbe4;
+  color: #64748b;
+  text-align: center;
+}
+.viz-empty--error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fffafa;
+}
+.viz-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: inherit;
+}
+.viz-empty-hint {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.viz-warning-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 760px;
+}
+.viz-warning-list span {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e5e7eb;
+  font-size: 12px;
+}
+.viz-config-panel {
+  width: 300px;
+  min-width: 300px;
+  background: #fff;
+  border-left: 1px solid #e2e5ea;
+  overflow-y: auto;
+}
+.viz-config-section {
+  padding: 14px 14px 16px;
+  border-bottom: 1px solid #eef0f4;
+}
+.viz-config-title {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+.viz-chart-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.viz-chart-nav .viz-chart-type-grid {
+  padding: 4px 6px 8px;
+}
+.viz-chart-type {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid #dbe1ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #4b5563;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.viz-chart-type:hover,
+.viz-chart-type.active {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+.viz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #4b5563;
+}
+.viz-field span {
+  font-weight: 600;
+}
+.viz-field select,
+.viz-field input {
+  height: 34px;
+  width: 100%;
+  padding: 0 9px;
+  border: 1px solid #d6dbe4;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  outline: none;
+}
+.viz-field select:focus,
+.viz-field input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, .14);
+}
+.viz-drop-zone {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+}
+.viz-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 0 12px;
+  color: #4b5563;
+  font-size: 12px;
+}
+.viz-check input {
+  width: 14px;
+  height: 14px;
+  accent-color: #2563eb;
+}
+.viz-primary-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.viz-primary-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.viz-primary-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.viz-secondary-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.viz-secondary-btn:hover {
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+.viz-empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.viz-full-btn {
+  width: 100%;
 }
 
 /* ===== Analysis Panel (右侧主区域) ===== */
@@ -2813,6 +3057,17 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   width: 100%;
   height: 100%;
 }
+.ap-chart-item:has(.ap-chart-svg--scatter) .ap-chart-wrap {
+  width: 680px;
+  height: 390px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ap-chart-svg--scatter {
+  width: 100%;
+  height: 100%;
+}
 .ap-category-mark {
   cursor: pointer;
   transition: opacity .15s, filter .15s;
@@ -2829,9 +3084,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   cursor: pointer;
   transition: opacity .15s, filter .15s;
 }
+.ap-scatter-mark {
+  cursor: pointer;
+  transition: opacity .15s, filter .15s;
+}
 .ap-category-mark:hover,
 .ap-metric-mark:hover,
-.ap-crosstab-mark:hover {
+.ap-crosstab-mark:hover,
+.ap-scatter-mark:hover {
   opacity: .88;
   filter: brightness(1.04);
 }
