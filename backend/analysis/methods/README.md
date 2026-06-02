@@ -67,7 +67,8 @@
 | --- | --- | --- |
 | `multiple_regression.py` | `multiple_regression` | 多元线性回归 |
 | `vif.py` | `vif` | 共线性分析 |
-| `mediation.py` | `mediation` | 中介效应分析 |
+| `mediation.py` | `mediation` | 中介作用 |
+| `serial_mediation.py` | `serial_mediation` | 链式中介 |
 | `moderation.py` | `moderation` | 调节作用 |
 
 ## 高级回归 & 因果分析包
@@ -76,8 +77,6 @@
 | --- | --- | --- |
 | `path_analysis.py` | `path_analysis` | 路径分析 |
 | `sem.py` | `sem` | 结构方程模型(SEM) |
-| `parallel_mediation.py` | `parallel_mediation` | 平行中介效应 |
-| `serial_mediation.py` | `serial_mediation` | 链式中介效应 |
 
 ## 数据检验
 

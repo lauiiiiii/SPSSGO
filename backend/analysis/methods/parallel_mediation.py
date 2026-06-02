@@ -7,9 +7,10 @@ from backend.r_runner import RExecutionError, is_r_runtime_available, run_r_scri
 
 METHOD_KEY = "parallel_mediation"
 METHOD_META = {'label': '平行中介效应',
- 'category': '高级回归&因果分析包',
+ 'category': '回归&因果分析包',
  'description': '检验多个中介变量是否并行传递自变量对因变量的影响',
- 'order': 120,
+ 'order': 45,
+ 'hidden': True,
  'slots': [{'key': 'x', 'label': '自变量(X)', 'type': 'single', 'accept': 'numeric', 'hint': '放入自变量'},
            {'key': 'mediators',
             'label': '中介变量(M)',
@@ -22,17 +23,44 @@ METHOD_META = {'label': '平行中介效应',
  'param_builder': 'direct'}
 
 
+def _as_list(value):
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, (list, tuple, set)):
+        items = []
+        for item in value:
+            items.extend(_as_list(item))
+        return items
+    return []
+
+
+def _unique(values):
+    seen = set()
+    result = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
 def run(df, params):
     """
-    平行中介入口：保留 Python 参数入口，R 负责 PROCESS/lavaan 口径计算。
+    平行中介入口：历史隐藏入口也必须保留多 X，别再退回单 X 旧口径。
     """
-    x = params.get("x", "")
-    y = params.get("y", "")
-    mediators = _resolve_cols(df, params.get("mediators", []))
-    required = [x, y] + mediators
-    missing = [variable for variable in required if variable not in df.columns]
+    x_variables = _resolve_cols(df, _as_list(params.get("x", "")))
+    y_variables = _resolve_cols(df, _as_list(params.get("y", "")))
+    y = y_variables[0] if y_variables else ""
+    mediators = _resolve_cols(df, _as_list(params.get("mediators", [])))
+    required = _unique(x_variables + y_variables + mediators)
+    missing = [variable for variable in _unique(_as_list(params.get("x", "")) + _as_list(params.get("y", "")) + _as_list(params.get("mediators", []))) if variable not in df.columns]
     if missing:
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": f"以下变量不存在：{', '.join(missing)}。"}
+    if not x_variables:
+        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "平行中介至少需要 1 个自变量。"}
+    if not y:
+        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "平行中介需要 1 个因变量。"}
     if len(mediators) < 2:
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "平行中介至少需要 2 个中介变量。"}
 
@@ -41,7 +69,17 @@ def run(df, params):
 
     csv_buffer = StringIO()
     df[required].to_csv(csv_buffer, index=False)
-    payload = {"x": x, "y": y, "mediators": mediators, "data_file": "parallel_mediation_input.csv"}
+    payload = {
+        "x": x_variables,
+        "y": y,
+        "mediators": mediators,
+        "controls": [],
+        "data_file": "parallel_mediation_input.csv",
+        "bootstrap": True,
+        "bootstrap_reps": 1000,
+        "bootstrap_method": "percentile",
+        "input_config": {"y": y, "x": x_variables, "mediators": mediators, "controls": []},
+    }
     try:
         result = run_r_script(
             "parallel_mediation.R",
