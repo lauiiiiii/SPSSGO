@@ -5,6 +5,7 @@ export function filterMethodCategories({ categories, methods, query }) {
   for (const category of categories || []) {
     const categoryMethods = []
     for (const [key, meta] of Object.entries(methods || {})) {
+      if (meta.hidden) continue
       if (meta.category !== category.key) continue
       if (
         normalizedQuery &&
@@ -13,7 +14,13 @@ export function filterMethodCategories({ categories, methods, query }) {
       ) {
         continue
       }
-      categoryMethods.push({ key, label: meta.label, order: Number(meta.order || 999) })
+      categoryMethods.push({
+        key,
+        label: meta.label,
+        order: Number(meta.order || 999),
+        reserved: Boolean(meta.reserved),
+        statusLabel: meta.statusLabel || '',
+      })
     }
     if (categoryMethods.length) {
       categoryMethods.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, 'zh-CN'))

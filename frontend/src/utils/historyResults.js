@@ -6,12 +6,15 @@ export function createStoredResultMapper(methodsMeta) {
     let matchedKey = ''
     let matchedLen = 0
     for (const [key, meta] of Object.entries(methodsMeta.value || {})) {
-      const label = String(meta?.label || '').trim()
-      if (!label) continue
-      const hit = text === label || text.startsWith(label + ':') || text.startsWith(label + '：') || text.startsWith(label + ' ')
-      if (hit && label.length > matchedLen) {
-        matchedKey = key
-        matchedLen = label.length
+      const labels = [meta?.label, ...(meta?.aliases || [])]
+        .map(label => String(label || '').trim())
+        .filter(Boolean)
+      for (const label of labels) {
+        const hit = text === label || text.startsWith(label + ':') || text.startsWith(label + '：') || text.startsWith(label + ' ')
+        if (hit && label.length > matchedLen) {
+          matchedKey = key
+          matchedLen = label.length
+        }
       }
     }
     return matchedKey

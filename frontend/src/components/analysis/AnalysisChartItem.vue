@@ -665,24 +665,24 @@
           <svg
             class="ap-chart-svg ap-chart-svg--model-path"
             :viewBox="`0 0 ${pathData.W} ${pathData.H}`"
-            :width="pathData.W"
-            :height="pathData.H">
+            :width="Math.round(pathData.W * modelPathZoom)"
+            :height="Math.round(pathData.H * modelPathZoom)">
             <defs>
-              <marker id="modelPathArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+              <marker :id="modelPathArrowId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280"/>
               </marker>
-              <marker id="modelPathArrowSig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <marker :id="modelPathArrowSigId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
               </marker>
             </defs>
             <rect x="0" y="0" :width="pathData.W" :height="pathData.H" fill="white"/>
             <g v-for="node in pathData.nodes" :key="node.key">
-              <rect :x="node.x" :y="node.y" :width="node.w" :height="node.h" rx="4" fill="#fff" stroke="#334155" stroke-width="1.2"/>
-              <text :x="node.x + node.w / 2" :y="node.y + node.h / 2 + 4" text-anchor="middle" font-size="12" fill="#111827">{{ node.label }}</text>
+              <rect :x="node.x" :y="node.y" :width="node.w" :height="node.h" rx="3" fill="#fff" stroke="#111827" stroke-width="1.25"/>
+              <text :x="node.x + node.w / 2" :y="node.y + node.h / 2 + 4" text-anchor="middle" font-size="13" fill="#111827">{{ node.label }}</text>
             </g>
-            <rect :x="pathData.target.x" :y="pathData.target.y" :width="pathData.target.w" :height="pathData.target.h" rx="4" fill="#fff" stroke="#334155" stroke-width="1.3"/>
-            <text :x="pathData.target.x + pathData.target.w / 2" :y="pathData.target.y + pathData.target.h / 2 + 4" text-anchor="middle" font-size="12" fill="#111827">{{ pathData.target.label }}</text>
-            <g v-for="edge in pathData.edges" :key="edge.key">
+            <rect :x="pathData.target.x" :y="pathData.target.y" :width="pathData.target.w" :height="pathData.target.h" rx="3" fill="#fff" stroke="#111827" stroke-width="1.25"/>
+            <text :x="pathData.target.x + pathData.target.w / 2" :y="pathData.target.y + pathData.target.h / 2 + 4" text-anchor="middle" font-size="13" fill="#111827">{{ pathData.target.label }}</text>
+            <g v-for="edge in visibleModelPathEdges(pathData.edges)" :key="edge.key">
               <line
                 :x1="edge.x1"
                 :y1="edge.y1"
@@ -690,7 +690,7 @@
                 :y2="edge.y2"
                 :stroke="edge.significant ? '#111827' : '#64748b'"
                 :stroke-width="edge.significant ? 2 : 1.2"
-                :marker-end="edge.significant ? 'url(#modelPathArrowSig)' : 'url(#modelPathArrow)'"
+                :marker-end="edge.significant ? `url(#${modelPathArrowSigId})` : `url(#${modelPathArrowId})`"
               />
               <text
                 v-show="showDataLabels"
@@ -956,9 +956,23 @@
           step="0.05"
         />
       </label>
+      <label v-if="isModelPathChart" class="ap-chart-size-control">
+        <span>缩放：</span>
+        <input
+          v-model.number="modelPathZoom"
+          type="range"
+          min="0.7"
+          max="1.8"
+          step="0.05"
+        />
+      </label>
       <label v-if="supportsDataLabels" class="ap-chart-size-control">
         <input v-model="showDataLabels" type="checkbox" />
         <span>显示数值</span>
+      </label>
+      <label v-if="isModelPathChart" class="ap-chart-size-control">
+        <input v-model="showSignificantOnly" type="checkbox" />
+        <span>显示显著路径</span>
       </label>
       <button class="ap-chart-act-btn" @click="$emit('download-chart', sectionIndex, chartIndex, displayTitle)" title="保存图片">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -1160,11 +1174,15 @@ const crosstabMode = ref(props.chart.data?.defaultMode || 'stackedColumn')
 const crosstabChartZoom = ref(1)
 const heatmapSize = ref(1)
 const kanoChartZoom = ref(1)
+const modelPathZoom = ref(1)
 const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(defaultShowDataLabels(props.chart))
+const showSignificantOnly = ref(true)
 const selectedMetric = ref(props.chart.data?.metric || '')
+const modelPathArrowId = computed(() => `modelPathArrow-${props.sectionIndex}-${props.chartIndex}`)
+const modelPathArrowSigId = computed(() => `modelPathArrowSig-${props.sectionIndex}-${props.chartIndex}`)
 const categoryModeOptions = [
   { value: 'bar', label: '柱状图' },
   { value: 'horizontalBar', label: '条形图' },
@@ -1256,9 +1274,10 @@ const chartWrapStyle = computed(() => {
     }
   }
   if (isModelPathChart.value) {
+    const layout = modelPathData.value
     return {
-      width: '760px',
-      height: '360px',
+      width: `${Math.round(layout.W * modelPathZoom.value)}px`,
+      height: `${Math.round(layout.H * modelPathZoom.value)}px`,
     }
   }
   if (isCrosstabChart.value) {
@@ -1305,6 +1324,48 @@ const displayTitle = computed(() => {
 })
 
 const modelPathData = computed(() => {
+  const explicitNodes = Array.isArray(props.chart.data?.nodes) ? props.chart.data.nodes : []
+  const explicitEdges = Array.isArray(props.chart.data?.edges) ? props.chart.data.edges : []
+  if (explicitNodes.length && explicitEdges.some(edge => edge.from && edge.to)) {
+    const W = Number(props.chart.data?.width || 760)
+    const baseH = Number(props.chart.data?.height || 360)
+    const H = needsModelPathSpacing(explicitNodes) ? Math.max(baseH, 340) : baseH
+    const nodeW = 124
+    const nodeH = 38
+    const nodes = normalizeModelPathNodeSpacing(explicitNodes.map((node, index) => ({
+      key: node.key || `node-${index}`,
+      label: node.label || node.key || `变量${index + 1}`,
+      x: Number(node.x ?? 80),
+      y: Number(node.y ?? 60 + index * 58),
+      w: Number(node.w || nodeW),
+      h: Number(node.h || nodeH),
+    })), H)
+    const nodeMap = Object.fromEntries(nodes.map(node => [node.key, node]))
+    const fallbackTarget = nodes[nodes.length - 1] || { key: 'target', label: props.chart.data?.target || 'Y', x: 560, y: H / 2 - nodeH / 2, w: nodeW, h: nodeH }
+    const edges = explicitEdges
+      .map((edge, index) => {
+        const fromNode = nodeMap[edge.from]
+        const toNode = nodeMap[edge.to]
+        if (!fromNode || !toNode) return null
+        const x1 = fromNode.x + fromNode.w
+        const y1 = fromNode.y + fromNode.h / 2
+        const x2 = toNode.x
+        const y2 = toNode.y + toNode.h / 2
+        return {
+          key: edge.key || `edge-${index}`,
+          significant: !!edge.significant,
+          value: edge.value || '',
+          x1,
+          y1,
+          x2,
+          y2,
+          labelX: Number(edge.labelX ?? ((x1 + x2) / 2)),
+          labelY: Number(edge.labelY ?? ((y1 + y2) / 2 - 5)),
+        }
+      })
+      .filter(Boolean)
+    return { W, H, nodes: nodes.filter(node => node.key !== fallbackTarget.key), target: fallbackTarget, edges }
+  }
   const rawEdges = Array.isArray(props.chart.data?.edges) ? props.chart.data.edges : []
   const W = 760
   const H = 360
@@ -1347,6 +1408,37 @@ const modelPathData = computed(() => {
   })
   return { W, H, nodes, target, edges }
 })
+
+function needsModelPathSpacing(nodes = []) {
+  return nodes.some(node => /^x\d+$/i.test(String(node.key || '')))
+    && nodes.some(node => /^m\d+$/i.test(String(node.key || '')))
+}
+
+function normalizeModelPathNodeSpacing(nodes, height) {
+  const result = nodes.map(node => ({ ...node }))
+  const groups = [
+    result.filter(node => /^x\d+$/i.test(String(node.key || ''))),
+    result.filter(node => /^m\d+$/i.test(String(node.key || ''))),
+  ]
+  groups.forEach((group) => {
+    if (group.length < 2) return
+    const sorted = group.sort((a, b) => a.y - b.y)
+    const minGap = 82
+    const currentMinGap = Math.min(...sorted.slice(1).map((node, index) => node.y - sorted[index].y))
+    if (currentMinGap >= minGap) return
+    const center = sorted.reduce((sum, node) => sum + node.y, 0) / sorted.length
+    const top = Math.max(38, Math.min(center - ((sorted.length - 1) * minGap) / 2, height - 42 - (sorted.length - 1) * minGap))
+    sorted.forEach((node, index) => {
+      node.y = top + index * minGap
+    })
+  })
+  return result
+}
+
+function visibleModelPathEdges(edges = []) {
+  if (!showSignificantOnly.value) return edges
+  return edges.filter(edge => edge.significant)
+}
 
 function defaultShowDataLabels(chart = {}) {
   if (chart.data?.defaultShowDataLabels != null) return !!chart.data.defaultShowDataLabels

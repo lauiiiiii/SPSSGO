@@ -723,6 +723,65 @@
       </div>
     </template>
 
+    <template v-else-if="isMediationConfig">
+      <div class="ap-mediation-form">
+        <div
+          v-for="slot in mediationSlots"
+          :key="slot.key"
+          class="ap-mediation-slot"
+          :class="`ap-mediation-slot--${slot.key}`"
+        >
+          <div class="ap-slot-label">
+            放入
+            <span v-if="getAcceptLabel(slot)" class="ap-accept-tag" :class="'accept-' + slot.accept">
+              [{{ getAcceptLabel(slot) }}]
+            </span>
+            {{ slot.label }}
+            <span class="ap-slot-constraint">
+              （{{ mediationSlotConstraintText(slot) }}）
+            </span>
+            <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+          </div>
+          <AnalysisDropZone
+            :drag-over-slot="dragOverSlot"
+            :drag-preview-count="dragPreviewCount"
+            :empty-text="mediationSlotEmptyText(slot)"
+            :get-var-type="getVarType"
+            :get-var-type-class="getVarTypeClass"
+            :slot="slot"
+            :slot-key="slot.key"
+            :values="slotValues[slot.key] || []"
+            :zone-class="`ap-mediation-drop-zone ap-mediation-drop-zone--${slot.key}`"
+            @drag-over="$emit('drag-over', $event)"
+            @drag-leave="$emit('drag-leave')"
+            @drop-slot="(...args) => $emit('drop-slot', ...args)"
+            @remove-var="(...args) => $emit('remove-var', ...args)"
+          />
+        </div>
+        <div class="ap-mediation-options">
+          <div v-for="option in visibleOptions" :key="option.key" class="ap-mediation-option">
+            <label v-if="option.type === 'checkbox'" class="ap-option-check">
+              <input
+                type="checkbox"
+                :checked="!!optionValues[option.key]"
+                @change="$emit('option-change', option.key, $event.target.checked)"
+              />
+              <span>{{ option.label }}</span>
+            </label>
+            <template v-else>
+              <label>
+                {{ option.label }}
+                <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
+              </label>
+              <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+                <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
+              </select>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <div
       v-else
       v-for="(slot, slotIndex) in displaySlots"
@@ -768,7 +827,7 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
-      <div v-if="method.options?.length && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isIndependentTMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
+      <div v-if="method.options?.length && !isMediationConfig && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isIndependentTMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
         <div v-for="option in visibleOptions" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
@@ -898,6 +957,11 @@ const equalSlotMethodLabels = new Set([
 ])
 const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
 const isNWayAnovaMethod = computed(() => props.method?.label === '多因素方差分析')
+const isMediationConfig = computed(() => (
+  props.method?.label === '中介效应'
+  || props.method?.label === '平行中介效应'
+  || ['x', 'y', 'mediators'].every(key => props.displaySlots.some(slot => slot.key === key))
+))
 const summaryOneWayGroups = computed(() => (
   Array.isArray(props.optionValues.groups) ? props.optionValues.groups : []
 ))
@@ -940,6 +1004,18 @@ const nWaySlots = computed(() => {
     .map(key => props.displaySlots.find(slot => slot.key === key))
     .filter(Boolean)
 })
+const mediationSlots = computed(() => {
+  const fallbackMap = {
+    y: { key: 'y', label: '变量Y', type: 'single', accept: 'numeric', hint: '拖入因变量Y' },
+    x: { key: 'x', label: '变量X', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入变量X' },
+    mediators: { key: 'mediators', label: '中介变量M', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入中介变量M' },
+    controls: { key: 'controls', label: '控制变量', type: 'multiple', accept: 'numeric', min: 0, hint: '拖入控制变量' },
+  }
+  return ['y', 'x', 'mediators', 'controls'].map(key => ({
+    ...fallbackMap[key],
+    ...(props.displaySlots.find(slot => slot.key === key) || {}),
+  }))
+})
 const visibleOptions = computed(() => (props.method?.options || []).filter(option => {
   if (['second_order_interaction', 'third_order_interaction'].includes(option.key)) {
     return Boolean(props.optionValues.include_interaction)
@@ -963,6 +1039,20 @@ function slotConstraintText(slot) {
   if (Number.isFinite(max) && max === min) return `变量数=${max}`
   if (Number.isFinite(max)) return `变量数${min}-${max}`
   return `变量数≥${min}`
+}
+
+function mediationSlotConstraintText(slot) {
+  if (slot.key === 'controls') return '非必填，变量数≥0'
+  if (slot.key === 'y') return '变量数=1'
+  return slotConstraintText(slot)
+}
+
+function mediationSlotEmptyText(slot) {
+  if (slot.key === 'y') return '拖入因变量Y'
+  if (slot.key === 'x') return '拖入变量X'
+  if (slot.key === 'mediators') return '拖入中介变量M'
+  if (slot.key === 'controls') return '拖入控制变量'
+  return slot.hint || '拖拽变量到此区域'
 }
 
 function nWaySlotEmptyText(slot) {

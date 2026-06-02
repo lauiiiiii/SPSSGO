@@ -25,10 +25,11 @@
             v-for="m in cat.methods"
             :key="m.key"
             class="mn-item"
-            :class="{ active: m.key === activeMethod }"
+            :class="{ active: m.key === activeMethod, 'mn-item--reserved': m.reserved }"
             @click="$emit('select', m.key)"
           >
             <span class="mn-item-label">{{ m.label }}</span>
+            <span v-if="m.statusLabel" class="mn-item-status">{{ m.statusLabel }}</span>
           </div>
         </div>
       </div>

@@ -6,6 +6,11 @@
     <!-- No method selected and no results to show -->
     <AnalysisMethodPlaceholder v-else-if="!method && !(results && results.length)" />
 
+    <div v-else-if="method?.reserved" class="ap-reserved">
+      <div class="ap-reserved-title">{{ method.label }}</div>
+      <div class="ap-reserved-desc">{{ method.description }}</div>
+    </div>
+
     <!-- Method selected OR has results from history -->
     <div
       v-else

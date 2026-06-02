@@ -63,6 +63,7 @@ export function useAnalysisExecution({
 
   async function executeCurrentMethod() {
     if (!activeMethodKey.value || executing.value) return
+    if (activeMethodMeta.value?.reserved) return
 
     executing.value = true
     currentResults.value = []

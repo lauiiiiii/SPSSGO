@@ -6,10 +6,10 @@ from backend.analysis.common import _resolve_cols
 from backend.r_runner import RExecutionError, is_r_runtime_available, run_r_script
 
 METHOD_KEY = "serial_mediation"
-METHOD_META = {'label': '链式中介效应',
- 'category': '高级回归&因果分析包',
+METHOD_META = {'label': '链式中介',
+ 'category': '回归&因果分析包',
  'description': '检验多个中介变量按顺序传递影响的链式作用',
- 'order': 130,
+ 'order': 50,
  'slots': [{'key': 'x', 'label': '自变量(X)', 'type': 'single', 'accept': 'numeric', 'hint': '放入自变量'},
            {'key': 'mediators',
             'label': '链式中介变量(M)',
@@ -37,7 +37,7 @@ def run(df, params):
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "链式中介至少需要 2 个中介变量。"}
 
     if not is_r_runtime_available():
-        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "R 运行环境不可用，链式中介效应需要 R 引擎执行。"}
+        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "R 运行环境不可用，链式中介需要 R 引擎执行。"}
 
     csv_buffer = StringIO()
     df[required].to_csv(csv_buffer, index=False)
@@ -49,11 +49,11 @@ def run(df, params):
             temp_files={"serial_mediation_input.csv": csv_buffer.getvalue()},
         )
     except RExecutionError as exc:
-        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": f"R 链式中介效应执行失败：{str(exc)}"}
+        return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": f"R 链式中介执行失败：{str(exc)}"}
 
     if isinstance(result, dict) and result.get("success"):
         result["name"] = METHOD_META["label"]
         return result
     if isinstance(result, dict) and result.get("error"):
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": str(result["error"])}
-    return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "R 链式中介效应未返回有效结果。"}
+    return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": "R 链式中介未返回有效结果。"}

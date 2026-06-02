@@ -249,6 +249,7 @@ const activeMethodMeta = computed(() => {
 const showVariablePanel = computed(() => (
   hasData.value
   && !!activeMethodMeta.value
+  && !activeMethodMeta.value.reserved
   && !executing.value
   && !analysisReportVisible.value
 ))

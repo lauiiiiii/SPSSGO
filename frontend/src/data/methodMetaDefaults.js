@@ -244,5 +244,78 @@ export function normalizeMethodMetaMap(rawMethods) {
     param_builder: methods.confirmatory_factor_analysis?.param_builder || 'direct',
   })
 
+  if (methods.moderation) {
+    methods.moderation = { ...methods.moderation, order: methods.moderation.order ?? 10 }
+  }
+  if (methods.vif) {
+    methods.vif = { ...methods.vif, order: methods.vif.order ?? 20 }
+  }
+  if (methods.multiple_regression) {
+    methods.multiple_regression = { ...methods.multiple_regression, order: methods.multiple_regression.order ?? 30 }
+  }
+  if (methods.mediation) {
+    methods.mediation = {
+      ...methods.mediation,
+      label: '中介效应',
+      category: '回归&因果分析包',
+      description: '用于探究是否是哪些变量影响 X-->Y 这个流程的因素。',
+      order: 40,
+      slots: [
+        { key: 'y', label: '变量Y', type: 'single', accept: 'numeric', hint: '拖入因变量Y' },
+        { key: 'x', label: '变量X', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入变量X' },
+        { key: 'mediators', label: '中介变量M', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入中介变量M' },
+        { key: 'controls', label: '控制变量', type: 'multiple', accept: 'numeric', min: 0, hint: '拖入控制变量' },
+      ],
+      options: [
+        {
+          key: 'bootstrap_reps',
+          label: 'bootstrap抽样次数',
+          type: 'select',
+          default: 'auto',
+          choices: [
+            { value: 'auto', label: '自动' },
+            { value: '1000', label: '1000' },
+            { value: '500', label: '500' },
+            { value: '2000', label: '2000' },
+            { value: '5000', label: '5000' },
+          ],
+        },
+        {
+          key: 'bootstrap_method',
+          label: 'bootstrap类型',
+          type: 'select',
+          default: 'percentile',
+          choices: [
+            { value: 'percentile', label: '百分位bootstrap法' },
+            { value: 'bias_corrected', label: '偏差校正bootstrap法' },
+          ],
+        },
+      ],
+      aliases: [...(methods.mediation.aliases || []), '中介效应分析', '中介效应检验'],
+    }
+  }
+  if (methods.parallel_mediation) {
+    methods.parallel_mediation = { ...methods.parallel_mediation, hidden: true }
+  }
+  if (methods.serial_mediation) {
+    methods.serial_mediation = {
+      ...methods.serial_mediation,
+      label: '链式中介',
+      category: '回归&因果分析包',
+      order: 50,
+      aliases: [...(methods.serial_mediation.aliases || []), '链式中介效应'],
+    }
+  }
+  methods.moderated_mediation_reserved = {
+    label: '调节中介',
+    category: '回归&因果分析包',
+    description: '调节中介模型入口预留，统计口径对齐后开放执行。',
+    order: 60,
+    slots: [],
+    options: [],
+    reserved: true,
+    statusLabel: '待对齐',
+  }
+
   return methods
 }

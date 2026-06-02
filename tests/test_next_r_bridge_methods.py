@@ -44,10 +44,10 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 "module": mediation,
                 "call": mediation.mediation_analysis,
                 "params": {"x": "x", "m": "m", "y": "y"},
-                "script": "mediation.R",
-                "temp_file": "mediation_input.csv",
-                "failure_text": "R 中介效应分析执行失败",
-                "unavailable_text": "中介效应分析需要 R 引擎执行",
+                "script": "parallel_mediation.R",
+                "temp_file": "parallel_mediation_input.csv",
+                "failure_text": "R 中介效应执行失败",
+                "unavailable_text": "中介效应需要 R 引擎执行",
             },
             {
                 "module": parallel_mediation,
@@ -64,8 +64,8 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 "params": {"x": "x", "mediators": ["m", "m2"], "y": "y"},
                 "script": "serial_mediation.R",
                 "temp_file": "serial_mediation_input.csv",
-                "failure_text": "R 链式中介效应执行失败",
-                "unavailable_text": "链式中介效应需要 R 引擎执行",
+                "failure_text": "R 链式中介执行失败",
+                "unavailable_text": "链式中介需要 R 引擎执行",
             },
             {
                 "module": moderation,
@@ -152,6 +152,56 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                         run_r.call_args.kwargs["temp_files"]["multiple_regression_input.csv"].splitlines()[0],
                         "y,x,group",
                     )
+                if case["module"] is mediation:
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["x"], ["x"])
+                    self.assertEqual(payload["y"], "y")
+                    self.assertEqual(payload["mediators"], ["m"])
+                    self.assertTrue(payload["bootstrap"])
+                    self.assertEqual(payload["bootstrap_reps"], 1000)
+                    self.assertEqual(payload["bootstrap_method"], "percentile")
+
+    def test_mediation_uses_parallel_script_for_multiple_mediators(self):
+        r_result = {
+            "success": True,
+            "name": "R result",
+            "headers": ["指标"],
+            "rows": [["1"]],
+            "description": "R bridge result",
+        }
+        with patch("backend.analysis.methods.mediation.is_r_runtime_available", return_value=True):
+            with patch("backend.analysis.methods.mediation.run_r_script", return_value=r_result) as run_r:
+                result = mediation.mediation_analysis(
+                    self.df,
+                    {"x": "x", "mediators": ["m", "m2"], "y": "y"},
+                )
+
+        self.assertEqual(result["description"], "R bridge result")
+        self.assertEqual(run_r.call_args.args[0], "parallel_mediation.R")
+        self.assertEqual(run_r.call_args.kwargs["payload"]["x"], ["x"])
+        self.assertEqual(run_r.call_args.kwargs["payload"]["mediators"], ["m", "m2"])
+        self.assertIn("parallel_mediation_input.csv", run_r.call_args.kwargs["temp_files"])
+
+    def test_mediation_preserves_multiple_x_variables(self):
+        r_result = {
+            "success": True,
+            "name": "R result",
+            "headers": ["指标"],
+            "rows": [["1"]],
+            "description": "R bridge result",
+        }
+        with patch("backend.analysis.methods.mediation.is_r_runtime_available", return_value=True):
+            with patch("backend.analysis.methods.mediation.run_r_script", return_value=r_result) as run_r:
+                mediation.mediation_analysis(
+                    self.df,
+                    {"x": ["x", "w"], "mediators": ["m", "m2"], "y": "y", "bootstrap_reps": "2000", "bootstrap_method": "bias_corrected"},
+                )
+
+        payload = run_r.call_args.kwargs["payload"]
+        self.assertEqual(payload["x"], ["x", "w"])
+        self.assertEqual(payload["input_config"]["x"], ["x", "w"])
+        self.assertEqual(payload["bootstrap_reps"], 2000)
+        self.assertEqual(payload["bootstrap_method"], "bias_corrected")
 
     def test_methods_return_error_when_r_fails(self):
         for case in self.cases:
