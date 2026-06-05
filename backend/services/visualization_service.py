@@ -9,6 +9,7 @@ import pandas as pd
 from fastapi import HTTPException
 
 from backend.file_parser import parse_data_file
+from backend.database import get_current_dataset_version_for_session, save_result
 from backend.services.session_data_service import materialized_session_data, resolve_session_data_source
 from backend.services.variable_metadata_service import infer_variable_type
 
@@ -37,6 +38,33 @@ async def preview_visualization(session_id: str, payload: dict[str, Any], *, all
             raise HTTPException(400, "当前数据为空，无法绘图")
         chart, warnings = _build_chart(df, chart_type, variables, options)
         return {"success": True, "chart": chart, "warnings": warnings}
+
+
+async def save_visualization_result(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    chart = payload.get("chart") or {}
+    if not chart or not isinstance(chart, dict):
+        raise HTTPException(400, "缺少可保存的图表")
+    title = str(payload.get("title") or chart.get("title") or chart.get("data", {}).get("displayTitle") or "可视化图表").strip()
+    warnings = [str(item) for item in (payload.get("warnings") or []) if str(item).strip()]
+    config = payload.get("config") or {}
+    current_version = await get_current_dataset_version_for_session(session_id)
+    sections = [{
+        "type": "charts",
+        "title": "可视化图表",
+        "charts": [chart],
+    }]
+    description = "\n".join(warnings)
+    await save_result(
+        session_id=session_id,
+        analysis_name=title,
+        table_headers=[],
+        table_rows=[],
+        description=description,
+        code="[可视化绘图]",
+        sections=sections,
+        dataset_version_id=(current_version or {}).get("id"),
+    )
+    return {"success": True, "name": title, "config": config}
 
 
 def _build_chart(df: pd.DataFrame, chart_type: str, variables: dict[str, Any], options: dict[str, Any]):
