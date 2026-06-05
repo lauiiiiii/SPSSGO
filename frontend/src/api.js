@@ -577,6 +577,14 @@ export function previewVisualization(sessionId, payload) {
   })
 }
 
+export function saveVisualization(sessionId, payload) {
+  return request(`/api/visualizations/${sessionId}/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export function renameVariable(sessionId, columnName, newName) {
   return request(`/api/variables/${sessionId}/${encodeURIComponent(columnName)}/rename`, {
     method: 'PATCH',

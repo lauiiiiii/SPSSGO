@@ -95,6 +95,7 @@
         :is-one-sample-equivalence-method="isOneSampleEquivalenceMethod"
         :is-one-way-anova-method="isOneWayAnovaMethod"
         :is-paired-equivalence-method="isPairedEquivalenceMethod"
+        :is-moderated-mediation-method="isModeratedMediationMethod"
         :is-summary-one-way-anova-method="isSummaryOneWayAnovaMethod"
         :is-summary-t-method="isSummaryTMethod"
         :is-two-sample-equivalence-method="isTwoSampleEquivalenceMethod"
@@ -217,6 +218,7 @@ const {
   isOneSampleEquivalenceMethod,
   isOneWayAnovaMethod,
   isPairedEquivalenceMethod,
+  isModeratedMediationMethod,
   isSummaryOneWayAnovaMethod,
   isSummaryTMethod,
   isTwoSampleEquivalenceMethod,

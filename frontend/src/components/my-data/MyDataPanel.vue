@@ -191,7 +191,8 @@
                   <span>{{ totalRows || currentDataSet?.rowCount || 0 }} 行</span>
                   <span>{{ variables.length || currentDataSet?.columnCount || 0 }} 个变量</span>
                   <span>{{ currentDataSet?.versionCount || datasetVersions.length || 0 }} 个版本</span>
-                  <span>{{ currentDataSet?.resultCount || historyItems.length || 0 }} 条分析</span>
+                  <span>{{ historyItems.length }} 条分析</span>
+                  <span>{{ visualizationHistoryItems.length }} 条绘图</span>
                 </div>
               </div>
               <div class="md-dataset-summary-actions">
@@ -223,6 +224,9 @@
               </button>
               <button class="md-detail-tab" :class="{ 'md-detail-tab--active': detailTab === 'history' }" @click="detailTab = 'history'">
                 分析记录 <span v-if="historyItems.length">{{ historyItems.length }}</span>
+              </button>
+              <button class="md-detail-tab" :class="{ 'md-detail-tab--active': detailTab === 'drawings' }" @click="detailTab = 'drawings'">
+                绘图记录 <span v-if="visualizationHistoryItems.length">{{ visualizationHistoryItems.length }}</span>
               </button>
             </div>
 
@@ -343,9 +347,9 @@
                   <aside class="md-history-list-pane">
                     <div class="md-history-head">
                       <div class="md-section-note">
-                        当前 {{ currentVersionHistoryCount }} / 全部 {{ historyItems.length }}
+                        当前 {{ activeRecordCurrentCount }} / 全部 {{ activeRecordItems.length }}
                       </div>
-                      <span v-if="historyItems.length" class="md-filter-tabs">
+                      <span v-if="activeRecordItems.length" class="md-filter-tabs">
                         <button class="md-filter-tab" :class="{ 'md-filter-tab--active': historyFilter === 'current' }" @click="historyFilter = 'current'">当前版本</button>
                         <button class="md-filter-tab" :class="{ 'md-filter-tab--active': historyFilter === 'all' }" @click="historyFilter = 'all'">全部版本</button>
                       </span>
@@ -365,8 +369,8 @@
                         <span v-if="item.dataset_version_no" class="md-tag-version" :class="{ 'md-tag-version--current': isCurrentHistoryItem(item) }">v{{ item.dataset_version_no }}</span>
                       </button>
                     </div>
-                    <div v-else-if="historyItems.length" class="md-empty-hint"><span>当前版本暂无分析记录，可切换到「全部版本」查看旧版本结果</span></div>
-                    <div v-else class="md-empty-hint"><span>该数据集暂无分析记录</span></div>
+                    <div v-else-if="activeRecordItems.length" class="md-empty-hint"><span>当前版本暂无{{ activeRecordLabel }}，可切换到「全部版本」查看旧版本结果</span></div>
+                    <div v-else class="md-empty-hint"><span>该数据集暂无{{ activeRecordLabel }}</span></div>
                   </aside>
 
                   <section class="md-history-detail-pane">
@@ -377,9 +381,9 @@
                       @close="closeExpandedResult"
                     />
                     <div v-else class="md-empty md-empty--history-detail">
-                      <div>{{ visibleHistoryItems.length ? '选择一条分析记录查看结果' : '暂无可查看的分析结果' }}</div>
-                      <button class="md-empty-action" @click.stop="$emit('go-analysis', currentSessionId)">去数据分析</button>
-                      <button class="md-empty-action" @click.stop="$emit('go-visualization', currentSessionId)">去可视化绘图</button>
+                      <div>{{ visibleHistoryItems.length ? `选择一条${activeRecordLabel}查看结果` : `暂无可查看的${activeRecordLabel}` }}</div>
+                      <button v-if="detailTab === 'history'" class="md-empty-action" @click.stop="$emit('go-analysis', currentSessionId)">去数据分析</button>
+                      <button v-else class="md-empty-action" @click.stop="$emit('go-visualization', currentSessionId)">去可视化绘图</button>
                     </div>
                   </section>
                 </div>
@@ -598,6 +602,7 @@ const props = defineProps({
   totalRows: { type: Number, default: 0 },
   variables: { type: Array, default: () => [] },
   historyItems: { type: Array, default: () => [] },
+  visualizationHistoryItems: { type: Array, default: () => [] },
   allDataSets: { type: Array, default: () => [] },
   currentSessionId: { type: String, default: '' },
   currentDatasetVersionId: { type: [Number, String], default: null },
@@ -693,6 +698,7 @@ const previewTotalRows = computed(() => Number(previewMeta.value.totalRows || pr
 const previewLimitOptions = computed(() => buildPreviewLimitOptions(previewTotalRows.value))
 
 const currentVersionHistoryCount = computed(() => props.historyItems.filter(isCurrentHistoryItem).length)
+const currentVersionVisualizationHistoryCount = computed(() => props.visualizationHistoryItems.filter(isCurrentHistoryItem).length)
 const totalPages = computed(() => Math.max(1, Math.ceil(props.datasetTotal / props.datasetPageSize)))
 
 function goPage(page) {
@@ -709,15 +715,19 @@ function onPageSizeChange(size) {
   clearSelection()
 }
 const datasetLineage = computed(() => datasetVersions.value.slice().sort((a, b) => Number(a.version_no || 0) - Number(b.version_no || 0)))
+const activeRecordItems = computed(() => detailTab.value === 'drawings' ? props.visualizationHistoryItems : props.historyItems)
+const activeRecordCurrentCount = computed(() => detailTab.value === 'drawings' ? currentVersionVisualizationHistoryCount.value : currentVersionHistoryCount.value)
+const activeRecordLabel = computed(() => detailTab.value === 'drawings' ? '绘图记录' : '分析记录')
 const visibleHistoryItems = computed(() => {
-  if (historyFilter.value === 'all') return props.historyItems
-  return props.historyItems.filter(isCurrentHistoryItem)
+  if (historyFilter.value === 'all') return activeRecordItems.value
+  return activeRecordItems.value.filter(isCurrentHistoryItem)
 })
 const datasetDetailStats = computed(() => [
   { label: '行数', value: `${props.totalRows || currentDataSet.value?.rowCount || 0}` },
   { label: '字段', value: `${props.variables.length || currentDataSet.value?.columnCount || 0}` },
   { label: '版本', value: `${currentDataSet.value?.versionCount || datasetVersions.value.length || 0}` },
-  { label: '分析', value: `${currentDataSet.value?.resultCount || props.historyItems.length || 0}` },
+  { label: '分析', value: `${props.historyItems.length}` },
+  { label: '绘图', value: `${props.visualizationHistoryItems.length}` },
   { label: '大小', value: currentDataSet.value?.fileSize || '-' },
   { label: '创建时间', value: formatDate(currentDataSet.value?.createdAt) || '-' },
 ])

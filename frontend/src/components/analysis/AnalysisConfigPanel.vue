@@ -724,61 +724,163 @@
     </template>
 
     <template v-else-if="isMediationConfig">
-      <div class="ap-mediation-form">
-        <div
-          v-for="slot in mediationSlots"
-          :key="slot.key"
-          class="ap-mediation-slot"
-          :class="`ap-mediation-slot--${slot.key}`"
-        >
-          <div class="ap-slot-label">
-            放入
-            <span v-if="getAcceptLabel(slot)" class="ap-accept-tag" :class="'accept-' + slot.accept">
-              [{{ getAcceptLabel(slot) }}]
-            </span>
-            {{ slot.label }}
-            <span class="ap-slot-constraint">
-              （{{ mediationSlotConstraintText(slot) }}）
-            </span>
-            <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+      <div class="ap-mediation-form" :class="{ 'ap-mediation-form--with-preview': isModeratedMediationMethod }">
+        <div class="ap-mediation-main">
+          <div
+            v-for="slot in mediationSlots"
+            :key="slot.key"
+            class="ap-mediation-slot"
+            :class="[`ap-mediation-slot--${slot.key}`, { 'ap-mediation-slot--single': slot.type === 'single' }]"
+          >
+            <div class="ap-slot-label">
+              放入
+              <span v-if="getAcceptLabel(slot)" class="ap-accept-tag" :class="'accept-' + slot.accept">
+                [{{ getAcceptLabel(slot) }}]
+              </span>
+              {{ slot.label }}
+              <span class="ap-slot-constraint">
+                （{{ mediationSlotConstraintText(slot) }}）
+              </span>
+              <span v-if="slotValues[slot.key]?.length" class="ap-slot-count">{{ slotValues[slot.key].length }}</span>
+            </div>
+            <AnalysisDropZone
+              :drag-over-slot="dragOverSlot"
+              :drag-preview-count="dragPreviewCount"
+              :empty-text="mediationSlotEmptyText(slot)"
+              :get-var-type="getVarType"
+              :get-var-type-class="getVarTypeClass"
+              :slot="slot"
+              :slot-key="slot.key"
+              :values="slotValues[slot.key] || []"
+              :zone-class="`ap-mediation-drop-zone ap-mediation-drop-zone--${slot.key} ${slot.type === 'single' ? 'ap-mediation-drop-zone--single' : ''}`"
+              @drag-over="$emit('drag-over', $event)"
+              @drag-leave="$emit('drag-leave')"
+              @drop-slot="(...args) => $emit('drop-slot', ...args)"
+              @remove-var="(...args) => $emit('remove-var', ...args)"
+            />
           </div>
-          <AnalysisDropZone
-            :drag-over-slot="dragOverSlot"
-            :drag-preview-count="dragPreviewCount"
-            :empty-text="mediationSlotEmptyText(slot)"
-            :get-var-type="getVarType"
-            :get-var-type-class="getVarTypeClass"
-            :slot="slot"
-            :slot-key="slot.key"
-            :values="slotValues[slot.key] || []"
-            :zone-class="`ap-mediation-drop-zone ap-mediation-drop-zone--${slot.key}`"
-            @drag-over="$emit('drag-over', $event)"
-            @drag-leave="$emit('drag-leave')"
-            @drop-slot="(...args) => $emit('drop-slot', ...args)"
-            @remove-var="(...args) => $emit('remove-var', ...args)"
-          />
-        </div>
-        <div class="ap-mediation-options">
-          <div v-for="option in visibleOptions" :key="option.key" class="ap-mediation-option">
-            <label v-if="option.type === 'checkbox'" class="ap-option-check">
-              <input
-                type="checkbox"
-                :checked="!!optionValues[option.key]"
-                @change="$emit('option-change', option.key, $event.target.checked)"
-              />
-              <span>{{ option.label }}</span>
-            </label>
+          <div class="ap-mediation-options">
+            <template v-if="isModeratedMediationMethod">
+              <div class="ap-mediation-extra-options">
+                <div v-for="option in moderatedMediationLeftOptions" :key="option.key" class="ap-mediation-option">
+                  <label>
+                    {{ option.label }}
+                    <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
+                  </label>
+                  <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+                    <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
+                  </select>
+                </div>
+              </div>
+            </template>
             <template v-else>
-              <label>
-                {{ option.label }}
-                <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
-              </label>
-              <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
-                <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
-              </select>
+              <div v-for="option in visibleOptions" :key="option.key" class="ap-mediation-option">
+                <label v-if="option.type === 'checkbox'" class="ap-option-check">
+                  <input
+                    type="checkbox"
+                    :checked="!!optionValues[option.key]"
+                    @change="$emit('option-change', option.key, $event.target.checked)"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+                <template v-else>
+                  <label>
+                    {{ option.label }}
+                    <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
+                  </label>
+                  <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+                    <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
+                  </select>
+                </template>
+              </div>
             </template>
           </div>
         </div>
+        <aside v-if="isModeratedMediationMethod" class="ap-mediation-preview-panel">
+          <div class="ap-mediation-preview" :class="{ 'is-empty': !hasModeratedMediationPath }">
+              <div class="ap-mediation-preview-head">
+                <span>{{ hasModeratedMediationPath ? `PROCESS ${moderatedMediationModelText}` : '未选择模型' }}</span>
+                <span :class="{ 'is-warning': !hasModeratedMediationPath }">{{ moderatedMediationPreviewDescription }}</span>
+              </div>
+              <div class="ap-mediation-path-row ap-mediation-path-row--preview">
+                <div v-for="option in moderatedMediationPathOptions" :key="option.key" class="ap-mediation-option">
+                  <label class="ap-option-check">
+                    <input
+                      type="checkbox"
+                      :checked="!!optionValues[option.key]"
+                      @change="$emit('option-change', option.key, $event.target.checked)"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+              <svg class="ap-mediation-preview-svg" viewBox="0 0 500 190" role="img" aria-label="调节中介模型预览图">
+                <defs>
+                  <marker id="moderatedPreviewArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#4b5563"/>
+                  </marker>
+                  <marker id="moderatedPreviewArrowActive" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e88ff"/>
+                  </marker>
+                </defs>
+                <rect x="18" y="16" width="464" height="158" fill="#fff" stroke="#d9dee8"/>
+                <line x1="105" y1="126" x2="216" y2="82" stroke="#4b5563" stroke-width="1.5" marker-end="url(#moderatedPreviewArrow)"/>
+                <line x1="280" y1="82" x2="390" y2="126" stroke="#4b5563" stroke-width="1.5" marker-end="url(#moderatedPreviewArrow)"/>
+                <line x1="105" y1="138" x2="390" y2="138" stroke="#4b5563" stroke-width="1.5" marker-end="url(#moderatedPreviewArrow)"/>
+                <line
+                  v-if="optionValues.moderate_x_m"
+                  :x1="moderatedMediationPreview.z.cx"
+                  :y1="moderatedMediationPreview.z.cy"
+                  x2="166"
+                  y2="102"
+                  stroke="#1e88ff"
+                  stroke-width="2"
+                  marker-end="url(#moderatedPreviewArrowActive)"
+                />
+                <line
+                  v-if="optionValues.moderate_m_y"
+                  :x1="moderatedMediationPreview.z.cx"
+                  :y1="moderatedMediationPreview.z.cy"
+                  x2="334"
+                  y2="102"
+                  stroke="#1e88ff"
+                  stroke-width="2"
+                  marker-end="url(#moderatedPreviewArrowActive)"
+                />
+                <line
+                  v-if="optionValues.moderate_x_y"
+                  :x1="moderatedMediationPreview.z.cx"
+                  :y1="moderatedMediationPreview.z.cy"
+                  x2="250"
+                  y2="124"
+                  stroke="#1e88ff"
+                  stroke-width="2"
+                  marker-end="url(#moderatedPreviewArrowActive)"
+                />
+                <g class="ap-mediation-preview-node">
+                  <rect x="70" y="118" width="36" height="32"/>
+                  <text x="88" y="139">X</text>
+                  <rect x="220" y="60" width="60" height="38"/>
+                  <text x="250" y="84">M</text>
+                  <rect x="390" y="118" width="36" height="32"/>
+                  <text x="408" y="139">Y</text>
+                  <rect :x="moderatedMediationPreview.z.x" :y="moderatedMediationPreview.z.y" width="44" height="34"/>
+                  <text :x="moderatedMediationPreview.z.cx" :y="moderatedMediationPreview.z.cy + 5">Z</text>
+                </g>
+              </svg>
+              <div class="ap-mediation-preview-options">
+                <div v-for="option in moderatedMediationPreviewOptions" :key="option.key" class="ap-mediation-option">
+                  <label>
+                    {{ option.label }}
+                    <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
+                  </label>
+                  <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+                    <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
+                  </select>
+                </div>
+              </div>
+          </div>
+        </aside>
       </div>
     </template>
 
@@ -904,6 +1006,7 @@ const props = defineProps({
   getVarTypeClass: { type: Function, required: true },
   isCfaMethod: { type: Boolean, default: false },
   isIndependentTMethod: { type: Boolean, default: false },
+  isModeratedMediationMethod: { type: Boolean, default: false },
   isOneSampleEquivalenceMethod: { type: Boolean, default: false },
   isOneWayAnovaMethod: { type: Boolean, default: false },
   isPairedEquivalenceMethod: { type: Boolean, default: false },
@@ -1009,12 +1112,65 @@ const mediationSlots = computed(() => {
     y: { key: 'y', label: '变量Y', type: 'single', accept: 'numeric', hint: '拖入因变量Y' },
     x: { key: 'x', label: '变量X', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入变量X' },
     mediators: { key: 'mediators', label: '中介变量M', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入中介变量M' },
+    z: { key: 'z', label: '调节变量Z', type: 'single', accept: 'numeric', hint: '拖入调节变量Z' },
     controls: { key: 'controls', label: '控制变量', type: 'multiple', accept: 'numeric', min: 0, hint: '拖入控制变量' },
   }
-  return ['y', 'x', 'mediators', 'controls'].map(key => ({
+  const slotOrder = props.isModeratedMediationMethod ? ['y', 'x', 'mediators', 'z', 'controls'] : ['y', 'x', 'mediators', 'controls']
+  return slotOrder.map(key => ({
     ...fallbackMap[key],
     ...(props.displaySlots.find(slot => slot.key === key) || {}),
   }))
+})
+const hasModeratedMediationPath = computed(() => (
+  Boolean(props.optionValues.moderate_x_m || props.optionValues.moderate_m_y || props.optionValues.moderate_x_y)
+))
+const moderatedMediationPathKeys = new Set(['moderate_x_m', 'moderate_m_y', 'moderate_x_y'])
+const moderatedMediationPathOptions = computed(() => (
+  visibleOptions.value.filter(option => moderatedMediationPathKeys.has(option.key))
+))
+const moderatedMediationPreviewOptionKeys = new Set(['moderator_levels', 'bootstrap_reps', 'bootstrap_method'])
+const moderatedMediationPreviewOptions = computed(() => (
+  visibleOptions.value.filter(option => moderatedMediationPreviewOptionKeys.has(option.key))
+))
+const moderatedMediationLeftOptions = computed(() => (
+  visibleOptions.value.filter(option => (
+    !moderatedMediationPathKeys.has(option.key)
+    && !moderatedMediationPreviewOptionKeys.has(option.key)
+  ))
+))
+const moderatedMediationModelText = computed(() => {
+  const xM = Boolean(props.optionValues.moderate_x_m)
+  const mY = Boolean(props.optionValues.moderate_m_y)
+  const xY = Boolean(props.optionValues.moderate_x_y)
+  if (!xM && !mY && xY) return 'Model 5'
+  if (xM && !mY && !xY) return 'Model 7'
+  if (xM && !mY && xY) return 'Model 8'
+  if (!xM && mY && !xY) return 'Model 14'
+  if (!xM && mY && xY) return 'Model 15'
+  if (xM && mY && !xY) return 'Model 58'
+  if (xM && mY && xY) return 'Model 59'
+  return '未选择模型'
+})
+const moderatedMediationPreviewDescription = computed(() => {
+  const paths = []
+  if (props.optionValues.moderate_x_m) paths.push('X→M')
+  if (props.optionValues.moderate_m_y) paths.push('M→Y')
+  if (props.optionValues.moderate_x_y) paths.push('X→Y')
+  return paths.length ? `Z 调节 ${paths.join('、')}` : '请选择至少一条 Z 调节路径'
+})
+const moderatedMediationPreview = computed(() => {
+  const xM = Boolean(props.optionValues.moderate_x_m)
+  const mY = Boolean(props.optionValues.moderate_m_y)
+  let z = { x: 70, y: 44 }
+  if (mY && !xM) z = { x: 338, y: 46 }
+  if (mY && xM) z = { x: 228, y: 136 }
+  return {
+    z: {
+      ...z,
+      cx: z.x + 22,
+      cy: z.y + 17,
+    },
+  }
 })
 const visibleOptions = computed(() => (props.method?.options || []).filter(option => {
   if (['second_order_interaction', 'third_order_interaction'].includes(option.key)) {
@@ -1043,7 +1199,7 @@ function slotConstraintText(slot) {
 
 function mediationSlotConstraintText(slot) {
   if (slot.key === 'controls') return '非必填，变量数≥0'
-  if (slot.key === 'y') return '变量数=1'
+  if (slot.key === 'y' || slot.key === 'z') return '变量数=1'
   return slotConstraintText(slot)
 }
 
@@ -1051,6 +1207,7 @@ function mediationSlotEmptyText(slot) {
   if (slot.key === 'y') return '拖入因变量Y'
   if (slot.key === 'x') return '拖入变量X'
   if (slot.key === 'mediators') return '拖入中介变量M'
+  if (slot.key === 'z') return '拖入调节变量Z'
   if (slot.key === 'controls') return '拖入控制变量'
   return slot.hint || '拖拽变量到此区域'
 }

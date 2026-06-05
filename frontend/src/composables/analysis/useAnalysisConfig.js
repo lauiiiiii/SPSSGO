@@ -10,6 +10,7 @@ const ONE_WAY_ANOVA_METHOD_KEY = 'anova_oneway'
 const ONE_SAMPLE_EQUIVALENCE_METHOD_KEY = 'one_sample_equivalence_test'
 const TWO_SAMPLE_EQUIVALENCE_METHOD_KEY = 'two_sample_equivalence_test'
 const PAIRED_EQUIVALENCE_METHOD_KEY = 'paired_equivalence_test'
+const MODERATED_MEDIATION_METHOD_KEY = 'moderated_mediation'
 const DYNAMIC_GROUP_CONFIGS = {
   [CFA_METHOD_KEY]: {
     addText: '+ 新建因子',
@@ -62,6 +63,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const isOneSampleEquivalenceMethod = computed(() => methodKey.value === ONE_SAMPLE_EQUIVALENCE_METHOD_KEY)
   const isTwoSampleEquivalenceMethod = computed(() => methodKey.value === TWO_SAMPLE_EQUIVALENCE_METHOD_KEY)
   const isPairedEquivalenceMethod = computed(() => methodKey.value === PAIRED_EQUIVALENCE_METHOD_KEY)
+  const isModeratedMediationMethod = computed(() => methodKey.value === MODERATED_MEDIATION_METHOD_KEY)
   const methodSlots = computed(() => method.value?.slots || [])
 
   const displaySlots = computed(() => {
@@ -126,6 +128,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (isOneSampleEquivalenceMethod.value) return oneSampleEquivalenceReady()
     if (isTwoSampleEquivalenceMethod.value) return twoSampleEquivalenceReady()
     if (isPairedEquivalenceMethod.value) return pairedEquivalenceReady()
+    if (isModeratedMediationMethod.value && !moderatedMediationPathReady()) return false
     if (isCfaMethod.value) {
       const groupLengths = displaySlots.value.map(slot => (slotValues[slot.key] || []).length)
       const validGroupLengths = groupLengths.filter(length => length > 0)
@@ -483,6 +486,9 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   function setOptionValue(key, value) {
     optionValues[key] = value
+    if (isModeratedMediationMethod.value && ['moderate_x_m', 'moderate_m_y', 'moderate_x_y'].includes(key)) {
+      optionValues.model = moderatedMediationModel()
+    }
     if (isTwoSampleEquivalenceMethod.value && key === 'data_format') {
       if (value === '样本在不同列') {
         slotValues.group_var = []
@@ -606,6 +612,24 @@ export function useAnalysisConfig(method, methodKey, emit) {
     )
   }
 
+  function moderatedMediationModel() {
+    const xM = Boolean(optionValues.moderate_x_m)
+    const mY = Boolean(optionValues.moderate_m_y)
+    const xY = Boolean(optionValues.moderate_x_y)
+    if (!xM && !mY && xY) return '5'
+    if (xM && !mY && !xY) return '7'
+    if (xM && !mY && xY) return '8'
+    if (!xM && mY && !xY) return '14'
+    if (!xM && mY && xY) return '15'
+    if (xM && mY && !xY) return '58'
+    if (xM && mY && xY) return '59'
+    return ''
+  }
+
+  function moderatedMediationPathReady() {
+    return Boolean(optionValues.moderate_x_m || optionValues.moderate_m_y || optionValues.moderate_x_y)
+  }
+
   function addSummaryOneWayGroup() {
     const groups = Array.isArray(optionValues.groups) ? optionValues.groups : []
     optionValues.groups = [
@@ -704,6 +728,14 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   function emitOptionValues() {
     const payload = { ...optionValues }
+    if (isModeratedMediationMethod.value) {
+      payload.model = moderatedMediationModel()
+      payload.moderated_paths = {
+        x_m: Boolean(optionValues.moderate_x_m),
+        m_y: Boolean(optionValues.moderate_m_y),
+        x_y: Boolean(optionValues.moderate_x_y),
+      }
+    }
     if (isCfaMethod.value && optionValues.second_order_model) {
       const factorLabelMap = {}
       for (const item of firstOrderFactorChoices.value) {
@@ -755,6 +787,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     isOneSampleEquivalenceMethod,
     isOneWayAnovaMethod,
     isPairedEquivalenceMethod,
+    isModeratedMediationMethod,
     isTwoSampleEquivalenceMethod,
     isSummaryOneWayAnovaMethod,
     isSummaryTMethod,

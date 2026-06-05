@@ -86,22 +86,30 @@
         @go-visualization="sid => { onGoVisualization(resolveAnalysisSessionId(sid)) }"
       />
 
-      <VisualizationWorkbench
-        v-else-if="currentTab === 'visualization'"
-        :session-id="visualizationSessionId"
-        :data-file-name="visualizationDataFileName"
-        :variables="visualizationVariables"
-        :total-rows="visualizationTotalRows"
-        :has-data="visualizationHasData"
-        :selected-vars="visualizationSelectedVars"
-        @upload="openUploadModal('visualization')"
-        @go-mydata="currentTab = 'mydata'"
-        @select-variable="onVisualizationVarSelect"
-        @deselect-variable="onVisualizationVarDeselect"
-        @select-range="onVisualizationVarSelectRange"
-        @drag-start="onVariableDragStart"
-        @drag-end="onVariableDragEnd"
-      />
+      <div v-else-if="currentTab === 'visualization'" class="visualization-shell">
+        <VisualizationWorkbench
+          :session-id="visualizationSessionId"
+          :data-file-name="visualizationDataFileName"
+          :active-result="activeVisualizationResult"
+          :history-items="visualizationHistoryItems"
+          :active-history-index="activeVisualizationHistoryIdx"
+          :variables="visualizationVariables"
+          :total-rows="visualizationTotalRows"
+          :has-data="visualizationHasData"
+          :selected-vars="visualizationSelectedVars"
+          @upload="openUploadModal('visualization')"
+          @go-mydata="currentTab = 'mydata'"
+          @history-saved="refreshVisualizationHistory"
+          @select-history="applyVisualizationHistoryItem"
+          @rename-history="onRenameVisualizationHistory"
+          @delete-history="onDeleteVisualizationHistory"
+          @select-variable="onVisualizationVarSelect"
+          @deselect-variable="onVisualizationVarDeselect"
+          @select-range="onVisualizationVarSelectRange"
+          @drag-start="onVariableDragStart"
+          @drag-end="onVariableDragEnd"
+        />
+      </div>
 
       <MyDataPanel
         v-else-if="currentTab === 'mydata'"
@@ -109,6 +117,7 @@
         :total-rows="totalRows"
         :variables="variables"
         :history-items="historyItems"
+        :visualization-history-items="visualizationHistoryItems"
         :all-data-sets="allDataSets"
         :current-session-id="sessionId"
         :current-dataset-version-id="currentDatasetVersionId"
@@ -155,7 +164,7 @@
       v-if="confirmDialog.visible"
       :dialog="confirmDialog"
       @close="closeConfirmDialog"
-      @confirm="confirmDeleteAction"
+      @confirm="confirmActiveDeleteAction"
       @update-suppress="confirmDialog.suppressForHour = $event"
     />
 
@@ -163,7 +172,7 @@
       v-if="renameDialog.visible"
       :dialog="renameDialog"
       @close="closeRenameDialog"
-      @submit="submitRenameDialog"
+      @submit="submitActiveRenameDialog"
       @update-value="renameDialog.value = $event"
     />
 
@@ -178,7 +187,7 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, ref, computed, onMounted } from 'vue'
+import { defineAsyncComponent, ref, computed, onMounted, watch } from 'vue'
 import { useGlobalTooltip } from '../composables/useGlobalTooltip.js'
 import TopBar from '../components/layout/TopBar.vue'
 import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
@@ -245,6 +254,8 @@ const visualizationVariables = ref([])
 const visualizationTotalRows = ref(0)
 const visualizationSelectedVars = ref([])
 const visualizationSlotValues = ref({})
+const visualizationHistoryItems = ref([])
+const activeVisualizationHistoryIdx = ref(-1)
 const dragPreviewCount = ref(0)
 
 const executing = ref(false)
@@ -261,6 +272,10 @@ const analysisReportVisible = ref(false)
 const activeMethodMeta = computed(() => {
   if (!activeMethodKey.value || !methodsMeta.value[activeMethodKey.value]) return null
   return methodsMeta.value[activeMethodKey.value]
+})
+const activeVisualizationResult = computed(() => {
+  const item = visualizationHistoryItems.value[activeVisualizationHistoryIdx.value]
+  return item?.results?.[0] || null
 })
 const showVariablePanel = computed(() => (
   hasData.value
@@ -594,6 +609,8 @@ async function loadVisualizationSession(sid, options = {}) {
     visualizationTotalRows.value = varsData.total_rows || 0
     visualizationSelectedVars.value = []
     visualizationSlotValues.value = {}
+    activeVisualizationHistoryIdx.value = -1
+    await refreshVisualizationHistory()
     if (persist) localStorage.setItem(VISUALIZATION_SESSION_KEY, sid)
     if (switchTab) currentTab.value = 'visualization'
     return true
@@ -603,15 +620,136 @@ async function loadVisualizationSession(sid, options = {}) {
   }
 }
 
+async function refreshVisualizationHistory() {
+  if (!visualizationSessionId.value) {
+    visualizationHistoryItems.value = []
+    activeVisualizationHistoryIdx.value = -1
+    return
+  }
+  try {
+    const resultData = await api.getResults(visualizationSessionId.value)
+    visualizationHistoryItems.value = mapStoredResults(resultData.results || [], { kind: 'visualization' })
+    activeVisualizationHistoryIdx.value = visualizationHistoryItems.value.length ? 0 : -1
+  } catch (_) {
+    visualizationHistoryItems.value = []
+    activeVisualizationHistoryIdx.value = -1
+  }
+}
+
+function applyVisualizationHistoryItem(idx) {
+  activeVisualizationHistoryIdx.value = idx
+}
+
+function onRenameVisualizationHistory(idx) {
+  const item = visualizationHistoryItems.value[idx]
+  if (!item) return
+  openRenameDialog({
+    context: 'visualization',
+    title: '重命名可视化记录',
+    value: item.name || '',
+    targetId: item.id || '',
+    targetIndex: idx,
+  })
+}
+
+function onDeleteVisualizationHistory(idx) {
+  const item = visualizationHistoryItems.value[idx]
+  if (!item) return
+  openConfirmDialog({
+    context: 'visualization',
+    title: '删除后不可恢复',
+    message: '确认删除可视化记录吗？',
+    type: 'visualization-history',
+    targetId: item.id || '',
+    targetIndex: idx,
+  })
+}
+
+async function submitVisualizationRenameDialog() {
+  const idx = renameDialog.targetIndex
+  const item = visualizationHistoryItems.value[idx]
+  const trimmed = String(renameDialog.value || '').trim()
+  if (!item) {
+    closeRenameDialog()
+    return
+  }
+  if (!trimmed) return
+  if (trimmed === item.name) {
+    closeRenameDialog()
+    return
+  }
+  try {
+    await api.renameAnalysisResult(visualizationSessionId.value, renameDialog.targetId, trimmed)
+    item.name = trimmed
+    if (item.results?.length) item.results[0].name = trimmed
+    closeRenameDialog()
+  } catch (e) {
+    alert('重命名失败: ' + e.message)
+  }
+}
+
+async function submitActiveRenameDialog() {
+  if (renameDialog.context === 'visualization') {
+    await submitVisualizationRenameDialog()
+    return
+  }
+  await submitRenameDialog()
+}
+
+async function confirmVisualizationHistoryDelete(targetId, targetIndex) {
+  try {
+    if (targetId) await api.deleteAnalysisResult(visualizationSessionId.value, targetId)
+    visualizationHistoryItems.value.splice(targetIndex, 1)
+    if (!visualizationHistoryItems.value.length) {
+      activeVisualizationHistoryIdx.value = -1
+      return
+    }
+    if (activeVisualizationHistoryIdx.value === targetIndex) {
+      activeVisualizationHistoryIdx.value = Math.min(targetIndex, visualizationHistoryItems.value.length - 1)
+      return
+    }
+    if (activeVisualizationHistoryIdx.value > targetIndex) activeVisualizationHistoryIdx.value -= 1
+  } catch (e) {
+    alert('删除失败: ' + e.message)
+  }
+}
+
+async function confirmActiveDeleteAction() {
+  if (confirmDialog.type === 'visualization-history' || confirmDialog.context === 'visualization') {
+    const targetId = confirmDialog.targetId
+    const targetIndex = confirmDialog.targetIndex
+    closeConfirmDialog()
+    await confirmVisualizationHistoryDelete(targetId, targetIndex)
+    return
+  }
+  await confirmDeleteAction()
+}
+
 async function onGoVisualization(sid) {
   const loaded = await loadVisualizationSession(sid, { persist: true, switchTab: true })
   if (!loaded) alert('加载可视化数据失败，请重新选择或上传数据')
+}
+
+async function refreshCurrentSessionVisualizationHistory() {
+  if (!sessionId.value) {
+    visualizationHistoryItems.value = []
+    activeVisualizationHistoryIdx.value = -1
+    return
+  }
+  visualizationSessionId.value = sessionId.value
+  await refreshVisualizationHistory()
 }
 
 onMounted(() => {
   const savedVisualizationSessionId = localStorage.getItem(VISUALIZATION_SESSION_KEY)
   if (savedVisualizationSessionId) {
     loadVisualizationSession(savedVisualizationSessionId).catch(() => {})
+  }
+})
+
+watch([currentTab, sessionId], () => {
+  if (currentTab.value === 'mydata') {
+    refreshCurrentSessionVisualizationHistory().catch(() => {})
   }
 })
 

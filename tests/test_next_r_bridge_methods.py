@@ -9,6 +9,7 @@ from backend.analysis.methods import (
     intraclass_correlation,
     mediation,
     moderation,
+    moderated_mediation,
     multiple_regression,
     parallel_mediation,
     path_analysis,
@@ -77,6 +78,15 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 "unavailable_text": "调节效应分析需要 R 引擎执行",
             },
             {
+                "module": moderated_mediation,
+                "call": moderated_mediation.run,
+                "params": {"x": "x", "z": "w", "mediators": ["m", "m2"], "y": "y", "controls": ["r1"]},
+                "script": "moderated_mediation.R",
+                "temp_file": "moderated_mediation_input.csv",
+                "failure_text": "R 调节中介执行失败",
+                "unavailable_text": "调节中介需要 R 引擎执行",
+            },
+            {
                 "module": multiple_regression,
                 "call": multiple_regression.multiple_regression,
                 "params": {
@@ -141,6 +151,11 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                     payload = run_r.call_args.kwargs["payload"]
                     self.assertEqual(payload["controls"], ["r1"])
                     self.assertEqual(payload["data_process"], "标准化")
+                if case["script"] == "moderated_mediation.R":
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["model"], "7")
+                    self.assertEqual(payload["moderated_paths"], {"x_m": True, "m_y": False, "x_y": False})
+                    self.assertEqual(payload["controls"], ["r1"])
                 if case["script"] == "multiple_regression.R":
                     payload = run_r.call_args.kwargs["payload"]
                     self.assertEqual(payload["dependent"], "y")
@@ -201,6 +216,72 @@ class NextRBridgeMethodsTests(unittest.TestCase):
         self.assertEqual(payload["x"], ["x", "w"])
         self.assertEqual(payload["input_config"]["x"], ["x", "w"])
         self.assertEqual(payload["bootstrap_reps"], 2000)
+        self.assertEqual(payload["bootstrap_method"], "bias_corrected")
+
+    def test_serial_mediation_preserves_multiple_x_and_bootstrap_options(self):
+        r_result = {
+            "success": True,
+            "name": "R result",
+            "headers": ["指标"],
+            "rows": [["1"]],
+            "description": "R bridge result",
+        }
+        with patch("backend.analysis.methods.serial_mediation.is_r_runtime_available", return_value=True):
+            with patch("backend.analysis.methods.serial_mediation.run_r_script", return_value=r_result) as run_r:
+                serial_mediation.run(
+                    self.df,
+                    {
+                        "x": ["x", "w"],
+                        "mediators": ["m", "m2"],
+                        "y": "y",
+                        "controls": ["r1"],
+                        "bootstrap_reps": "5000",
+                        "bootstrap_method": "bias_corrected",
+                    },
+                )
+
+        payload = run_r.call_args.kwargs["payload"]
+        self.assertEqual(run_r.call_args.args[0], "serial_mediation.R")
+        self.assertEqual(payload["x"], ["x", "w"])
+        self.assertEqual(payload["mediators"], ["m", "m2"])
+        self.assertEqual(payload["controls"], ["r1"])
+        self.assertEqual(payload["input_config"]["x"], ["x", "w"])
+        self.assertEqual(payload["bootstrap_reps"], "5000")
+        self.assertEqual(payload["bootstrap_method"], "bias_corrected")
+        self.assertEqual(
+            run_r.call_args.kwargs["temp_files"]["serial_mediation_input.csv"].splitlines()[0],
+            "x,w,y,m,m2,r1",
+        )
+
+    def test_moderated_mediation_maps_path_selection_to_model(self):
+        r_result = {
+            "success": True,
+            "name": "R result",
+            "headers": ["指标"],
+            "rows": [["1"]],
+            "description": "R bridge result",
+        }
+        with patch("backend.analysis.methods.moderated_mediation.is_r_runtime_available", return_value=True):
+            with patch("backend.analysis.methods.moderated_mediation.run_r_script", return_value=r_result) as run_r:
+                moderated_mediation.run(
+                    self.df,
+                    {
+                        "x": "x",
+                        "z": "w",
+                        "mediators": ["m", "m2"],
+                        "y": "y",
+                        "moderate_x_m": True,
+                        "moderate_m_y": True,
+                        "moderate_x_y": True,
+                        "bootstrap_reps": "5000",
+                        "bootstrap_method": "bias_corrected",
+                    },
+                )
+
+        payload = run_r.call_args.kwargs["payload"]
+        self.assertEqual(payload["model"], "59")
+        self.assertEqual(payload["moderated_paths"], {"x_m": True, "m_y": True, "x_y": True})
+        self.assertEqual(payload["bootstrap_reps"], "5000")
         self.assertEqual(payload["bootstrap_method"], "bias_corrected")
 
     def test_methods_return_error_when_r_fails(self):

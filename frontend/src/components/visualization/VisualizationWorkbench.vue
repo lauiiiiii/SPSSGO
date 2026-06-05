@@ -1,38 +1,5 @@
 <template>
   <div class="viz-workbench">
-    <aside class="viz-chart-nav">
-      <div class="mn-header">
-        <input v-model="chartTypeQuery" class="mn-search" placeholder="搜索图形类型..." />
-      </div>
-      <div class="mn-list">
-        <div class="mn-category">
-          <div class="mn-cat-header" @click="chartGroupExpanded = !chartGroupExpanded">
-            <svg class="mn-cat-arrow" :class="{ open: chartGroupExpanded }" viewBox="0 0 16 16" fill="none">
-              <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span>基础图形</span>
-          </div>
-          <div class="mn-items" v-show="chartGroupExpanded">
-            <div class="viz-chart-type-grid">
-              <button
-                v-for="item in filteredChartTypes"
-                :key="item.value"
-                type="button"
-                class="viz-chart-type"
-                :class="{ active: chartType === item.value }"
-                @click="chartType = item.value"
-              >
-                {{ item.label }}
-              </button>
-            </div>
-            <div v-if="!filteredChartTypes.length" class="hp-empty" style="padding:16px 8px">
-              未找到匹配的图形
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
     <VariablePanel
       :variables="variables"
       :total-rows="totalRows"
@@ -46,12 +13,55 @@
     />
 
     <main class="viz-canvas-panel">
-      <div class="viz-canvas-head">
-        <div>
-          <div class="viz-title">可视化绘图</div>
-          <div class="viz-subtitle">{{ hasData ? `当前数据 ${totalRows} 行，拖入变量生成图表` : '上传数据后开始绘图' }}</div>
+      <div v-if="historyItems.length > 0" class="viz-canvas-head">
+        <div class="viz-canvas-head-main">
+          <div class="viz-history-strip" :class="{ expanded: historyExpanded }">
+            <div class="viz-history-chip-wrap" :class="{ expanded: historyExpanded }">
+              <div
+                v-for="(item, idx) in historyItems"
+                :key="item.id || idx"
+                class="viz-history-chip-item"
+                @mouseenter="hoveredHistoryIdx = idx"
+                @mouseleave="onLeaveHistoryChip(idx)"
+              >
+                <button
+                  class="viz-history-chip"
+                  :class="{ active: idx === activeHistoryIndex }"
+                  :title="item.name || '可视化记录'"
+                  type="button"
+                  @click="selectHistory(idx)"
+                  @contextmenu.prevent="openHistoryMenu(idx, $event)"
+                >
+                  <span class="viz-history-serial">N{{ historyItems.length - idx }}</span>
+                  <span class="viz-history-text">{{ item.name }}</span>
+                </button>
+                <button
+                  class="viz-history-delete"
+                  type="button"
+                  title="删除记录"
+                  @click.stop="deleteHistoryAt(idx)"
+                >×</button>
+              </div>
+            </div>
+            <button
+              v-if="historyItems.length > 8"
+              class="viz-history-expand"
+              type="button"
+              :title="historyExpanded ? '收起记录' : '展开记录'"
+              @click="historyExpanded = !historyExpanded"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  :d="historyExpanded ? 'M4 10l4-4 4 4' : 'M4 6l4 4 4-4'"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
-        <button v-if="!hasData" class="viz-primary-btn" type="button" @click="$emit('upload')">上传数据</button>
       </div>
 
       <div class="viz-canvas">
@@ -72,6 +82,7 @@
         </div>
         <div v-else-if="chart" class="viz-chart-stage">
           <AnalysisChartItem
+            :key="chartRenderKey"
             :calc-box="calcBox"
             :calc-grouped-box="calcGroupedBox"
             :calc-category-bar="calcCategoryBar"
@@ -116,30 +127,60 @@
 
     <aside class="viz-config-panel">
       <div class="viz-config-section">
-        <div class="viz-config-title">变量</div>
-        <label v-if="needsX" class="viz-field">
-          <span>{{ xLabel }}</span>
-          <select v-model="slotValues.x">
-            <option value="">请选择</option>
-            <option v-for="variable in xCandidates" :key="variable.name" :value="variable.name">{{ variable.name }}</option>
-          </select>
-        </label>
-        <label v-if="needsY" class="viz-field">
-          <span>变量Y</span>
-          <select v-model="slotValues.y">
-            <option value="">请选择</option>
-            <option v-for="variable in numericVariables" :key="variable.name" :value="variable.name">{{ variable.name }}</option>
-          </select>
-        </label>
-        <label v-if="needsGroup" class="viz-field">
-          <span>分组变量</span>
-          <select v-model="slotValues.group">
-            <option value="">请选择</option>
-            <option v-for="variable in categoryVariables" :key="variable.name" :value="variable.name">{{ variable.name }}</option>
-          </select>
-        </label>
+        <div class="viz-config-title-row">
+          <div class="viz-config-title">变量</div>
+          <button v-if="assignedSlotChips.length" class="viz-reset-slots" type="button" @click="clearAllSlots">重新设置</button>
+        </div>
         <div class="viz-drop-zone" @dragover.prevent @drop.prevent="onDropVariables">
-          将变量拖到这里
+          <template v-if="assignedSlotChips.length">
+            <span v-for="chip in assignedSlotChips" :key="chip.key" class="viz-slot-chip">
+              {{ chip.name }}
+              <button type="button" title="移除变量" @mousedown.prevent.stop @click.prevent.stop="clearSlot(chip.key)">×</button>
+            </span>
+          </template>
+          <span v-else>将变量拖到这里，或从左侧选择变量</span>
+        </div>
+      </div>
+
+      <div class="viz-config-section">
+        <div class="viz-config-title">智能图表推荐</div>
+        <div class="viz-chart-preview-grid viz-chart-preview-grid--recommended">
+          <button
+            v-for="item in recommendedChartTypes"
+            :key="item.value"
+            type="button"
+            class="viz-chart-preview"
+            :class="{ active: chartType === item.value }"
+            @click="selectChartType(item.value)"
+          >
+            <span class="viz-mini-chart" :class="`viz-mini-chart--${item.value}`">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span>{{ item.label }}</span>
+          </button>
+        </div>
+        <div v-if="!recommendedChartTypes.length" class="viz-config-empty">
+          先选择变量，系统会按变量类型推荐图表。
+        </div>
+      </div>
+
+      <div class="viz-config-section">
+        <div class="viz-config-title">全部图表类型</div>
+        <div class="viz-chart-preview-grid">
+          <button
+            v-for="item in chartTypes"
+            :key="item.value"
+            type="button"
+            class="viz-chart-preview"
+            :class="{ active: chartType === item.value }"
+            :disabled="!chartTypeUsable(item.value)"
+            @click="selectChartType(item.value)"
+          >
+            <span class="viz-mini-chart" :class="`viz-mini-chart--${item.value}`">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span>{{ item.label }}</span>
+          </button>
         </div>
       </div>
 
@@ -165,8 +206,16 @@
           <span>显示数值</span>
         </label>
         <button class="viz-primary-btn viz-full-btn" type="button" :disabled="!canPreview || loading" @click="loadPreview">生成图表</button>
+        <button class="viz-secondary-btn viz-full-btn" type="button" :disabled="(!chart && !canPreview) || loading || saving" @click="saveCurrentVisualization">
+          {{ saving ? '保存中...' : '保存记录' }}
+        </button>
       </div>
     </aside>
+
+    <div v-if="historyMenuIdx >= 0" class="viz-history-menu" :style="historyMenuStyle">
+      <button type="button" @click="renameHistory">重命名</button>
+      <button type="button" class="danger" @click="deleteHistory">删除</button>
+    </div>
 
     <AnalysisChartTooltip :tip="tip" />
   </div>
@@ -182,14 +231,17 @@ import VariablePanel from '../variable/VariablePanel.vue'
 
 const props = defineProps({
   dataFileName: { type: String, default: '' },
+  activeResult: { type: Object, default: null },
+  activeHistoryIndex: { type: Number, default: -1 },
   hasData: { type: Boolean, default: false },
+  historyItems: { type: Array, default: () => [] },
   selectedVars: { type: Array, default: () => [] },
   sessionId: { type: String, default: '' },
   totalRows: { type: Number, default: 0 },
   variables: { type: Array, default: () => [] },
 })
 
-defineEmits(['deselect-variable', 'drag-end', 'drag-start', 'go-mydata', 'select-range', 'select-variable', 'upload'])
+const emit = defineEmits(['delete-history', 'deselect-variable', 'drag-end', 'drag-start', 'go-mydata', 'history-saved', 'rename-history', 'select-history', 'select-range', 'select-variable', 'upload'])
 
 const chartTypes = [
   { value: 'bar', label: '柱状图' },
@@ -210,14 +262,18 @@ const xyTypes = new Set(['scatter', 'line'])
 const groupedTypes = new Set(['grouped_bar', 'grouped_boxplot'])
 
 const chartType = ref('bar')
-const chartTypeQuery = ref('')
-const chartGroupExpanded = ref(true)
 const slotValues = reactive({ x: '', y: '', group: '' })
 const options = reactive({ title: '', bins: '', sort: 'count_desc', show_labels: true })
 const chart = ref(null)
 const warnings = ref([])
 const errorMessage = ref('')
 const loading = ref(false)
+const saving = ref(false)
+const chartRenderKey = ref(0)
+const hoveredHistoryIdx = ref(-1)
+const historyExpanded = ref(false)
+const historyMenuIdx = ref(-1)
+const historyMenuStyle = reactive({ left: '0px', top: '0px' })
 
 const {
   calcBox,
@@ -253,17 +309,34 @@ const {
 const usedVars = computed(() => new Set([slotValues.x, slotValues.y, slotValues.group].filter(Boolean)))
 const numericVariables = computed(() => props.variables.filter(variable => variable.type === 'numeric'))
 const categoryVariables = computed(() => props.variables.filter(variable => variable.type !== 'numeric'))
-const filteredChartTypes = computed(() => {
-  const query = chartTypeQuery.value.trim().toLowerCase()
-  if (!query) return chartTypes
-  return chartTypes.filter(item => item.label.toLowerCase().includes(query) || item.value.toLowerCase().includes(query))
-})
 const needsX = computed(() => categoryTypes.has(chartType.value) || numericTypes.has(chartType.value) || xyTypes.has(chartType.value))
 const needsY = computed(() => xyTypes.has(chartType.value) || groupedTypes.has(chartType.value))
 const needsGroup = computed(() => groupedTypes.has(chartType.value))
 const xLabel = computed(() => categoryTypes.has(chartType.value) ? '分类变量' : '变量X')
 const xCandidates = computed(() => (categoryTypes.has(chartType.value) ? categoryVariables.value : numericVariables.value))
 const supportsSort = computed(() => categoryTypes.has(chartType.value) || chartType.value === 'grouped_bar')
+const assignedSlotChips = computed(() => [
+  { key: 'group', name: slotValues.group },
+  { key: 'x', name: slotValues.x },
+  { key: 'y', name: slotValues.y },
+].filter(item => item.name))
+const selectedVariableTypes = computed(() => {
+  const values = [slotValues.x, slotValues.y, slotValues.group]
+    .map(variableByName)
+    .filter(Boolean)
+  return {
+    hasCategory: values.some(variable => variable.type !== 'numeric'),
+    numericCount: values.filter(variable => variable.type === 'numeric').length,
+  }
+})
+const recommendedChartTypes = computed(() => {
+  const { hasCategory, numericCount } = selectedVariableTypes.value
+  if (hasCategory && numericCount) return chartTypes.filter(item => ['grouped_bar', 'grouped_boxplot'].includes(item.value))
+  if (numericCount >= 2) return chartTypes.filter(item => ['scatter', 'line'].includes(item.value))
+  if (numericCount === 1) return chartTypes.filter(item => ['histogram', 'boxplot'].includes(item.value))
+  if (hasCategory) return chartTypes.filter(item => ['bar', 'horizontal_bar', 'pie', 'donut'].includes(item.value))
+  return []
+})
 const canPreview = computed(() => {
   if (!props.hasData || !props.sessionId) return false
   if (needsX.value && !slotValues.x) return false
@@ -274,6 +347,22 @@ const canPreview = computed(() => {
 
 watch(() => props.selectedVars, (names) => {
   if (Array.isArray(names) && names.length) assignVariables(names)
+}, { deep: true })
+
+watch(() => props.activeResult, (result) => {
+  const savedChart = extractSavedChart(result)
+  if (!savedChart) {
+    if (result) {
+      chart.value = null
+      warnings.value = []
+      errorMessage.value = '这条绘图记录缺少图表数据，请删除后重新保存。'
+    }
+    return
+  }
+  chart.value = savedChart
+  warnings.value = result?.description ? String(result.description).split('\n').filter(Boolean) : []
+  errorMessage.value = ''
+  chartRenderKey.value += 1
 }, { deep: true })
 
 watch(chartType, () => {
@@ -297,6 +386,9 @@ function assignVariables(names) {
   const list = names.map(variableByName).filter(Boolean)
   const numeric = list.filter(variable => variable.type === 'numeric')
   const category = list.filter(variable => variable.type !== 'numeric')
+  slotValues.x = ''
+  slotValues.y = ''
+  slotValues.group = ''
   if (category.length && numeric.length) {
     chartType.value = groupedTypes.has(chartType.value) ? chartType.value : 'grouped_bar'
     slotValues.group = category[0].name
@@ -320,12 +412,49 @@ function assignVariables(names) {
   }
 }
 
+function chartTypeUsable(type) {
+  const { hasCategory, numericCount } = selectedVariableTypes.value
+  if (groupedTypes.has(type)) return hasCategory && numericCount >= 1
+  if (xyTypes.has(type)) return numericCount >= 2
+  if (numericTypes.has(type)) return numericCount >= 1
+  if (categoryTypes.has(type)) return hasCategory
+  return false
+}
+
+function selectChartType(type) {
+  if (!chartTypeUsable(type) && props.hasData) return
+  chartType.value = type
+}
+
 function resetSlotsForType() {
   chart.value = null
   warnings.value = []
   errorMessage.value = ''
+  chartRenderKey.value += 1
   if (categoryTypes.has(chartType.value) && slotValues.x && variableByName(slotValues.x)?.type === 'numeric') slotValues.x = ''
   if ((numericTypes.has(chartType.value) || xyTypes.has(chartType.value)) && slotValues.x && variableByName(slotValues.x)?.type !== 'numeric') slotValues.x = ''
+}
+
+function clearSlot(key) {
+  const removedName = slotValues[key]
+  slotValues[key] = ''
+  chart.value = null
+  warnings.value = []
+  errorMessage.value = ''
+  chartRenderKey.value += 1
+  if (removedName) emit('deselect-variable', removedName)
+}
+
+function clearAllSlots() {
+  const removedNames = Array.from(new Set([slotValues.x, slotValues.y, slotValues.group].filter(Boolean)))
+  slotValues.x = ''
+  slotValues.y = ''
+  slotValues.group = ''
+  chart.value = null
+  warnings.value = []
+  errorMessage.value = ''
+  chartRenderKey.value += 1
+  removedNames.forEach(name => emit('deselect-variable', name))
 }
 
 function onDropVariables(event) {
@@ -334,6 +463,52 @@ function onDropVariables(event) {
     .map(name => name.trim())
     .filter(Boolean)
   if (names.length) assignVariables(names)
+}
+
+function selectHistory(idx) {
+  historyMenuIdx.value = -1
+  historyExpanded.value = false
+  emit('select-history', idx)
+}
+
+function onLeaveHistoryChip(idx) {
+  if (historyMenuIdx.value !== idx) hoveredHistoryIdx.value = -1
+}
+
+function openHistoryMenu(idx, event) {
+  historyMenuIdx.value = idx
+  hoveredHistoryIdx.value = idx
+  historyMenuStyle.left = `${event.clientX}px`
+  historyMenuStyle.top = `${event.clientY}px`
+}
+
+function toggleHistoryMenu(idx, event) {
+  if (historyMenuIdx.value === idx) {
+    historyMenuIdx.value = -1
+    return
+  }
+  const rect = event.currentTarget.getBoundingClientRect()
+  historyMenuIdx.value = idx
+  hoveredHistoryIdx.value = idx
+  historyMenuStyle.left = `${rect.left}px`
+  historyMenuStyle.top = `${rect.bottom + 6}px`
+}
+
+function renameHistory() {
+  if (historyMenuIdx.value < 0) return
+  emit('rename-history', historyMenuIdx.value)
+  historyMenuIdx.value = -1
+}
+
+function deleteHistory() {
+  if (historyMenuIdx.value < 0) return
+  emit('delete-history', historyMenuIdx.value)
+  historyMenuIdx.value = -1
+}
+
+function deleteHistoryAt(idx) {
+  historyMenuIdx.value = -1
+  emit('delete-history', idx)
 }
 
 async function loadPreview() {
@@ -357,12 +532,53 @@ async function loadPreview() {
     })
     chart.value = result.chart
     warnings.value = result.warnings || []
+    chartRenderKey.value += 1
   } catch (error) {
     chart.value = null
     warnings.value = []
     errorMessage.value = error.message || '图表生成失败'
+    chartRenderKey.value += 1
   } finally {
     loading.value = false
+  }
+}
+
+function extractSavedChart(result) {
+  const chartSection = (result?.sections || []).find(section => section?.type === 'charts' && Array.isArray(section.charts))
+  return chartSection?.charts?.[0] || null
+}
+
+async function saveCurrentVisualization() {
+  if (!chart.value && canPreview.value) {
+    await loadPreview()
+  }
+  if (!chart.value || saving.value) return
+  saving.value = true
+  try {
+    await api.saveVisualization(props.sessionId, {
+      chart: chart.value,
+      title: chart.value.title || options.title || '可视化图表',
+      warnings: warnings.value,
+      config: {
+        chart_type: chartType.value,
+        variables: {
+          x: slotValues.x || null,
+          y: slotValues.y || null,
+          group: slotValues.group || null,
+        },
+        options: {
+          title: options.title || '',
+          bins: options.bins || '',
+          sort: options.sort,
+          show_labels: options.show_labels,
+        },
+      },
+    })
+    emit('history-saved')
+  } catch (error) {
+    alert('保存记录失败: ' + (error.message || '未知错误'))
+  } finally {
+    saving.value = false
   }
 }
 </script>

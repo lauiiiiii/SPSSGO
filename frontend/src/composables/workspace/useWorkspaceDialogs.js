@@ -6,6 +6,7 @@ export function useWorkspaceDialogs() {
     title: '',
     message: '',
     type: '',
+    context: '',
     targetId: '',
     targetDatasetId: null,
     targetIndex: -1,
@@ -17,6 +18,7 @@ export function useWorkspaceDialogs() {
     title: '',
     value: '',
     targetId: '',
+    context: '',
     targetIndex: -1,
   })
 
@@ -25,6 +27,7 @@ export function useWorkspaceDialogs() {
     confirmDialog.title = ''
     confirmDialog.message = ''
     confirmDialog.type = ''
+    confirmDialog.context = ''
     confirmDialog.targetId = ''
     confirmDialog.targetDatasetId = null
     confirmDialog.targetIndex = -1
@@ -36,25 +39,28 @@ export function useWorkspaceDialogs() {
     renameDialog.title = ''
     renameDialog.value = ''
     renameDialog.targetId = ''
+    renameDialog.context = ''
     renameDialog.targetIndex = -1
   }
 
-  function openConfirmDialog({ message, targetDatasetId = null, targetId = '', targetIndex = -1, title, type }) {
+  function openConfirmDialog({ context = '', message, targetDatasetId = null, targetId = '', targetIndex = -1, title, type }) {
     confirmDialog.visible = true
     confirmDialog.title = title
     confirmDialog.message = message
     confirmDialog.type = type
+    confirmDialog.context = context
     confirmDialog.targetId = targetId
     confirmDialog.targetDatasetId = targetDatasetId
     confirmDialog.targetIndex = targetIndex
     confirmDialog.suppressForHour = false
   }
 
-  function openRenameDialog({ targetId = '', targetIndex = -1, title, value = '' }) {
+  function openRenameDialog({ context = '', targetId = '', targetIndex = -1, title, value = '' }) {
     renameDialog.visible = true
     renameDialog.title = title
     renameDialog.value = value
     renameDialog.targetId = targetId
+    renameDialog.context = context
     renameDialog.targetIndex = targetIndex
   }
 

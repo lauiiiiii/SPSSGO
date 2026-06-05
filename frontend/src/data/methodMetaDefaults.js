@@ -310,24 +310,56 @@ export function normalizeMethodMetaMap(rawMethods) {
       label: '链式中介',
       category: '回归&因果分析包',
       order: 50,
-      statusLabel: '待对齐',
+      slots: [
+        { key: 'y', label: '变量Y', type: 'single', accept: 'numeric', hint: '拖入因变量Y' },
+        { key: 'x', label: '变量X', type: 'multiple', accept: 'numeric', min: 1, hint: '拖入变量X' },
+        { key: 'mediators', label: '链式中介变量M', type: 'multiple', accept: 'numeric', min: 2, hint: '按链式顺序拖入中介变量M' },
+        { key: 'controls', label: '控制变量', type: 'multiple', accept: 'numeric', min: 0, hint: '拖入控制变量' },
+      ],
+      options: [
+        {
+          key: 'bootstrap_reps',
+          label: 'bootstrap抽样次数',
+          type: 'select',
+          default: 'auto',
+          choices: [
+            { value: 'auto', label: '自动' },
+            { value: '1000', label: '1000' },
+            { value: '500', label: '500' },
+            { value: '2000', label: '2000' },
+            { value: '5000', label: '5000' },
+          ],
+        },
+        {
+          key: 'bootstrap_method',
+          label: 'bootstrap类型',
+          type: 'select',
+          default: 'percentile',
+          choices: [
+            { value: 'percentile', label: '百分位bootstrap法' },
+            { value: 'bias_corrected', label: '偏差校正bootstrap法' },
+          ],
+        },
+      ],
+      statusLabel: '',
       aliases: [...(methods.serial_mediation.aliases || []), '链式中介效应'],
     }
   }
-  methods.moderated_mediation_reserved = {
-    label: '调节中介',
-    category: '回归&因果分析包',
-    description: '调节中介模型入口预留，统计口径对齐后开放执行。',
-    order: 60,
-    slots: [],
-    options: [],
-    reserved: true,
-    statusLabel: '待对齐',
+  if (methods.moderated_mediation) {
+    methods.moderated_mediation = {
+      ...methods.moderated_mediation,
+      label: '调节中介',
+      category: '回归&因果分析包',
+      description: '检验调节变量Z是否改变X通过中介变量M影响Y的间接效应。',
+      order: 60,
+      statusLabel: '',
+      aliases: [...(methods.moderated_mediation.aliases || []), '调节中介作用', '调节中介作用分析'],
+    }
   }
 
   for (const [key, method] of Object.entries(methods)) {
     if (!pendingAlignmentCategories.has(method?.category)) continue
-    methods[key] = { ...method, statusLabel: method.statusLabel || '待对齐' }
+    methods[key] = { ...method, statusLabel: method.statusLabel ?? '待对齐' }
   }
 
   return methods

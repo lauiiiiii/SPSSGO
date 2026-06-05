@@ -3,6 +3,11 @@ export function formatBin(value) {
   return Number.isInteger(value) ? value : parseFloat(value.toFixed(4))
 }
 
+function compactNumber(value) {
+  const num = Number(value || 0)
+  return num.toFixed(2).replace(/\.?0+$/, '')
+}
+
 export function calcHistogramLayout(data) {
   const { binEdges, counts } = data
   const W = 460, H = 230
