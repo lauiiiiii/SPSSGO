@@ -1452,27 +1452,33 @@ Authorization: Bearer <access_token>
 ### `one_sample_wilcoxon` - 单样本Wilcoxon符号秩检验
 
 - 分类：数据检验
-- 说明：检验样本中位数是否显著偏离给定检验值
+- 说明：检验一个或多个样本中位数是否显著偏离给定检验值
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variable | 检验变量 | 单选，定量变量 | 放入需要检验的变量 |
+| test_vars | 检验变量 | 多选，定量变量，至少 1 个 | 放入需要逐个检验的定量变量 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| test_value | 检验值 | "0" | 0, 1, 3, 5 |  |
+| test_value | 检验值 | "0" | 任意数字 | 自动选择关闭时生效，可输入任意数字。 |
+| auto_test_value | 自动选择检验值 | true |  | 勾选后每个变量使用自身均值作为检验值，和 SPSSPRO 的自动检验值口径保持一致。 |
+| output_normality | 输出正态性检验图 | true |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variable": "数值变量1",
-  "test_value": "0"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "test_value": "0",
+  "auto_test_value": true,
+  "output_normality": true
 }
 ```
 
@@ -1480,34 +1486,45 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variable": "数值变量1",
-  "test_value": "0"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "test_value": "0",
+  "auto_test_value": true,
+  "output_normality": true
 }
 ```
 
 ### `wilcoxon_signed_rank_test` - 配对样本Wilcoxon符号秩检验
 
 - 分类：数据检验
-- 说明：比较两个配对样本在中位数水平上的差异
+- 说明：比较一组或多组配对样本在中位数水平上的差异
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 变量1 | 单选，定量变量 | 放入第一个配对变量 |
-| var2 | 变量2 | 单选，定量变量 | 放入第二个配对变量 |
+| var1 | 变量X1 | 多选，定量变量，至少 1 个 | 放入第一组配对测量变量 |
+| var2 | 变量X2 | 多选，定量变量，至少 1 个 | 放入第二组配对测量变量，数量和顺序需与变量X1一致 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| output_normality | 输出正态性检验图 | true |  | 输出每组配对差值的正态性检验和直方图，便于和配对样本T检验互相参照。 |
 
 前端槽位示例：
 
 ```json
 {
-  "var1": "数值变量1",
-  "var2": "数值变量1"
+  "var1": [
+    "数值变量1"
+  ],
+  "var2": [
+    "数值变量2"
+  ],
+  "output_normality": true
 }
 ```
 
@@ -1515,34 +1532,44 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "var1": "数值变量1",
-  "var2": "数值变量1"
+  "var1": [
+    "数值变量1"
+  ],
+  "var2": [
+    "数值变量2"
+  ],
+  "output_normality": true
 }
 ```
 
 ### `mann_whitney_u_test` - 独立样本MannWhitney检验
 
 - 分类：数据检验
-- 说明：比较两个独立组在秩次分布上的差异
+- 说明：比较两个独立组在一个或多个定量变量上的秩次分布差异
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入二分类分组变量 |
-| test_var | 检验变量 | 单选，定量变量 | 放入检验变量 |
+| group_var | 变量X | 单选，任意变量 | 放入分组变量；2组直接检验，3组及以上自动两两比较 |
+| test_vars | 变量Y | 多选，定量变量，至少 1 个 | 放入需要逐个检验的定量变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| output_normality | 输出正态性检验图 | true |  | 输出各检验变量的正态性检验和直方图，便于和独立样本T检验互相参照。 |
 
 前端槽位示例：
 
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "output_normality": true
 }
 ```
 
@@ -1551,33 +1578,44 @@ Authorization: Bearer <access_token>
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1"
+  "test_vars": [
+    "数值变量1"
+  ],
+  "output_normality": true
 }
 ```
 
 ### `kruskal_wallis_test` - 多独立样本Kruskal-Wallis检验
 
 - 分类：数据检验
-- 说明：比较三个及以上独立组在秩次分布上的差异
+- 说明：比较独立组在一个或多个定量变量上的秩次分布差异
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入分组变量（3组及以上） |
-| test_var | 检验变量 | 单选，定量变量 | 放入检验变量 |
+| group_var | 变量X | 单选，定类变量 | 请输入分组变量 |
+| test_vars | 变量Y | 多选，定量变量 | 请输入变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| output_normality | 输出正态性检验图 | 布尔 | true | 输出各检验变量的正态性检验和直方图，便于和单因素方差分析互相参照。 |
+| pairwise_compare | 输出两两比较 | 布尔 | true | 整体检验显著时，可参考Mann-Whitney两两比较定位差异来源。 |
 
 前端槽位示例：
 
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1"
+  "test_vars": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "output_normality": true,
+  "pairwise_compare": true
 }
 ```
 
@@ -1586,7 +1624,12 @@ Authorization: Bearer <access_token>
 ```json
 {
   "group_var": "分类变量1",
-  "test_var": "数值变量1"
+  "test_vars": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "output_normality": true,
+  "pairwise_compare": true
 }
 ```
 
@@ -1600,11 +1643,14 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 配对变量 | 多选，定量变量，至少 3 个 | 放入三个及以上配对变量 |
+| variables | 变量X | 多选，任意变量，至少 3 个 | 放入3个及以上配对测量变量；量表题会按数值转换后检验 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| output_normality | 输出正态性检验图 | true |  | 输出各变量正态性检验和直方图，便于和重复测量方差分析互相参照。 |
+| pairwise_compare | 输出两两比较 | true |  | Friedman显著时，可参考Wilcoxon两两比较定位差异来源。 |
 
 前端槽位示例：
 
@@ -1614,7 +1660,9 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "output_normality": true,
+  "pairwise_compare": true
 }
 ```
 
@@ -1626,7 +1674,9 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "output_normality": true,
+  "pairwise_compare": true
 }
 ```
 
