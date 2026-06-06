@@ -10,6 +10,15 @@ function getToken() {
   return localStorage.getItem('spssgo_token') || ''
 }
 
+export function clearAuthSession() {
+  localStorage.removeItem('spssgo_token')
+  localStorage.removeItem('spssgo_refresh_token')
+  localStorage.removeItem('spssgo_user')
+  localStorage.removeItem('spssgo_role')
+  localStorage.removeItem('spssgo_session_id')
+  localStorage.removeItem('spssgo_visualization_session_id')
+}
+
 function authHeaders(extra = {}) {
   const token = getToken()
   const headers = { ...extra }
@@ -19,12 +28,7 @@ function authHeaders(extra = {}) {
 
 export function handleAuthError() {
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
-  localStorage.removeItem('spssgo_token')
-  localStorage.removeItem('spssgo_refresh_token')
-  localStorage.removeItem('spssgo_user')
-  localStorage.removeItem('spssgo_role')
-  localStorage.removeItem('spssgo_session_id')
-  localStorage.removeItem('spssgo_visualization_session_id')
+  clearAuthSession()
   const next = current && current !== '/login' ? `/login?redirect=${encodeURIComponent(current)}` : '/login'
   window.location.href = next
 }
@@ -683,11 +687,7 @@ export function checkAuth() {
 }
 
 export function logout() {
-  localStorage.removeItem('spssgo_token')
-  localStorage.removeItem('spssgo_refresh_token')
-  localStorage.removeItem('spssgo_user')
-  localStorage.removeItem('spssgo_role')
-  localStorage.removeItem('spssgo_session_id')
+  clearAuthSession()
   window.location.href = '/login'
 }
 

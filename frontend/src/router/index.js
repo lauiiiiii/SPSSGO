@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { checkToken, clearAuthSession } from '@/api.js'
 
 export const routePrefetchTtl = [69, 94, 77, 95, 86, 88, 55]
 
@@ -33,14 +34,27 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const token = getToken()
 
   if ((to.name === 'workspace' || to.name === 'admin') && !token) {
     return buildLoginRedirect(to)
   }
 
+  if ((to.name === 'workspace' || to.name === 'admin') && token) {
+    const ok = await checkToken(token).catch(() => false)
+    if (!ok) {
+      clearAuthSession()
+      return buildLoginRedirect(to)
+    }
+  }
+
   if (to.name === 'login' && token) {
+    const ok = await checkToken(token).catch(() => false)
+    if (!ok) {
+      clearAuthSession()
+      return true
+    }
     const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/workspace'
     return redirect
   }

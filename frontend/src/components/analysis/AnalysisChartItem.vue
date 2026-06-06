@@ -1,5 +1,5 @@
 <template>
-  <div class="ap-chart-item">
+  <div class="ap-chart-item" :class="{ 'ap-chart-item--full-row': isFullRowChart }">
     <div class="ap-chart-caption">{{ displayTitle }}</div>
     <div v-if="supportsLabelMode || hasMetricSwitcher" class="ap-chart-label-toolbar">
       <select
@@ -81,7 +81,7 @@
       </template>
       <template v-else-if="chart.chartType === 'boxplot'">
         <template v-for="boxplotData in [calcBox(chart.data)]" :key="0">
-          <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxplotData.W} ${boxplotData.H}`" :width="boxplotData.W" :height="boxplotData.H"
+          <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxplotData.W} ${boxplotData.H}`" :width="Math.round(boxplotData.W * boxplotChartZoom)" :height="Math.round(boxplotData.H * boxplotChartZoom)"
             @mouseleave="$emit('hide-tip')">
             <rect :x="boxplotData.ml" :y="boxplotData.mt" :width="boxplotData.W-boxplotData.ml-20" :height="boxplotData.ph" fill="white"/>
             <line v-for="(tick, tickIndex) in boxplotData.yTicks" :key="'yg'+tickIndex"
@@ -112,7 +112,7 @@
       </template>
       <template v-else-if="isGroupedBoxplotChart">
         <template v-for="boxData in [calcGroupedBox(chart.data)]" :key="0">
-          <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxData.W} ${boxData.H}`" :width="boxData.W" :height="boxData.H"
+          <svg class="ap-chart-svg ap-chart-svg--box" :viewBox="`0 0 ${boxData.W} ${boxData.H}`" :width="Math.round(boxData.W * boxplotChartZoom)" :height="Math.round(boxData.H * boxplotChartZoom)"
             @mouseleave="$emit('hide-tip')">
             <rect :x="boxData.ml" :y="boxData.mt" :width="boxData.pw" :height="boxData.ph" fill="white"/>
             <line v-for="(tick, tickIndex) in boxData.yTicks" :key="'gbyg'+tickIndex"
@@ -911,7 +911,7 @@
         {{ option.label }}
       </button>
     </div>
-    <div v-if="isMetricComparisonChart" class="ap-chart-mode-bar">
+    <div v-if="isMetricComparisonChart && metricModeOptions.length > 1" class="ap-chart-mode-bar">
       <button
         v-for="option in metricModeOptions"
         :key="option.value"
@@ -979,6 +979,16 @@
         <span>尺寸：</span>
         <input
           v-model.number="metricChartZoom"
+          type="range"
+          min="0.7"
+          max="1.8"
+          step="0.05"
+        />
+      </label>
+      <label v-if="isBoxplotChart" class="ap-chart-size-control">
+        <span>缩放：</span>
+        <input
+          v-model.number="boxplotChartZoom"
           type="range"
           min="0.7"
           max="1.8"
@@ -1186,7 +1196,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   calcBox: { type: Function, required: true },
@@ -1217,6 +1227,7 @@ const heatmapSize = ref(1)
 const kanoChartZoom = ref(1)
 const modelPathZoom = ref(1)
 const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
+const boxplotChartZoom = ref(1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(defaultShowDataLabels(props.chart))
@@ -1234,13 +1245,21 @@ const isCategoryChart = computed(() => categoryChartTypes.has(props.chart.chartT
 const isCorrespondenceMap = computed(() => props.chart.chartType === 'correspondence_map')
 const isCrosstabChart = computed(() => props.chart.chartType === 'crosstab_distribution')
 const isGroupedBoxplotChart = computed(() => props.chart.chartType === 'grouped_boxplot')
+const isBoxplotChart = computed(() => props.chart.chartType === 'boxplot' || isGroupedBoxplotChart.value)
 const isEquivalenceIntervalChart = computed(() => props.chart.chartType === 'equivalence_interval')
 const isCoefficientIntervalChart = computed(() => props.chart.chartType === 'coefficient_interval')
 const isHeatmapChart = computed(() => ['factor_loading_heatmap', 'correlation_heatmap'].includes(props.chart.chartType))
 const isKanoBetterWorseChart = computed(() => props.chart.chartType === 'kano_better_worse')
 const isMetricComparisonChart = computed(() => props.chart.chartType === 'metric_comparison')
+const isExpectedFrequencyMetricChart = computed(() => {
+  if (!isMetricComparisonChart.value) return false
+  const metrics = props.chart.data?.metrics || {}
+  return Object.prototype.hasOwnProperty.call(metrics, '实际频数')
+    && Object.prototype.hasOwnProperty.call(metrics, '期望频数')
+})
 const isModelPathChart = computed(() => props.chart.chartType === 'model_path')
 const isScatterPlotChart = computed(() => props.chart.chartType === 'scatter_plot')
+const isFullRowChart = computed(() => !!(props.chart.fullRow || props.chart.data?.fullRow))
 const supportsDataLabels = computed(() => (
   isCrosstabChart.value
   || isMetricComparisonChart.value
@@ -1266,12 +1285,38 @@ const categoryTitle = computed(() => {
   const label = option?.label || '柱状图'
   return `${props.chart.varName || props.chart.data?.variable || props.chart.title}${label}`
 })
-const metricModeOptions = [
+const DEFAULT_METRIC_MODE_OPTIONS = [
   { value: 'line', label: '折线图' },
   { value: 'bar', label: '柱形图' },
   { value: 'horizontalBar', label: '条形图' },
   { value: 'radar', label: '雷达图' },
 ]
+const metricModeOptions = computed(() => {
+  if (isExpectedFrequencyMetricChart.value) {
+    return [
+      { value: 'bar', label: '柱形图' },
+      { value: 'line', label: '折线图' },
+    ]
+  }
+  const modes = props.chart.data?.displayModes
+  if (!Array.isArray(modes) || !modes.length) return DEFAULT_METRIC_MODE_OPTIONS
+  return modes
+    .map(mode => ({
+      value: mode.value || mode.key,
+      label: mode.label || mode.value || mode.key,
+    }))
+    .filter(mode => mode.value)
+})
+watch(
+  metricModeOptions,
+  options => {
+    const allowed = options.map(option => option.value)
+    if (!allowed.includes(metricMode.value)) {
+      metricMode.value = allowed[0] || 'bar'
+    }
+  },
+  { immediate: true },
+)
 const metricChartData = computed(() => {
   const data = props.chart.data
   if (!hasMetricSwitcher.value || !selectedMetric.value) return data
@@ -1308,6 +1353,15 @@ const chartWrapStyle = computed(() => {
       height: `${Math.round(baseHeight * metricChartZoom.value)}px`,
     }
   }
+  if (isBoxplotChart.value) {
+    const layout = isGroupedBoxplotChart.value
+      ? props.calcGroupedBox(props.chart.data || {})
+      : props.calcBox(props.chart.data || {})
+    return {
+      width: `${Math.round(layout.W * boxplotChartZoom.value)}px`,
+      height: `${Math.round(layout.H * boxplotChartZoom.value)}px`,
+    }
+  }
   if (isCoefficientIntervalChart.value) {
     const layout = calcCoefficientInterval(props.chart.data)
     return {
@@ -1341,20 +1395,40 @@ const chartWrapStyle = computed(() => {
   }
 })
 const metricComparisonTitle = computed(() => {
-  const option = metricModeOptions.find(item => item.value === metricMode.value)
+  const option = metricModeOptions.value.find(item => item.value === metricMode.value)
   const data = metricChartData.value
   if (data?.displayTitle) return data.displayTitle
   return `${data?.metric || props.chart.title}${option?.label || '柱形图'}`
 })
-const crosstabModeOptions = [
+const DEFAULT_CROSSTAB_MODE_OPTIONS = [
   { value: 'heatmap', label: '热力图' },
   { value: 'stackedColumn', label: '堆积柱形图' },
   { value: 'column', label: '柱形图' },
   { value: 'stackedBar', label: '堆积条形图' },
   { value: 'bar', label: '条形图' },
 ]
+const crosstabModeOptions = computed(() => {
+  const modes = props.chart.data?.displayModes
+  if (!Array.isArray(modes) || !modes.length) return DEFAULT_CROSSTAB_MODE_OPTIONS
+  return modes
+    .map(mode => ({
+      value: mode.value || mode.key,
+      label: mode.label || mode.value || mode.key,
+    }))
+    .filter(mode => mode.value)
+})
+watch(
+  crosstabModeOptions,
+  options => {
+    const allowed = options.map(option => option.value)
+    if (!allowed.includes(crosstabMode.value)) {
+      crosstabMode.value = allowed[0] || 'stackedColumn'
+    }
+  },
+  { immediate: true },
+)
 const crosstabTitle = computed(() => {
-  const option = crosstabModeOptions.find(item => item.value === crosstabMode.value)
+  const option = crosstabModeOptions.value.find(item => item.value === crosstabMode.value)
   if (crosstabMode.value === 'heatmap' && String(props.chart.title || '').includes('热力图')) {
     return props.chart.title
   }

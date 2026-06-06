@@ -149,23 +149,23 @@ const extendedStatChildren = [
   }),
   buildAnalysisChild('analysis-one-sample-wilcoxon', '单样本Wilcoxon符号秩检验', {
     intro: '单样本 Wilcoxon 符号秩检验适用于样本不满足正态性假设时，对给定中位数进行非参数检验。',
-    io: ['输入：1 个定量变量和检验值。', '输出：Wilcoxon 统计量和显著性结果。'],
+    io: ['输入：1 个或多个定量变量，可手动输入检验值或自动选择检验值。', '输出：每个变量独立对比检验值的 Wilcoxon 统计量、正态性辅助结果和显著性结论。'],
   }),
   buildAnalysisChild('analysis-paired-wilcoxon', '配对样本Wilcoxon符号秩检验', {
-    intro: '配对样本 Wilcoxon 符号秩检验适用于两个配对样本的非参数比较。',
-    io: ['输入：2 个配对变量。', '输出：W 值和显著性结果。'],
+    intro: '配对样本 Wilcoxon 符号秩检验适用于同一对象在两个条件、两个时间点或两列配对测量之间的非参数比较。',
+    io: ['输入：一组或多组等长配对定量变量。', '输出：每组配对的中位数、四分位数、中位数差值、Z 值、p 值、差值正态性辅助结果和差异幅度指标。'],
   }),
   buildAnalysisChild('analysis-mann-whitney', '独立样本MannWhitney检验', {
-    intro: 'Mann-Whitney U 检验适用于两个独立样本的非参数比较。',
-    io: ['输入：1 个二分类分组变量和 1 个检验变量。', '输出：U 值和显著性结果。'],
+    intro: 'Mann-Whitney U 检验适用于独立组在定量变量上的非参数比较；2组直接检验，3组及以上自动进行两两比较。',
+    io: ['输入：1 个分组变量和 1 个或多个定量检验变量。', '输出：每个变量在各组别组合下的中位数、秩均值、U 值、Z 值、p 值、正态性辅助结果和差异幅度指标。'],
   }),
   buildAnalysisChild('analysis-kruskal', '多独立样本Kruskal-Wallis检验', {
-    intro: 'Kruskal-Wallis 检验适用于三个及以上独立样本的非参数比较。',
-    io: ['输入：1 个分组变量和 1 个检验变量。', '输出：H 值和显著性结果。'],
+    intro: 'Kruskal-Wallis 检验适用于独立组在定量变量上的非参数比较，可作为方差分析的非参数替代。',
+    io: ['输入：1 个分组变量和 1 个或多个定量检验变量。', '输出：正态性辅助、分组描述统计、中位数趋势图、分组箱线图、Kruskal-Wallis H 检验、ε²效应量和可选两两比较结果。'],
   }),
   buildAnalysisChild('analysis-friedman', '多配对样本Friedman检验', {
-    intro: 'Friedman 检验适用于三个及以上配对样本的非参数比较。',
-    io: ['输入：3 个及以上配对变量。', '输出：Friedman χ² 和显著性结果。'],
+    intro: 'Friedman 检验适用于同一批样本在三个及以上时间点、条件或题项上的非参数比较，量表题会按数值转换后检验。',
+    io: ['输入：3 个及以上配对测量变量。', '输出：正态性辅助、描述统计、箱线图、中位数趋势图、Friedman χ²、Kendall’s W 和可选两两比较结果。'],
   }),
   buildAnalysisChild('analysis-gof-chi', '卡方拟合优度检验', {
     intro: '卡方拟合优度检验用于判断样本频数分布是否符合某个理论分布。',

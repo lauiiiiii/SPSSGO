@@ -70,6 +70,11 @@ export function useAppBootstrap({
 
   onMounted(async () => {
     if (!api.checkAuth()) return
+    const authenticated = await api.checkToken().catch(() => false)
+    if (!authenticated) {
+      api.handleAuthError()
+      return
+    }
     await loadMethods()
     await restoreSavedSession()
     await loadAllDataSets()

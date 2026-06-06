@@ -884,6 +884,57 @@
       </div>
     </template>
 
+    <template v-else-if="isGoodnessOfFitChiSquareMethod">
+      <div class="ap-gof-card">
+        <div v-if="displaySlots[0]" class="ap-slot-label">
+          放入
+          <span class="ap-accept-tag accept-categorical">[{{ getAcceptLabel(displaySlots[0]) }}]</span>
+          {{ displaySlots[0].label }}
+          <span class="ap-slot-constraint">（变量数=1）</span>
+          <span v-if="slotValues[displaySlots[0].key]?.length" class="ap-slot-count">{{ slotValues[displaySlots[0].key].length }}</span>
+        </div>
+        <AnalysisDropZone
+          v-if="displaySlots[0]"
+          :drag-over-slot="dragOverSlot"
+          :drag-preview-count="dragPreviewCount"
+          :empty-text="displaySlots[0].hint || '拖入变量到此区域'"
+          :get-var-type="getVarType"
+          :get-var-type-class="getVarTypeClass"
+          :slot="displaySlots[0]"
+          :slot-key="displaySlots[0].key"
+          :values="slotValues[displaySlots[0].key] || []"
+          zone-class="ap-gof-drop-zone"
+          @drag-over="$emit('drag-over', $event)"
+          @drag-leave="$emit('drag-leave')"
+          @drop-slot="(...args) => $emit('drop-slot', ...args)"
+          @remove-var="(...args) => $emit('remove-var', ...args)"
+        />
+
+        <div v-if="slotValues.variable?.length" class="ap-gof-ratio-grid">
+          <div class="ap-gof-ratio-head">分组</div>
+          <div class="ap-gof-ratio-head">期望比例(%)</div>
+          <template v-if="goodnessOfFitLoading">
+            <div class="ap-gof-loading">正在读取分组...</div>
+          </template>
+          <template v-else>
+            <template v-for="label in goodnessOfFitCategories" :key="label">
+              <input class="ap-gof-group-input" :value="label" disabled />
+              <div class="ap-gof-ratio-row">
+                <span>表示</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  :value="goodnessOfFitRatioValue(label)"
+                  @input="$emit('set-goodness-of-fit-ratio', label, $event.target.value)"
+                />
+              </div>
+            </template>
+          </template>
+        </div>
+      </div>
+    </template>
+
     <div
       v-else
       v-for="(slot, slotIndex) in displaySlots"
@@ -964,8 +1015,15 @@
               {{ option.label }}：
               <span v-if="option.hint" class="ap-option-help" :data-hint="option.hint">?</span>
             </label>
-            <select :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
-            <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
+            <input
+              v-if="option.type === 'number'"
+              type="number"
+              step="any"
+              :value="optionValues[option.key]"
+              @input="$emit('option-change', option.key, $event.target.value)"
+            />
+            <select v-else :value="optionValues[option.key]" @change="$emit('option-change', option.key, $event.target.value)">
+              <option v-for="choice in optionChoices(option)" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
             </select>
           </template>
         </div>
@@ -1004,7 +1062,10 @@ const props = defineProps({
   getFactorShortLabel: { type: Function, required: true },
   getVarType: { type: Function, required: true },
   getVarTypeClass: { type: Function, required: true },
+  goodnessOfFitCategories: { type: Array, default: () => [] },
+  goodnessOfFitLoading: { type: Boolean, default: false },
   isCfaMethod: { type: Boolean, default: false },
+  isGoodnessOfFitChiSquareMethod: { type: Boolean, default: false },
   isIndependentTMethod: { type: Boolean, default: false },
   isModeratedMediationMethod: { type: Boolean, default: false },
   isOneSampleEquivalenceMethod: { type: Boolean, default: false },
@@ -1045,6 +1106,7 @@ const emit = defineEmits([
   'reset',
   'select-factor',
   'select-second-order-model',
+  'set-goodness-of-fit-ratio',
   'show-report',
   'toggle-factor-menu',
   'toggle-second-order-member',
@@ -1057,6 +1119,7 @@ const equalSlotMethodLabels = new Set([
   '多选-单选（对比分析）',
   '单选-多选（对比分析）',
   '多变量方差分析',
+  '配对样本Wilcoxon符号秩检验',
 ])
 const usesEqualSlotHeights = computed(() => equalSlotMethodLabels.has(props.method?.label))
 const isNWayAnovaMethod = computed(() => props.method?.label === '多因素方差分析')
@@ -1210,6 +1273,11 @@ function getAcceptLabel(slot) {
   if (slot.accept === 'numeric') return '定量'
   if (slot.accept === 'categorical') return '定类'
   return slot.accept
+}
+
+function goodnessOfFitRatioValue(label) {
+  const values = props.optionValues.expected_ratios || {}
+  return values[String(label)] ?? ''
 }
 
 function slotConstraintText(slot) {

@@ -7,6 +7,15 @@ export function normalizeMethodMetaMap(rawMethods) {
     '高级回归 & 因果分析包',
     '高级回归&因果分析包',
   ])
+  const alignedMethodKeys = new Set([
+    'one_sample_wilcoxon',
+    'wilcoxon_signed_rank_test',
+    'mann_whitney_u_test',
+    'friedman_test',
+    'kruskal_wallis_test',
+    'goodness_of_fit_chi_square',
+    'cochrans_q_test',
+  ])
   const ensureSlotMethod = (key, patch) => {
     if (!methods[key]) {
       methods[key] = patch
@@ -359,7 +368,7 @@ export function normalizeMethodMetaMap(rawMethods) {
 
   for (const [key, method] of Object.entries(methods)) {
     if (!pendingAlignmentCategories.has(method?.category)) continue
-    methods[key] = { ...method, statusLabel: method.statusLabel ?? '待对齐' }
+    methods[key] = { ...method, statusLabel: method.statusLabel ?? (alignedMethodKeys.has(key) ? '' : '待对齐') }
   }
 
   return methods

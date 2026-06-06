@@ -76,6 +76,21 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
+    date: '2026-06-06',
+    type: 'feat',
+    title: '非参数检验全线重构与配置面板升级',
+    items: [
+      'Mann-Whitney U 检验全面重构，增强秩和计算、效应量输出与报告完整性',
+      'Wilcoxon 符号秩检验重构，增强配对秩差分析与描述统计',
+      '单样本 Wilcoxon 增强中位数偏离检验与置信区间报告',
+      'Kruskal-Wallis 检验增强多组秩和比较、事后多重比较集成与效应量',
+      'Friedman 检验重构多配对秩检验，增强 Kendall 和谐系数与事后比较',
+      'Cochran\'s Q 检验与拟合优度卡方检验输出完整性增强',
+      '配置面板升级：非参数检验参数联动与条件显示',
+      '新增 7 个非参数检验方法的完整测试用例',
+    ],
+  },
+  {
     date: '2026-06-05',
     type: 'feat',
     title: '中介效应全线 R 脚本升级与任务执行优化',

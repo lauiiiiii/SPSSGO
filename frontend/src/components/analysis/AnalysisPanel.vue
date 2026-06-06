@@ -90,7 +90,10 @@
         :get-factor-short-label="getFactorShortLabel"
         :get-var-type="getVarType"
         :get-var-type-class="getVarTypeClass"
+        :goodness-of-fit-categories="goodnessOfFitCategories"
+        :goodness-of-fit-loading="goodnessOfFitLoading"
         :is-cfa-method="isCfaMethod"
+        :is-goodness-of-fit-chi-square-method="isGoodnessOfFitChiSquareMethod"
         :is-independent-t-method="isIndependentTMethod"
         :is-one-sample-equivalence-method="isOneSampleEquivalenceMethod"
         :is-one-way-anova-method="isOneWayAnovaMethod"
@@ -125,6 +128,7 @@
         @drag-leave="onDragLeave"
         @drop-slot="onDrop"
         @remove-var="removeVar"
+        @set-goodness-of-fit-ratio="setGoodnessOfFitExpectedRatio"
         @option-change="setOptionValue"
         @rename-second-order-factor="setSecondOrderFactorName"
         @reset="handleReset"
@@ -213,7 +217,10 @@ const {
   factorMenuKey,
   firstOrderFactorChoices,
   getFactorShortLabel,
+  goodnessOfFitCategories,
+  goodnessOfFitLoading,
   isCfaMethod,
+  isGoodnessOfFitChiSquareMethod,
   isIndependentTMethod,
   isOneSampleEquivalenceMethod,
   isOneWayAnovaMethod,
@@ -236,6 +243,7 @@ const {
   resetSlots,
   selectFactor,
   selectSecondOrderModel,
+  setGoodnessOfFitExpectedRatio,
   setOptionValue,
   setSecondOrderFactorName,
   secondOrderModels,
@@ -244,7 +252,7 @@ const {
   toggleFactorMenu,
   toggleSecondOrderMember,
   updateSummaryOneWayGroup,
-} = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit)
+} = useAnalysisConfig(toRef(props, 'method'), toRef(props, 'methodKey'), emit, toRef(props, 'sessionId'))
 const {
   calcBox,
   calcGroupedBox,

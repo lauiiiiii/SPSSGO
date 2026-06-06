@@ -1,4 +1,5 @@
 import { computed, reactive, ref, watch } from 'vue'
+import * as api from '../../api.js'
 
 const CFA_METHOD_KEY = 'confirmatory_factor_analysis'
 const RELIABILITY_METHOD_KEY = 'reliability'
@@ -11,6 +12,7 @@ const ONE_SAMPLE_EQUIVALENCE_METHOD_KEY = 'one_sample_equivalence_test'
 const TWO_SAMPLE_EQUIVALENCE_METHOD_KEY = 'two_sample_equivalence_test'
 const PAIRED_EQUIVALENCE_METHOD_KEY = 'paired_equivalence_test'
 const MODERATED_MEDIATION_METHOD_KEY = 'moderated_mediation'
+const GOODNESS_OF_FIT_CHI_SQUARE_METHOD_KEY = 'goodness_of_fit_chi_square'
 const DYNAMIC_GROUP_CONFIGS = {
   [CFA_METHOD_KEY]: {
     addText: '+ 新建因子',
@@ -40,7 +42,7 @@ const DYNAMIC_GROUP_CONFIGS = {
   },
 }
 
-export function useAnalysisConfig(method, methodKey, emit) {
+export function useAnalysisConfig(method, methodKey, emit, sessionId = ref('')) {
   const slotValues = reactive({})
   const optionValues = reactive({})
   const dragOverSlot = ref(null)
@@ -52,6 +54,8 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const factorLabels = reactive({})
   const secondOrderModels = ref([])
   const activeSecondOrderKey = ref('second_order_1')
+  const goodnessOfFitCategories = ref([])
+  const goodnessOfFitLoading = ref(false)
 
   const dynamicGroupConfig = computed(() => DYNAMIC_GROUP_CONFIGS[methodKey.value] || null)
   const isCfaMethod = computed(() => Boolean(dynamicGroupConfig.value))
@@ -64,6 +68,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
   const isTwoSampleEquivalenceMethod = computed(() => methodKey.value === TWO_SAMPLE_EQUIVALENCE_METHOD_KEY)
   const isPairedEquivalenceMethod = computed(() => methodKey.value === PAIRED_EQUIVALENCE_METHOD_KEY)
   const isModeratedMediationMethod = computed(() => methodKey.value === MODERATED_MEDIATION_METHOD_KEY)
+  const isGoodnessOfFitChiSquareMethod = computed(() => methodKey.value === GOODNESS_OF_FIT_CHI_SQUARE_METHOD_KEY)
   const methodSlots = computed(() => method.value?.slots || [])
 
   const displaySlots = computed(() => {
@@ -120,6 +125,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
 
   const canExecute = computed(() => {
     if (!method.value) return false
+    if (isGoodnessOfFitChiSquareMethod.value) return goodnessOfFitReady()
     if (isIndependentTMethod.value) return independentTReady()
     if (isPairedTMethod.value) return pairedTReady()
     if (isSummaryTMethod.value) return summaryTReady()
@@ -235,6 +241,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     for (const key of Object.keys(slotValues)) delete slotValues[key]
     for (const key of Object.keys(optionValues)) delete optionValues[key]
     for (const key of Object.keys(factorLabels)) delete factorLabels[key]
+    goodnessOfFitCategories.value = []
     if (!nextMethod) return
 
     if (isSummaryTMethod.value) {
@@ -513,6 +520,16 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (key === 'second_order_model') syncSecondOrderMembers()
   }
 
+  function setGoodnessOfFitExpectedRatio(label, value) {
+    const current = optionValues.expected_ratios && typeof optionValues.expected_ratios === 'object'
+      ? optionValues.expected_ratios
+      : {}
+    optionValues.expected_ratios = {
+      ...current,
+      [String(label)]: value,
+    }
+  }
+
   function filledNumber(value, mode = 'any') {
     if (value === '' || value === null || value === undefined) return false
     const number = Number(value)
@@ -520,6 +537,10 @@ export function useAnalysisConfig(method, methodKey, emit) {
     if (mode === 'positive') return number > 0
     if (mode === 'non_negative') return number >= 0
     return true
+  }
+
+  function goodnessOfFitReady() {
+    return (slotValues.variable || []).length === 1
   }
 
   function summaryTReady() {
@@ -717,6 +738,39 @@ export function useAnalysisConfig(method, methodKey, emit) {
     resetConfigState(nextMethod)
   }, { immediate: true })
 
+  watch(
+    () => [isGoodnessOfFitChiSquareMethod.value, sessionId.value, slotValues.variable?.[0] || ''],
+    async ([enabled, sid, variable]) => {
+      if (!enabled || !sid || !variable) {
+        goodnessOfFitCategories.value = []
+        return
+      }
+      const requestKey = `${sid}:${variable}`
+      goodnessOfFitLoading.value = true
+      try {
+        const data = await api.getVariableValues(sid, variable)
+        if (`${sessionId.value}:${slotValues.variable?.[0] || ''}` !== requestKey) return
+        const values = (data.values || []).map(value => String(value))
+        goodnessOfFitCategories.value = values
+        const existing = optionValues.expected_ratios && typeof optionValues.expected_ratios === 'object'
+          ? optionValues.expected_ratios
+          : {}
+        const next = {}
+        values.forEach(value => {
+          next[value] = existing[value] ?? ''
+        })
+        optionValues.expected_ratios = next
+      } catch (_) {
+        goodnessOfFitCategories.value = []
+      } finally {
+        if (`${sessionId.value}:${slotValues.variable?.[0] || ''}` === requestKey) {
+          goodnessOfFitLoading.value = false
+        }
+      }
+    },
+    { immediate: true },
+  )
+
   function emitSlotValues() {
     const payload = { ...slotValues }
     const labelParamKey = dynamicGroupConfig.value?.labelParamKey
@@ -781,7 +835,10 @@ export function useAnalysisConfig(method, methodKey, emit) {
     dynamicGroupTip,
     factorMenuKey,
     getFactorShortLabel,
+    goodnessOfFitCategories,
+    goodnessOfFitLoading,
     isCfaMethod,
+    isGoodnessOfFitChiSquareMethod,
     isIndependentTMethod,
     isPairedTMethod,
     isOneSampleEquivalenceMethod,
@@ -806,6 +863,7 @@ export function useAnalysisConfig(method, methodKey, emit) {
     resetSlots,
     selectFactor,
     selectSecondOrderModel,
+    setGoodnessOfFitExpectedRatio,
     setOptionValue,
     setSecondOrderFactorName,
     slotValues,

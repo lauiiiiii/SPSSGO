@@ -468,6 +468,8 @@ export function calcCrosstabLayout(data, mode = 'stackedColumn') {
   groupLabels.forEach((groupLabel, groupIndex) => {
     if (stacked) {
       let cursor = mt + ph
+      const stackedBarW = Math.min(Math.max(groupW * 0.6, 12), 72)
+      const stackedX = ml + groupIndex * groupW + (groupW - stackedBarW) / 2
       xLabels.forEach((seriesLabel, seriesIndex) => {
         const count = Number(matrix[seriesIndex]?.[groupIndex] || 0)
         const percent = cellPercent(count, groupIndex, seriesIndex)
@@ -478,9 +480,9 @@ export function calcCrosstabLayout(data, mode = 'stackedColumn') {
           count,
           percent,
           color: CATEGORY_COLORS[seriesIndex % CATEGORY_COLORS.length],
-          x: ml + groupIndex * groupW + Math.max(groupW * 0.2, 8),
+          x: stackedX,
           y: cursor - height,
-          w: Math.max(groupW * 0.6, 12),
+          w: stackedBarW,
           h: height,
           labelX: ml + groupIndex * groupW + groupW / 2,
           labelY: cursor - height / 2,
@@ -488,7 +490,9 @@ export function calcCrosstabLayout(data, mode = 'stackedColumn') {
         cursor -= height
       })
     } else {
-      const barW = Math.max(groupW * 0.7 / Math.max(xLabels.length, 1), 5)
+      const barW = Math.min(Math.max(groupW * 0.7 / Math.max(xLabels.length, 1), 5), 34)
+      const groupBarsW = barW * Math.max(xLabels.length, 1)
+      const groupStart = ml + groupIndex * groupW + (groupW - groupBarsW) / 2
       xLabels.forEach((seriesLabel, seriesIndex) => {
         const count = Number(matrix[seriesIndex]?.[groupIndex] || 0)
         const percent = cellPercent(count, groupIndex, seriesIndex)
@@ -499,11 +503,11 @@ export function calcCrosstabLayout(data, mode = 'stackedColumn') {
           count,
           percent,
           color: CATEGORY_COLORS[seriesIndex % CATEGORY_COLORS.length],
-          x: ml + groupIndex * groupW + groupW * 0.15 + seriesIndex * barW,
+          x: groupStart + seriesIndex * barW,
           y: mt + ph - height,
           w: Math.max(barW - 1, 4),
           h: height,
-          labelX: ml + groupIndex * groupW + groupW * 0.15 + seriesIndex * barW + barW / 2,
+          labelX: groupStart + seriesIndex * barW + barW / 2,
           labelY: mt + ph - height - 6,
         })
       })

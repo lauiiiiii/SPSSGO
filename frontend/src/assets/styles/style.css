@@ -2632,6 +2632,87 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .ap-one-way-drop-zone.has-items {
   padding: 4px 10px;
 }
+.ap-gof-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+.ap-gof-drop-zone {
+  flex: 0 0 42px;
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  margin: 0 0 18px;
+  padding: 0 10px;
+  border: 1px dashed #d1d5db;
+  border-radius: 0;
+  background: #fff;
+  overflow: hidden;
+}
+.ap-gof-drop-zone .ap-drop-empty {
+  min-height: 40px;
+  padding: 0;
+  align-items: center;
+  color: #b0b7c3;
+}
+.ap-gof-drop-zone.has-items {
+  flex: 0 0 42px;
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  padding: 4px 10px;
+}
+.ap-gof-ratio-grid {
+  display: grid;
+  grid-template-columns: 120px 220px;
+  align-items: center;
+  justify-content: start;
+  column-gap: 26px;
+  row-gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+.ap-gof-ratio-head {
+  height: 24px;
+  line-height: 24px;
+  color: #6b7280;
+}
+.ap-gof-group-input,
+.ap-gof-ratio-row input {
+  width: 120px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 0;
+  background: #fff;
+  color: #374151;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+}
+.ap-gof-group-input:disabled {
+  background: #f5f7fb;
+  color: #b8c0cc;
+}
+.ap-gof-ratio-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #9ca3af;
+}
+.ap-gof-ratio-row input:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 1px #1677ff;
+}
+.ap-gof-loading {
+  grid-column: 1 / span 2;
+  height: 36px;
+  line-height: 36px;
+  color: #9ca3af;
+}
 .ap-mediation-form {
   flex: 1;
   min-height: 0;
@@ -2911,11 +2992,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .ap-option-group {
   display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151;
 }
-.ap-option-group select {
+.ap-option-group select,
+.ap-option-group input {
   padding: 5px 8px; border: 1px solid #e2e5ea; border-radius: 6px;
   font-size: 13px; font-family: inherit; outline: none; background: #fff;
 }
-.ap-option-group select:focus { border-color: #93c5fd; }
+.ap-option-group input { width: 76px; }
+.ap-option-group select:focus,
+.ap-option-group input:focus { border-color: #93c5fd; }
 .ap-option-help {
   position: relative;
   display: inline-flex; align-items: center; justify-content: center;
@@ -3476,6 +3560,9 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   flex: 0 0 calc(25% - 20px);
   min-width: 200px;
 }
+.ap-chart-item.ap-chart-item--full-row {
+  flex: 0 0 100%;
+}
 .ap-chart-caption {
   font-size: 13px;
   font-weight: 500;
@@ -3492,8 +3579,8 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   max-width: 100%;
 }
 .ap-chart-svg--box {
-  max-width: 240px;
-  width: 100%;
+  max-width: none;
+  width: auto;
 }
 .ap-chart-wrap {
   border: 1px solid #eee;
