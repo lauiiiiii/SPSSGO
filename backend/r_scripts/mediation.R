@@ -89,7 +89,12 @@ sections <- list(
   sec_table("Bootstrap 效应分解", c("效应", "估计值", "Bootstrap 下限", "Bootstrap 上限", "p"), effect_rows, "优先依据 Bootstrap 置信区间判断间接效应是否显著。"),
   sec_advice("若间接效应 Bootstrap 区间不含 0，可认为中介路径成立；再结合直接效应 c' 判断完全中介或部分中介。"),
   sec_smart(smart),
-  sec_refs(c("[1] Hayes, A. F. Introduction to Mediation, Moderation, and Conditional Process Analysis.", "[2] Rosseel, Y. lavaan: An R Package for Structural Equation Modeling."))
+  sec_refs(c(
+    "[1] 温忠麟, 张雷, 侯杰泰, 刘红云. (2004). 中介效应检验程序及其应用. 心理学报, 36(5), 614-620.",
+    "[2] 温忠麟, 叶宝娟. (2014). 中介效应分析：方法和模型发展. 心理科学进展, 22(5), 731-745.",
+    "[3] Baron, R. M., & Kenny, D. A. (1986). The moderator-mediator variable distinction in social psychological research: Conceptual, strategic, and statistical considerations. Journal of Personality and Social Psychology, 51(6), 1173-1182.",
+    "[4] MacKinnon, D. P. (2008). Introduction to Statistical Mediation Analysis. Routledge."
+  ))
 )
 
 result <- list(success = TRUE, name = paste0("中介效应检验：", x, "→", m, "→", y), headers = c("路径", "B", "标准化β", "Std. Err", "z", "p"), rows = path_rows, description = smart, sections = sections)

@@ -1220,7 +1220,7 @@ const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
 const showDataLabels = ref(defaultShowDataLabels(props.chart))
-const showSignificantOnly = ref(true)
+const showSignificantOnly = ref(defaultShowSignificantOnly(props.chart))
 const selectedMetric = ref(props.chart.data?.metric || '')
 const modelPathArrowId = computed(() => `modelPathArrow-${props.sectionIndex}-${props.chartIndex}`)
 const modelPathArrowSigId = computed(() => `modelPathArrowSig-${props.sectionIndex}-${props.chartIndex}`)
@@ -1495,6 +1495,11 @@ function defaultShowDataLabels(chart = {}) {
   const labels = chart.data?.labels || []
   const seriesCount = chart.data?.multiSeries && chart.data?.metrics ? Object.keys(chart.data.metrics).length : 1
   return labels.length <= 24 && labels.length * seriesCount <= 80
+}
+
+function defaultShowSignificantOnly(chart = {}) {
+  if (chart.data?.defaultShowSignificantOnly != null) return !!chart.data.defaultShowSignificantOnly
+  return true
 }
 
 function percentLabel(value) {

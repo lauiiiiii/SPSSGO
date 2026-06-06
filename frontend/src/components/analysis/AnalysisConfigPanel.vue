@@ -774,7 +774,7 @@
               </div>
             </template>
             <template v-else>
-              <div v-for="option in visibleOptions" :key="option.key" class="ap-mediation-option">
+              <div v-for="option in mediationFormOptions" :key="option.key" class="ap-mediation-option">
                 <label v-if="option.type === 'checkbox'" class="ap-option-check">
                   <input
                     type="checkbox"
@@ -929,8 +929,8 @@
         <span v-if="executing" class="spinner-sm"></span>
         {{ executing ? '分析中...' : '开始分析' }}
       </button>
-      <div v-if="method.options?.length && !isMediationConfig && !isSummaryTMethod && !isSummaryOneWayAnovaMethod && !isIndependentTMethod && !isOneWayAnovaMethod && !isOneSampleEquivalenceMethod && !isTwoSampleEquivalenceMethod && !isPairedEquivalenceMethod" class="ap-options ap-options--actions">
-        <div v-for="option in visibleOptions" :key="option.key" class="ap-option-group">
+      <div v-if="actionOptions.length" class="ap-options ap-options--actions">
+        <div v-for="option in actionOptions" :key="option.key" class="ap-option-group">
           <label v-if="option.type === 'checkbox'" class="ap-option-check">
             <input
               type="checkbox"
@@ -1132,8 +1132,14 @@ const moderatedMediationPreviewOptionKeys = new Set(['moderator_levels', 'bootst
 const moderatedMediationPreviewOptions = computed(() => (
   visibleOptions.value.filter(option => moderatedMediationPreviewOptionKeys.has(option.key))
 ))
+function isActionOption(option) {
+  return option?.key === 'include_missing_analysis'
+}
+const mediationFormOptions = computed(() => (
+  visibleOptions.value.filter(option => !isActionOption(option))
+))
 const moderatedMediationLeftOptions = computed(() => (
-  visibleOptions.value.filter(option => (
+  mediationFormOptions.value.filter(option => (
     !moderatedMediationPathKeys.has(option.key)
     && !moderatedMediationPreviewOptionKeys.has(option.key)
   ))
@@ -1179,6 +1185,24 @@ const visibleOptions = computed(() => (props.method?.options || []).filter(optio
   if (option.key === 'post_hoc_method') return Boolean(props.optionValues.do_post_hoc)
   return true
 }))
+const actionOptions = computed(() => {
+  if (isMediationConfig.value) {
+    return visibleOptions.value.filter(isActionOption)
+  }
+  if (
+    props.method?.options?.length
+    && !props.isSummaryTMethod
+    && !props.isSummaryOneWayAnovaMethod
+    && !props.isIndependentTMethod
+    && !props.isOneWayAnovaMethod
+    && !props.isOneSampleEquivalenceMethod
+    && !props.isTwoSampleEquivalenceMethod
+    && !props.isPairedEquivalenceMethod
+  ) {
+    return visibleOptions.value
+  }
+  return []
+})
 
 function getAcceptLabel(slot) {
   if (slot.acceptLabel) return slot.acceptLabel

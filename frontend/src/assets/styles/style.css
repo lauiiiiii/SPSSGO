@@ -2639,25 +2639,26 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
   flex-direction: column;
 }
 .ap-mediation-form--with-preview {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
   width: 100%;
   max-width: 100%;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 24px;
 }
 .ap-mediation-main {
-  flex: 1 1 0;
+  flex: 1 0 auto;
   min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 .ap-mediation-preview-panel {
   flex: 0 0 360px;
   min-width: 0;
+  align-self: flex-start;
   position: sticky;
   top: 12px;
+  margin-top: 30px;
   padding-top: 0;
 }
 .ap-mediation-slot {
@@ -2676,7 +2677,8 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-mediation-form--with-preview .ap-mediation-slot--mediators,
 .ap-mediation-form--with-preview .ap-mediation-slot--controls {
-  flex: 0 0 194px;
+  flex: 1 0 150px;
+  min-height: 150px;
 }
 .ap-mediation-slot--single {
   flex: 0 0 82px;
@@ -2703,9 +2705,8 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-mediation-form--with-preview .ap-mediation-drop-zone--mediators,
 .ap-mediation-form--with-preview .ap-mediation-drop-zone--controls {
-  height: 154px;
-  min-height: 154px;
-  flex: 0 0 154px;
+  flex: 1;
+  min-height: 120px;
 }
 .ap-mediation-drop-zone--single {
   height: 42px;
@@ -2720,7 +2721,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-mediation-form--with-preview .ap-mediation-drop-zone--mediators .ap-drop-empty,
 .ap-mediation-form--with-preview .ap-mediation-drop-zone--controls .ap-drop-empty {
-  min-height: 152px;
+  min-height: 120px;
 }
 .ap-mediation-options {
   flex-shrink: 0;
@@ -2830,10 +2831,13 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .ap-mediation-preview-options .ap-mediation-option {
   justify-content: space-between;
   gap: 10px;
+  width: 100%;
 }
 .ap-mediation-preview-options .ap-mediation-option select {
+  width: 170px;
   min-width: 170px;
-  max-width: 190px;
+  max-width: 170px;
+  flex: 0 0 170px;
 }
 .ap-mediation-preview-node rect {
   fill: #f3f4f6;
