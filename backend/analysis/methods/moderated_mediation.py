@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 # 调节中介方法入口：只做变量校验和 R bridge 打包，统计口径放在 R 脚本里。
 from io import StringIO
+import logging
+import time
 
 from backend.analysis.common import _resolve_cols
 from backend.r_runner import RExecutionError, is_r_runtime_available, run_r_script
 
 METHOD_KEY = "moderated_mediation"
+logger = logging.getLogger("uvicorn.error")
 METHOD_META = {
     "label": "调节中介",
     "category": "回归&因果分析包",
@@ -19,7 +22,7 @@ METHOD_META = {
         {"key": "controls", "label": "控制变量", "type": "multiple", "accept": "numeric", "min": 0, "hint": "拖入控制变量"},
     ],
     "options": [
-        {"key": "moderate_x_m", "label": "X→M", "type": "checkbox", "default": True},
+        {"key": "moderate_x_m", "label": "X→M", "type": "checkbox", "default": False},
         {"key": "moderate_m_y", "label": "M→Y", "type": "checkbox", "default": False},
         {"key": "moderate_x_y", "label": "X→Y", "type": "checkbox", "default": False},
         {
@@ -144,7 +147,7 @@ def run(df, params):
         return _error("调节中介至少需要 1 个中介变量 M。")
 
     moderated_paths = {
-        "x_m": _truthy(params.get("moderate_x_m", True)),
+        "x_m": _truthy(params.get("moderate_x_m", False)),
         "m_y": _truthy(params.get("moderate_m_y", False)),
         "x_y": _truthy(params.get("moderate_x_y", False)),
     }
@@ -155,9 +158,12 @@ def run(df, params):
     if not is_r_runtime_available():
         return _error("R 运行环境不可用，调节中介需要 R 引擎执行。")
 
-    required = _unique([x, y, z] + mediators + controls)
+    csv_start = time.perf_counter()
+    required_set = set(_unique([x, y, z] + mediators + controls))
+    required = [column for column in df.columns if column in required_set]
     csv_buffer = StringIO()
     df[required].to_csv(csv_buffer, index=False)
+    csv_ms = (time.perf_counter() - csv_start) * 1000
     input_name = "moderated_mediation_input.csv"
     payload = {
         "x": x,
@@ -172,6 +178,7 @@ def run(df, params):
         "bootstrap_method": _bootstrap_method(params.get("bootstrap_method")),
         "data_file": input_name,
     }
+    r_start = time.perf_counter()
     try:
         result = run_r_script(
             "moderated_mediation.R",
@@ -179,7 +186,29 @@ def run(df, params):
             temp_files={input_name: csv_buffer.getvalue()},
         )
     except RExecutionError as exc:
+        logger.info(
+            "moderated_mediation timing status=failed rows=%s cols=%s model=%s mediators=%s controls=%s bootstrap_reps=%s csv_ms=%.1f r_ms=%.1f",
+            len(df.index),
+            len(df.columns),
+            model,
+            len(mediators),
+            len(controls),
+            payload["bootstrap_reps"],
+            csv_ms,
+            (time.perf_counter() - r_start) * 1000,
+        )
         return _error(f"R 调节中介执行失败：{str(exc)}")
+    logger.info(
+        "moderated_mediation timing status=success rows=%s cols=%s model=%s mediators=%s controls=%s bootstrap_reps=%s csv_ms=%.1f r_ms=%.1f",
+        len(df.index),
+        len(df.columns),
+        model,
+        len(mediators),
+        len(controls),
+        payload["bootstrap_reps"],
+        csv_ms,
+        (time.perf_counter() - r_start) * 1000,
+    )
 
     if isinstance(result, dict) and result.get("success"):
         result["name"] = METHOD_META["label"]

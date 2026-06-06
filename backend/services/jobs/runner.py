@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import tempfile
+import time
 from contextlib import contextmanager
 
 from backend.ai_engine import generate_plan
@@ -46,6 +48,7 @@ from backend.storage import storage_service
 from backend.word_report import generate_report
 
 _REPORT_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+logger = logging.getLogger("uvicorn.error")
 
 
 @contextmanager
@@ -201,16 +204,32 @@ async def _run_ai_interpret_job(job: dict):
 
 
 async def _run_execute_method_job(job: dict):
+    total_start = time.perf_counter()
+    timings = {}
     session_id = job["session_id"]
     payload = job["payload"]
+    method = payload["method"]
+    stage_start = time.perf_counter()
     version = await get_dataset_version(job.get("dataset_version_id")) or await get_current_dataset_version_for_session(session_id)
     if not version:
         raise RuntimeError("当前会话缺少可分析的数据版本")
     with _materialized_dataset(session_id, version["storage_key"]) as filepath:
         df, _ = await parse_data_file_async(filepath)
-    params = await inject_analysis_metadata(session_id, payload["method"], build_execute_params(payload["method"], payload.get("params") or {}))
-    result = await asyncio.to_thread(METHOD_REGISTRY[payload["method"]], df, params)
+    timings["load_dataset_ms"] = (time.perf_counter() - stage_start) * 1000
+
+    stage_start = time.perf_counter()
+    params = await inject_analysis_metadata(session_id, method, build_execute_params(method, payload.get("params") or {}))
+    timings["metadata_ms"] = (time.perf_counter() - stage_start) * 1000
+
+    stage_start = time.perf_counter()
+    result = await asyncio.to_thread(METHOD_REGISTRY[method], df, params)
+    timings["method_run_ms"] = (time.perf_counter() - stage_start) * 1000
+
+    stage_start = time.perf_counter()
     result = append_optional_missing_analysis(result, df, params)
+    timings["missing_analysis_ms"] = (time.perf_counter() - stage_start) * 1000
+
+    stage_start = time.perf_counter()
     items = normalize_analysis_items(result)
     await delete_results_for_job(job["id"])
     for item in items:
@@ -227,6 +246,17 @@ async def _run_execute_method_job(job: dict):
             dataset_version_id=version["id"],
         )
     await update_session(session_id, status=DONE)
+    timings["save_results_ms"] = (time.perf_counter() - stage_start) * 1000
+    timings["total_ms"] = (time.perf_counter() - total_start) * 1000
+    logger.info(
+        "execute_method timing job_id=%s session_id=%s method=%s rows=%s cols=%s timings=%s",
+        job["id"],
+        session_id,
+        method,
+        len(df.index),
+        len(df.columns),
+        {key: round(value, 1) for key, value in timings.items()},
+    )
     return {"success": True, "count": len(items), "dataset_version_id": version["id"]}
 
 

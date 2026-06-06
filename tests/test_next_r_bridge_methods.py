@@ -80,7 +80,7 @@ class NextRBridgeMethodsTests(unittest.TestCase):
             {
                 "module": moderated_mediation,
                 "call": moderated_mediation.run,
-                "params": {"x": "x", "z": "w", "mediators": ["m", "m2"], "y": "y", "controls": ["r1"]},
+                "params": {"x": "x", "z": "w", "mediators": ["m", "m2"], "y": "y", "controls": ["r1"], "moderate_x_m": True},
                 "script": "moderated_mediation.R",
                 "temp_file": "moderated_mediation_input.csv",
                 "failure_text": "R 调节中介执行失败",

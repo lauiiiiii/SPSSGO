@@ -451,7 +451,12 @@ sections <- list(
   sec_advice("总间接效应表示同一自变量通过全部中介路径对Y的合计影响；链式路径只说明按当前中介顺序的传导，不自动证明因果先后。"),
   sec_charts("模型图", list(path_chart)),
   sec_table("样本缺失情况汇总", c("项", "样本数", "占比"), sample_rows, "上表展示真正进入算法模型的有效样本和排除在外的无效样本情况。", tableClass = "tlt--spssau"),
-  sec_refs(c("[1] The SPSSAU project (2026). SPSSAU. [Online Application Software]. Retrieved from https://www.spssau.com.", "[2] 周俊, 马世澄. SPSSAU科研数据分析方法与应用. 电子工业出版社.", "[3] Hayes, A. F. Introduction to Mediation, Moderation, and Conditional Process Analysis."))
+  sec_refs(c(
+    "[1] 温忠麟, 张雷, 侯杰泰, 刘红云. (2004). 中介效应检验程序及其应用. 心理学报, 36(5), 614-620.",
+    "[2] 温忠麟, 叶宝娟. (2014). 中介效应分析：方法和模型发展. 心理科学进展, 22(5), 731-745.",
+    "[3] Preacher, K. J., & Hayes, A. F. (2008). Asymptotic and resampling strategies for assessing and comparing indirect effects in multiple mediator models. Behavior Research Methods, 40(3), 879-891.",
+    "[4] Hayes, A. F. (2022). Introduction to Mediation, Moderation, and Conditional Process Analysis: A Regression-Based Approach (3rd ed.). Guilford Press."
+  ))
 )
 
 result <- list(
