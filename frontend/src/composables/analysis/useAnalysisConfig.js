@@ -147,6 +147,7 @@ export function useAnalysisConfig(method, methodKey, emit, sessionId = ref('')) 
     }
     for (const slot of displaySlots.value) {
       const vals = slotValues[slot.key] || []
+      if (slot.required === false && vals.length === 0) continue
       const min = slot.min ?? (slot.type === 'single' ? 1 : 1)
       const max = Number(slot.max)
       if (vals.length < min) return false

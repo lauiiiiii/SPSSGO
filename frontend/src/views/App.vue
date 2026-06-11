@@ -63,6 +63,7 @@
                 :current-dataset-version-id="currentDatasetVersionId"
                 :current-dataset-version-no="currentDatasetVersionNo"
                 @upload="openUploadModal('workspace')"
+                @go-mydata="currentTab = 'mydata'"
                 @execute="executeCurrentMethod"
                 @update:slotValues="sv => currentSlotValues = sv"
                 @update:optionValues="ov => currentOptionValues = ov"
@@ -82,6 +83,8 @@
         :total-rows="totalRows"
         :has-data="hasData"
         @variables-updated="loadVariables"
+        @upload="openUploadModal('workspace')"
+        @go-mydata="currentTab = 'mydata'"
         @go-analysis="sid => { onGoAnalysis(resolveAnalysisSessionId(sid)) }"
         @go-visualization="sid => { onGoVisualization(resolveAnalysisSessionId(sid)) }"
       />

@@ -1,7 +1,7 @@
 <template>
   <section class="analysis-panel">
     <!-- No data uploaded yet -->
-    <AnalysisUploadPrompt v-if="!hasData" @upload="$emit('upload')" />
+    <AnalysisUploadPrompt v-if="!hasData" @upload="$emit('upload')" @go-mydata="$emit('go-mydata')" />
 
     <!-- No method selected and no results to show -->
     <AnalysisMethodPlaceholder v-else-if="!method && !(results && results.length)" />
@@ -191,7 +191,7 @@ const props = defineProps({
   currentDatasetVersionNo: { type: Number, default: null },
 })
 
-const emit = defineEmits(['upload', 'execute', 'update:slotValues', 'update:optionValues', 'report-view', 'reset-variable-selection'])
+const emit = defineEmits(['upload', 'go-mydata', 'execute', 'update:slotValues', 'update:optionValues', 'report-view', 'reset-variable-selection'])
 
 const {
   activeSecondOrderFactorName,

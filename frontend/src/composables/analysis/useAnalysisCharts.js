@@ -204,6 +204,7 @@ export function useAnalysisCharts() {
   function showScatterTip(event, chart, dataPoint) {
     tip.lines = [
       { text: chart.title || '散点图', dot: null },
+      ...(dataPoint.label ? [{ text: `名称：${dataPoint.label}`, dot: '#4f46e5' }] : []),
       { text: `${chart.data?.xLabel || 'X'}：${Number(dataPoint.rawX || 0).toFixed(3)}`, dot: '#2389e8' },
       { text: `${chart.data?.yLabel || 'Y'}：${Number(dataPoint.rawY || 0).toFixed(3)}`, dot: '#10b981' },
     ]

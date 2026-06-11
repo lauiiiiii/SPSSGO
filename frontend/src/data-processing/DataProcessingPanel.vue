@@ -43,7 +43,11 @@
 
       <div v-else-if="!hasData" class="dp-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3V3z" stroke="#d1d5db" stroke-width="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="#d1d5db" stroke-width="1" opacity=".35"/></svg>
-        <p>请先上传数据文件</p>
+        <p>暂无数据</p>
+        <div class="dp-empty-actions">
+          <button class="viz-primary-btn" type="button" @click="$emit('upload')">上传数据文件</button>
+          <button class="viz-secondary-btn" type="button" @click="$emit('go-mydata')">去我的数据选择</button>
+        </div>
       </div>
 
       <div v-if="hasData && previewLoading" class="dp-loading">加载数据中...</div>
@@ -136,7 +140,7 @@ const props = defineProps({
   hasData: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['variables-updated', 'go-analysis', 'go-visualization'])
+const emit = defineEmits(['variables-updated', 'go-analysis', 'go-visualization', 'upload', 'go-mydata'])
 const previewDiff = ref(null)
 const previewColumnWidth = 70
 const previewLimitOptions = computed(() => buildPreviewLimitOptions(props.totalRows))

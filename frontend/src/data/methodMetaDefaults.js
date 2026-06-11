@@ -15,6 +15,12 @@ export function normalizeMethodMetaMap(rawMethods) {
     'kruskal_wallis_test',
     'goodness_of_fit_chi_square',
     'cochrans_q_test',
+    'kappa_consistency',
+    'kendall_consistency',
+    'intraclass_correlation',
+    'correlation_auto_solver',
+    'mds',
+    'spearman_correlation',
   ])
   const ensureSlotMethod = (key, patch) => {
     if (!methods[key]) {

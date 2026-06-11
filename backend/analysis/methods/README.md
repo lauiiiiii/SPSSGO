@@ -91,10 +91,10 @@
 | `cochrans_q_test.py` | `cochrans_q_test` | Cochran's Q检验 |
 | `kappa_consistency.py` | `kappa_consistency` | Kappa一致性检验 |
 | `kendall_consistency.py` | `kendall_consistency` | Kendall一致性检验 |
-| `intraclass_correlation.py` | `intraclass_correlation` | 组内相关系数 |
-| `correlation_auto_solver.py` | `correlation_auto_solver` | 相关性分析自动求解器 |
+| `intraclass_correlation.py` | `intraclass_correlation` | ICC组内相关系数 |
+| `correlation_auto_solver.py` | `correlation_auto_solver` | 相关与一致性推荐 |
 | `spearman_correlation.py` | `spearman_correlation` | Spearman 等级相关 |
-| `mds.py` | `mds` | 多维尺度分析 |
+| `mds.py` | `mds` | 多维尺度分析MDS |
 
 ## 综合评价
 

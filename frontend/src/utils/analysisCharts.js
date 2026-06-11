@@ -169,6 +169,18 @@ function heatmapColor(intensity) {
   return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
 }
 
+function clamp01(value) {
+  return Math.min(Math.max(Number(value || 0), 0), 1)
+}
+
+function signedHeatmapColor(value, intensity, correlationScale = false) {
+  const visualIntensity = correlationScale ? Math.pow(clamp01(intensity), 3) : clamp01(intensity)
+  const hue = Number(value) < 0 ? 214 : 0
+  const saturation = Math.round((correlationScale ? 28 : 34) + visualIntensity * (correlationScale ? 58 : 32))
+  const lightness = Math.round((correlationScale ? 98 : 96) - visualIntensity * (correlationScale ? 54 : 42))
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+}
+
 function shortLabel(value, maxLength = 10) {
   const text = String(value ?? '')
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
@@ -761,11 +773,19 @@ export function calcFactorHeatmapLayout(data) {
   const ml = Math.max(96, Math.min(160, Math.max(...rowLabels.map(label => String(label).length), 2) * 10 + 24))
   const mt = 36
   const mr = 24
-  const mb = 50
+  const flat = values.flat().map(value => Number(value)).filter(Number.isFinite)
+  const sameLabels = rowLabels.length === colLabels.length
+    && rowLabels.every((label, index) => String(label) === String(colLabels[index]))
+  const boundedCorrelationValues = flat.length > 0 && flat.every(value => value >= -1 && value <= 1)
+  const isCorrelationScale = data?.colorScale === 'correlation'
+    || data?.heatmapScale === 'correlation'
+    || (sameLabels && boundedCorrelationValues)
+  const mb = isCorrelationScale ? 78 : 50
   const W = ml + colLabels.length * cellW + mr
   const H = mt + rowLabels.length * cellH + mb
-  const flat = values.flat().map(value => Number(value)).filter(Number.isFinite)
-  const maxAbs = Math.max(...flat.map(value => Math.abs(value)), 1)
+  const maxAbs = isCorrelationScale ? 1 : Math.max(...flat.map(value => Math.abs(value)), 1)
+  const legendX = ml + (colLabels.length * cellW) / 2 - 84
+  const legendY = mt + rowLabels.length * cellH + 26
   const cells = []
   rowLabels.forEach((rowLabel, rowIndex) => {
     colLabels.forEach((colLabel, colIndex) => {
@@ -773,9 +793,7 @@ export function calcFactorHeatmapLayout(data) {
       const value = Number(rawValue)
       const empty = rawValue === null || rawValue === '' || !Number.isFinite(value)
       const intensity = Math.min(Math.abs(value) / maxAbs, 1)
-      const hue = value < 0 ? 214 : 0
-      const saturation = Math.round(34 + intensity * 32)
-      const lightness = Math.round(96 - intensity * 42)
+      const visualIntensity = isCorrelationScale ? Math.pow(clamp01(intensity), 3) : intensity
       cells.push({
         rowLabel,
         colLabel,
@@ -785,12 +803,36 @@ export function calcFactorHeatmapLayout(data) {
         w: cellW,
         h: cellH,
         empty,
-        fill: empty ? '#fff' : `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-        textFill: intensity > 0.58 ? '#fff' : '#222',
+        fill: empty ? '#fff' : signedHeatmapColor(value, intensity, isCorrelationScale),
+        textFill: visualIntensity > 0.58 ? '#fff' : '#222',
       })
     })
   })
-  return { W, H, ml, mt, mb, cellW, cellH, rowLabels, colLabels, cells }
+  return {
+    W,
+    H,
+    ml,
+    mt,
+    mb,
+    cellW,
+    cellH,
+    rowLabels,
+    colLabels,
+    cells,
+    isCorrelationScale,
+    legendLabel: isCorrelationScale ? '蓝=负相关，白=弱相关，红=正相关；颜色越深绝对值越大' : '颜色越深表示绝对值越大',
+    legend: {
+      x: Math.max(ml, legendX),
+      y: legendY,
+      w: 168,
+      h: 10,
+      ticks: [
+        { label: '-1', x: Math.max(ml, legendX) },
+        { label: '0', x: Math.max(ml, legendX) + 84 },
+        { label: '1', x: Math.max(ml, legendX) + 168 },
+      ],
+    },
+  }
 }
 
 export function calcProbabilityPlotLayout(data) {
@@ -912,42 +954,86 @@ export function calcCorrespondenceMapLayout(data) {
 
 export function calcScatterPlotLayout(data) {
   const points = data?.points || []
-  const W = 680
-  const H = 390
-  const ml = 64
-  const mr = 34
-  const mt = 28
-  const mb = 58
+  const isMdsMap = data?.purpose === 'mds'
+  const W = isMdsMap ? 760 : 680
+  const H = isMdsMap ? 460 : 390
+  const ml = isMdsMap ? 84 : 64
+  const mr = isMdsMap ? 56 : 34
+  const mt = isMdsMap ? 42 : 28
+  const mb = isMdsMap ? 74 : 58
   const pw = W - ml - mr
   const ph = H - mt - mb
   const xs = points.map(point => Number(point.x)).filter(Number.isFinite)
   const ys = points.map(point => Number(point.y)).filter(Number.isFinite)
-  const xMinRaw = Math.min(...xs, 0)
-  const xMaxRaw = Math.max(...xs, 1)
-  const yMinRaw = Math.min(...ys, 0)
-  const yMaxRaw = Math.max(...ys, 1)
-  const xPad = Math.max((xMaxRaw - xMinRaw) * 0.08, 0.5)
-  const yPad = Math.max((yMaxRaw - yMinRaw) * 0.08, 0.5)
-  const xMin = xMinRaw - xPad
-  const xMax = xMaxRaw + xPad
-  const yMin = yMinRaw - yPad
-  const yMax = yMaxRaw + yPad
+  const useZeroCross = !!data?.showZeroCross || isMdsMap
+  const useSymmetricAxis = !!data?.symmetricAxis || isMdsMap
+  const xMinRaw = Math.min(...xs, useZeroCross ? 0 : 0)
+  const xMaxRaw = Math.max(...xs, useZeroCross ? 0 : 1)
+  const yMinRaw = Math.min(...ys, useZeroCross ? 0 : 0)
+  const yMaxRaw = Math.max(...ys, useZeroCross ? 0 : 1)
+  let xMin
+  let xMax
+  let yMin
+  let yMax
+  if (useSymmetricAxis) {
+    const xAbs = Math.max(...xs.map(value => Math.abs(value)), 0.5)
+    const yAbs = Math.max(...ys.map(value => Math.abs(value)), 0.5)
+    const unit = isMdsMap
+      ? Math.max(xAbs / (pw / 2), yAbs / (ph / 2))
+      : 0
+    const xLimit = isMdsMap ? unit * (pw / 2) * 1.18 : xAbs * 1.12
+    const yLimit = isMdsMap ? unit * (ph / 2) * 1.18 : yAbs * 1.12
+    xMin = -xLimit
+    xMax = xLimit
+    yMin = -yLimit
+    yMax = yLimit
+  } else {
+    const xPad = Math.max((xMaxRaw - xMinRaw) * 0.08, 0.5)
+    const yPad = Math.max((yMaxRaw - yMinRaw) * 0.08, 0.5)
+    xMin = xMinRaw - xPad
+    xMax = xMaxRaw + xPad
+    yMin = yMinRaw - yPad
+    yMax = yMaxRaw + yPad
+  }
   const toX = value => ml + ((Number(value || 0) - xMin) / (xMax - xMin || 1)) * pw
   const toY = value => mt + ph - ((Number(value || 0) - yMin) / (yMax - yMin || 1)) * ph
   const marks = points
-    .map(point => ({
-      rawX: Number(point.x),
-      rawY: Number(point.y),
-      x: toX(point.x),
-      y: toY(point.y),
-    }))
+    .map(point => {
+      const x = toX(point.x)
+      const y = toY(point.y)
+      const labelOnLeft = x > ml + pw * 0.78
+      const labelBelow = y < mt + 18
+      const label = String(point.label ?? '')
+      const labelBoxW = Math.min(Math.max(label.length * 12 + 14, 42), 168)
+      const labelBoxH = 22
+      const labelX = x + (labelOnLeft ? -10 : 10)
+      const labelY = y + (labelBelow ? 18 : -10)
+      return {
+        ...point,
+        label,
+        rawX: Number(point.x),
+        rawY: Number(point.y),
+        x,
+        y,
+        labelX,
+        labelY,
+        labelAnchor: labelOnLeft ? 'end' : 'start',
+        labelBoxX: labelOnLeft ? labelX - labelBoxW + 7 : labelX - 7,
+        labelBoxY: labelY - 16,
+        labelBoxW,
+        labelBoxH,
+        leaderX: labelOnLeft ? labelX + 7 : labelX - 7,
+        leaderY: labelY - 5,
+      }
+    })
     .filter(point => Number.isFinite(point.rawX) && Number.isFinite(point.rawY))
-  const xTicks = Array.from({ length: 6 }, (_, index) => {
-    const value = xMin + (index / 5) * (xMax - xMin)
+  const tickSegments = useSymmetricAxis ? 6 : 5
+  const xTicks = Array.from({ length: tickSegments + 1 }, (_, index) => {
+    const value = xMin + (index / tickSegments) * (xMax - xMin)
     return { x: toX(value), label: compactNumber(value) }
   })
-  const yTicks = Array.from({ length: 6 }, (_, index) => {
-    const value = yMin + (index / 5) * (yMax - yMin)
+  const yTicks = Array.from({ length: tickSegments + 1 }, (_, index) => {
+    const value = yMin + (index / tickSegments) * (yMax - yMin)
     return { y: toY(value), label: compactNumber(value) }
   })
   return {
@@ -963,6 +1049,11 @@ export function calcScatterPlotLayout(data) {
     yTicks,
     xLabel: data?.xLabel || 'X',
     yLabel: data?.yLabel || 'Y',
+    isMdsMap,
+    showLabels: !!data?.showLabels,
+    showZeroCross: useZeroCross,
+    zeroX: toX(0),
+    zeroY: toY(0),
   }
 }
 

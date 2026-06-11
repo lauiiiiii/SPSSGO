@@ -3315,7 +3315,19 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 /* No data upload placeholder */
 .ap-upload-prompt {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 16px;
+  align-items: center; justify-content: center; gap: 12px;
+}
+.ap-upload-empty-title {
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ap-upload-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .ap-upload-card {
   display: flex; align-items: center; gap: 14px;
@@ -3688,7 +3700,45 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 }
 .ap-scatter-mark {
   cursor: pointer;
-  transition: opacity .15s, filter .15s;
+  transition: opacity .15s, filter .15s, transform .16s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ap-chart-svg--mds .ap-scatter-mark {
+  filter: drop-shadow(0 2px 3px rgba(37, 99, 235, .24));
+}
+.ap-chart-svg--mds .ap-scatter-mark:hover,
+.ap-chart-svg--mds .ap-scatter-mark.is-linked-hover {
+  opacity: 1;
+  transform: scale(1.45);
+  filter: drop-shadow(0 4px 8px rgba(37, 99, 235, .34));
+}
+.ap-scatter-label {
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.ap-chart-svg--mds .ap-scatter-label {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.ap-scatter-label-box {
+  fill: #fff;
+  stroke: #dbe7ff;
+  stroke-width: 1;
+}
+.ap-scatter-label-group {
+  cursor: pointer;
+  transition: transform .16s ease, filter .16s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ap-scatter-label-group:hover,
+.ap-scatter-label-group.is-linked-hover {
+  transform: scale(1.12);
+  filter: drop-shadow(0 4px 8px rgba(37, 99, 235, .16));
 }
 .ap-category-mark:hover,
 .ap-metric-mark:hover,
@@ -6392,6 +6442,18 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; co
 .dp-empty {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #9ca3af; gap: 12px; font-size: 14px;
+}
+.dp-empty p {
+  margin: 0;
+  color: #64748b;
+  font-weight: 600;
+}
+.dp-empty-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .dp-loading {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);

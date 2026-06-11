@@ -1488,30 +1488,30 @@ print(p)`,
     ],
     notice: '如果变量本身是等级变量、打分等级或明显偏态分布，Spearman 往往比 Pearson 更稳妥。',
   }),
-  buildAnalysisChild('analysis-mds', '多维尺度分析', {
-    intro: '多维尺度分析用于把变量或对象之间的距离关系压缩到二维空间，帮助你观察“谁更接近谁、谁更疏远谁”的结构。',
+  buildAnalysisChild('analysis-mds', '多维尺度分析MDS', {
+    intro: '多维尺度分析MDS用于把变量或对象之间的距离矩阵压缩到二维空间，帮助你观察“谁更接近谁、谁更疏远谁”的结构。',
     io: [
-      '输入：2 个或以上可比较结构接近性的变量。',
-      '输出：二维坐标、对象间相对位置和结构接近图。',
+      '输入：2 个或以上数值变量，可由原始数据创建距离矩阵，也可直接输入距离矩阵。',
+      '输出：距离矩阵、空间感知图、二维坐标和模型拟合摘要。',
     ],
     steps: [
       {
-        title: '选择“多维尺度分析”',
+        title: '选择“多维尺度分析MDS”',
         text: '在数据检验分类下点击该方法，进入结构映射分析界面。',
       },
       {
-        title: '拖入需要比较结构的变量',
-        text: '这些变量应具有可比较的相关或距离结构，否则二维映射很难给出有意义解释。',
+        title: '设置数据格式和分析维度',
+        text: '如果是原始评分数据，选择“根据数据创建距离矩阵”；如果已经整理好对象两两距离，选择“数据为距离矩阵”。',
       },
       {
         title: '执行并观察二维坐标',
-        text: '查看哪些变量在平面上靠近，哪些明显分离，再结合变量语义理解潜在结构。',
+        text: '先看距离矩阵，再看空间感知图中哪些对象靠近、哪些明显分离，最后结合对象语义理解潜在结构。',
       },
     ],
     reading: [
       {
         title: '坐标位置看相对关系，不看绝对数值',
-        text: 'MDS 的重点是对象间相对远近，而不是某个坐标值本身有独立含义。',
+        text: '多维尺度分析MDS的重点是对象间相对远近，而不是某个坐标值本身有独立含义。',
       },
       {
         title: '距离越近，结构越相似',
@@ -1519,30 +1519,32 @@ print(p)`,
       },
       {
         title: '仍然需要回到原变量解释',
-        text: 'MDS 更像一种结构可视化工具，最终解释依然要结合变量的实际含义。',
+        text: '多维尺度分析MDS更像一种结构可视化工具，最终解释依然要结合变量的实际含义。',
       },
     ],
     formulas: [
       {
-        title: 'Stress 函数',
-        latex: String.raw`$$
-\mathrm{Stress} = \sqrt{\frac{\sum_{i<j}(d_{ij}-\hat{d}_{ij})^2}{\sum_{i<j}d_{ij}^2}}
-$$`,
+        title: '双中心化距离矩阵',
+        latex: String.raw`$$B=-\frac{1}{2}JD^{(2)}J,\quad J=I-\frac{1}{n}\mathbf{1}\mathbf{1}^{T}$$`,
+      },
+      {
+        title: '二维坐标',
+        latex: String.raw`$$Z=W\Sigma^{1/2}$$`,
       },
     ],
     codeBlocks: [
       {
         title: 'Python 示例',
-        code: String.raw`corr = df[["x1", "x2", "x3", "x4"]].corr().abs()
-dist = 1 - corr
-
-mds = MDS(n_components=2, dissimilarity="precomputed", random_state=42)
-coords = mds.fit_transform(dist.values)
-
-result = pd.DataFrame(coords, index=dist.index, columns=["Dim1", "Dim2"])`,
+        code: String.raw`values = df[["q4", "q5", "q6"]].dropna().to_numpy().T
+dist = np.sqrt(((values[:, None, :] - values[None, :, :]) ** 2).sum(axis=2))
+J = np.eye(len(dist)) - np.ones_like(dist) / len(dist)
+B = -0.5 * J @ (dist ** 2) @ J
+eigvals, eigvecs = np.linalg.eigh(B)
+order = np.argsort(eigvals)[::-1][:2]
+coords = eigvecs[:, order] * np.sqrt(np.maximum(eigvals[order], 0))`,
       },
     ],
-    notice: 'MDS 更适合做结构探索和可视化表达，不适合单独承担显著性检验结论。',
+    notice: '多维尺度分析MDS更适合做结构探索和可视化表达，不适合单独承担显著性检验结论。',
   }),
   ...extraAnalysisChildren,
 ]

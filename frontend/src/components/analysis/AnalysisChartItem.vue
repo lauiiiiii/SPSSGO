@@ -843,6 +843,13 @@
       <template v-else-if="isHeatmapChart">
         <template v-for="heatmapData in [calcFactorHeatmap(activeHeatmapData)]" :key="0">
           <svg class="ap-chart-svg ap-chart-svg--heatmap" :viewBox="`0 0 ${heatmapData.W} ${heatmapData.H}`" :width="heatmapData.W" :height="heatmapData.H">
+            <defs v-if="heatmapData.isCorrelationScale">
+              <linearGradient :id="`heatmap-corr-gradient-${sectionIndex}-${chartIndex}`" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="hsl(214, 86%, 44%)"/>
+                <stop offset="50%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="hsl(0, 86%, 44%)"/>
+              </linearGradient>
+            </defs>
             <rect x="0" y="0" :width="heatmapData.W" :height="heatmapData.H" fill="white"/>
             <text
               v-for="(label, labelIndex) in heatmapData.colLabels"
@@ -866,29 +873,88 @@
               <rect :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h" :fill="cell.fill" stroke="rgba(255,255,255,.55)" stroke-width="1"/>
               <text v-if="!cell.empty" :x="cell.x + cell.w / 2" :y="cell.y + cell.h / 2 + 4" text-anchor="middle" font-size="12" :fill="cell.textFill">{{ Number(cell.value).toFixed(3) }}</text>
             </g>
-            <text :x="heatmapData.ml + heatmapData.colLabels.length * heatmapData.cellW / 2" :y="heatmapData.H - 16" text-anchor="middle" font-size="11" fill="#777">颜色越深表示绝对值越大</text>
+            <template v-if="heatmapData.isCorrelationScale">
+              <rect
+                :x="heatmapData.legend.x"
+                :y="heatmapData.legend.y"
+                :width="heatmapData.legend.w"
+                :height="heatmapData.legend.h"
+                :fill="`url(#heatmap-corr-gradient-${sectionIndex}-${chartIndex})`"
+                stroke="#d8dee8"
+                stroke-width="1"
+                rx="2"
+              />
+              <text
+                v-for="tick in heatmapData.legend.ticks"
+                :key="tick.label"
+                :x="tick.x"
+                :y="heatmapData.legend.y + 27"
+                text-anchor="middle"
+                font-size="10"
+                fill="#6b7280"
+              >{{ tick.label }}</text>
+            </template>
+            <text :x="heatmapData.ml + heatmapData.colLabels.length * heatmapData.cellW / 2" :y="heatmapData.H - 16" text-anchor="middle" font-size="11" fill="#777">{{ heatmapData.legendLabel }}</text>
           </svg>
         </template>
       </template>
       <template v-else-if="isScatterPlotChart">
         <template v-for="scatterData in [calcScatterPlot(chart.data)]" :key="0">
-          <svg class="ap-chart-svg ap-chart-svg--scatter" :viewBox="`0 0 ${scatterData.W} ${scatterData.H}`" :width="scatterData.W" :height="scatterData.H"
+          <svg class="ap-chart-svg ap-chart-svg--scatter" :class="{ 'ap-chart-svg--mds': scatterData.isMdsMap }" :viewBox="`0 0 ${scatterData.W} ${scatterData.H}`" :width="scatterData.W" :height="scatterData.H"
             @mouseleave="$emit('hide-tip')">
             <rect :x="scatterData.ml" :y="scatterData.mt" :width="scatterData.pw" :height="scatterData.ph" fill="white"/>
             <line v-for="(tick, tickIndex) in scatterData.xTicks" :key="'sxg'+tickIndex"
               :x1="tick.x" :y1="scatterData.mt" :x2="tick.x" :y2="scatterData.mt+scatterData.ph"
-              stroke="#f1f5f9" stroke-width="1"/>
+              :stroke="scatterData.isMdsMap ? '#e8edf4' : '#f1f5f9'" stroke-width="1"/>
             <line v-for="(tick, tickIndex) in scatterData.yTicks" :key="'syg'+tickIndex"
               :x1="scatterData.ml" :y1="tick.y" :x2="scatterData.ml+scatterData.pw" :y2="tick.y"
-              stroke="#eef2f7" stroke-width="1"/>
+              :stroke="scatterData.isMdsMap ? '#e8edf4' : '#eef2f7'" stroke-width="1"/>
+            <template v-if="scatterData.showZeroCross">
+              <line :x1="scatterData.ml" :y1="scatterData.zeroY" :x2="scatterData.ml+scatterData.pw" :y2="scatterData.zeroY" stroke="#475569" stroke-width="1.25" vector-effect="non-scaling-stroke"/>
+              <line :x1="scatterData.zeroX" :y1="scatterData.mt" :x2="scatterData.zeroX" :y2="scatterData.mt+scatterData.ph" stroke="#475569" stroke-width="1.25" vector-effect="non-scaling-stroke"/>
+            </template>
+            <rect v-if="scatterData.isMdsMap" :x="scatterData.ml" :y="scatterData.mt" :width="scatterData.pw" :height="scatterData.ph" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+            <template v-else>
+              <line :x1="scatterData.ml" :y1="scatterData.mt+scatterData.ph" :x2="scatterData.ml+scatterData.pw" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
+              <line :x1="scatterData.ml" :y1="scatterData.mt" :x2="scatterData.ml" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
+            </template>
+            <template v-if="scatterData.isMdsMap">
+              <line v-for="(tick, tickIndex) in scatterData.xTicks" :key="'sxm'+tickIndex"
+                :x1="tick.x" :y1="scatterData.mt+scatterData.ph" :x2="tick.x" :y2="scatterData.mt+scatterData.ph+5" stroke="#64748b" stroke-width="1"/>
+              <line v-for="(tick, tickIndex) in scatterData.yTicks" :key="'sym'+tickIndex"
+                :x1="scatterData.ml-5" :y1="tick.y" :x2="scatterData.ml" :y2="tick.y" stroke="#64748b" stroke-width="1"/>
+            </template>
+            <template v-if="scatterData.isMdsMap && scatterData.showLabels">
+              <line v-for="(point, pointIndex) in scatterData.marks" :key="'spl'+pointIndex"
+                :x1="point.x" :y1="point.y" :x2="point.leaderX" :y2="point.leaderY" stroke="#b6c4d6" stroke-width="1"/>
+            </template>
             <circle v-for="(point, pointIndex) in scatterData.marks" :key="'sp'+pointIndex"
-              class="ap-scatter-mark"
-              :cx="point.x" :cy="point.y" r="3.2" fill="#2389e8" fill-opacity=".72"
-              @mouseenter="$emit('show-scatter-tip', $event, chart, point)"
+              :class="['ap-scatter-mark', { 'is-linked-hover': scatterHoverKey === scatterPointKey(sectionIndex, chartIndex, pointIndex) }]"
+              :cx="point.x" :cy="point.y" :r="scatterData.isMdsMap ? 4.8 : 3.2" fill="#2563eb" :fill-opacity="scatterData.isMdsMap ? .95 : .72"
+              :stroke="scatterData.isMdsMap ? '#fff' : 'none'" :stroke-width="scatterData.isMdsMap ? 1.8 : 0"
+              @mouseenter="setScatterHover(sectionIndex, chartIndex, pointIndex, true); $emit('show-scatter-tip', $event, chart, point)"
               @mousemove="$emit('move-tip', $event)"
-              @mouseleave="$emit('hide-tip')"/>
-            <line :x1="scatterData.ml" :y1="scatterData.mt+scatterData.ph" :x2="scatterData.ml+scatterData.pw" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
-            <line :x1="scatterData.ml" :y1="scatterData.mt" :x2="scatterData.ml" :y2="scatterData.mt+scatterData.ph" stroke="#94a3b8" stroke-width="1"/>
+              @mouseleave="setScatterHover(sectionIndex, chartIndex, pointIndex, false); $emit('hide-tip')"/>
+            <template v-if="scatterData.showLabels">
+              <g v-for="(point, pointIndex) in scatterData.marks" :key="'sptg'+pointIndex"
+                :class="['ap-scatter-label-group', { 'is-linked-hover': scatterHoverKey === scatterPointKey(sectionIndex, chartIndex, pointIndex) }]"
+                @mouseenter="setScatterHover(sectionIndex, chartIndex, pointIndex, true); $emit('show-scatter-tip', $event, chart, point)"
+                @mouseleave="setScatterHover(sectionIndex, chartIndex, pointIndex, false); $emit('hide-tip')"
+                @focus="setScatterHover(sectionIndex, chartIndex, pointIndex, true)"
+                @blur="setScatterHover(sectionIndex, chartIndex, pointIndex, false)"
+                tabindex="0"
+                role="button"
+                aria-label="查看点位详情"
+                @mousemove="$emit('move-tip', $event)"
+              >
+                <rect v-if="scatterData.isMdsMap"
+                  class="ap-scatter-label-box"
+                  :x="point.labelBoxX" :y="point.labelBoxY" :width="point.labelBoxW" :height="point.labelBoxH" rx="4"/>
+                <text
+                  class="ap-scatter-label"
+                  :x="point.labelX" :y="point.labelY" :text-anchor="point.labelAnchor" :font-size="scatterData.isMdsMap ? 12 : 11" fill="#1d4ed8">{{ point.label }}</text>
+              </g>
+            </template>
             <text v-for="(tick, tickIndex) in scatterData.xTicks" :key="'sxt'+tickIndex"
               :x="tick.x" :y="scatterData.mt+scatterData.ph+18" text-anchor="middle" font-size="11" fill="#64748b">{{ tick.label }}</text>
             <text v-for="(tick, tickIndex) in scatterData.yTicks" :key="'syt'+tickIndex"
@@ -1087,9 +1153,10 @@
     </div>
     <div v-if="dataVisible && isScatterPlotChart" class="ap-chart-data-table">
       <table class="tlt tlt--sm">
-        <thead><tr><th>{{ chart.data.xLabel || 'X' }}</th><th>{{ chart.data.yLabel || 'Y' }}</th></tr></thead>
+        <thead><tr><th v-if="scatterHasLabels(chart.data)">名称</th><th>{{ chart.data.xLabel || 'X' }}</th><th>{{ chart.data.yLabel || 'Y' }}</th></tr></thead>
         <tbody>
           <tr v-for="(point, rowIndex) in chart.data.points" :key="rowIndex">
+            <td v-if="scatterHasLabels(chart.data)">{{ point.label }}</td>
             <td>{{ formatChartNumber(point.x) }}</td>
             <td>{{ formatChartNumber(point.y) }}</td>
           </tr>
@@ -1230,6 +1297,7 @@ const metricChartZoom = ref(props.chart.data?.multiSeries ? 1.15 : 1)
 const boxplotChartZoom = ref(1)
 const labelMode = ref(props.chart.data?.defaultLabelMode || 'percent')
 const metricMode = ref(props.chart.data?.defaultMode || 'bar')
+const scatterHoverKey = ref('')
 const showDataLabels = ref(defaultShowDataLabels(props.chart))
 const showSignificantOnly = ref(defaultShowSignificantOnly(props.chart))
 const selectedMetric = ref(props.chart.data?.metric || '')
@@ -1383,9 +1451,10 @@ const chartWrapStyle = computed(() => {
     }
   }
   if (isScatterPlotChart.value) {
+    const layout = props.calcScatterPlot(props.chart.data || {})
     return {
-      width: '680px',
-      height: '390px',
+      width: `${layout.W}px`,
+      height: `${layout.H}px`,
     }
   }
   if (!isKanoBetterWorseChart.value) return {}
@@ -1607,6 +1676,19 @@ function multiMetricLabelPoints(metricData) {
 function metricSeriesNames(data = {}) {
   if (!data.multiSeries || !data.metrics) return []
   return Object.keys(data.metrics)
+}
+
+function scatterHasLabels(data = {}) {
+  return (data.points || []).some(point => point.label)
+}
+
+function scatterPointKey(sectionIndex, chartIndex, pointIndex) {
+  return `${sectionIndex}-${chartIndex}-${pointIndex}`
+}
+
+function setScatterHover(sectionIndex, chartIndex, pointIndex, active) {
+  const key = scatterPointKey(sectionIndex, chartIndex, pointIndex)
+  scatterHoverKey.value = active ? key : (scatterHoverKey.value === key ? '' : scatterHoverKey.value)
 }
 
 function chartMean(values) {
