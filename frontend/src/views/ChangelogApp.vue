@@ -76,7 +76,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const changelogEntries = [
   {
-    date: '2026-06-07',
+    date: '2026-06-11',
     type: 'feat',
     title: '信度与相关系列方法全面升级',
     items: [
@@ -91,7 +91,7 @@ const changelogEntries = [
     ],
   },
   {
-    date: '2026-06-06',
+    date: '2026-06-10',
     type: 'feat',
     title: '非参数检验全线重构与配置面板升级',
     items: [
