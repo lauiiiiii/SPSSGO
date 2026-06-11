@@ -30,6 +30,7 @@
 - `serial_mediation.R`：链式中介效应（基于 lavaan + Bootstrap）
 - `moderation.R`：调节效应分析（分层回归、简单斜率、Johnson-Neyman 区间）
 - `intraclass_correlation.R`：组内相关系数（ICC 多口径）
+- `kendall_consistency.R`：Kendall一致性检验（Kendall's W，行内平均秩和并列秩修正）
 - `discrimination.R`：区分度/项目分析
 - `n_way_anova.R`：多因素方差分析（无交互主效应模型、截距、事后比较）
 
@@ -67,7 +68,7 @@
 - 已安装 `jsonlite` 包
 - 已安装 `lavaan` 包
 
-运行调节效应、组内相关系数、区分度分析需要：
+运行调节效应、组内相关系数、Kendall一致性检验、区分度分析需要：
 
 - 已安装 R
 - `Rscript` 可执行

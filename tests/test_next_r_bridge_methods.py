@@ -111,7 +111,7 @@ class NextRBridgeMethodsTests(unittest.TestCase):
             {
                 "module": intraclass_correlation,
                 "call": intraclass_correlation.run,
-                "params": {"variables": ["r1", "r2"]},
+                "params": {"variables": ["r1", "r2"], "icc_type": "单向随机 绝对一致性"},
                 "script": "intraclass_correlation.R",
                 "temp_file": "intraclass_correlation_input.csv",
                 "failure_text": "R 组内相关系数执行失败",
@@ -167,6 +167,10 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                         run_r.call_args.kwargs["temp_files"]["multiple_regression_input.csv"].splitlines()[0],
                         "y,x,group",
                     )
+                if case["script"] == "intraclass_correlation.R":
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["variables"], ["r1", "r2"])
+                    self.assertEqual(payload["icc_type"], "单向随机 绝对一致性")
                 if case["module"] is mediation:
                     payload = run_r.call_args.kwargs["payload"]
                     self.assertEqual(payload["x"], ["x"])

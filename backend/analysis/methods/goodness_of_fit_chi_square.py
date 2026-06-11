@@ -14,7 +14,7 @@ METHOD_META = {
             "label": "变量",
             "type": "single",
             "accept": "categorical",
-            "hint": "放入 1 个定类变量",
+            "hint": "请输入变量",
         },
     ],
     "options": [],
@@ -143,7 +143,7 @@ def goodness_of_fit_chi_square(df, params):
     chart_section = _sec_charts(
         "输出结果2：期望频数图",
         [_result_chart(labels, observed.tolist(), expected.round(6).tolist())],
-        "上图展示了各组期望比例与实际比例的频数柱状图，可直观观测实际与预期差异不大。",
+        "上图展示了各组实际频数与期望频数的柱状图，可直观观察实际分布与预期分布的差异。",
     )
     sections = [
         _sec_table(

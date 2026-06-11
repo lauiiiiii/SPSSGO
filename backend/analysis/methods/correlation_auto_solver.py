@@ -4,7 +4,7 @@ from backend.analysis.common import *
 
 METHOD_KEY = "correlation_auto_solver"
 METHOD_META = {
- 'label': '相关性分析自动求解器',
+ 'label': '相关与一致性推荐',
  'category': '数据检验',
  'description': '自动识别变量特征并推荐合适的相关或一致性分析方法',
  'order': 80,
@@ -182,13 +182,13 @@ def run(df, params):
         smart_parts.append(f"自动识别为多个数值评价变量，ICC 近似值为 {_fmt(icc, 3)}。")
 
     sections = [
-        _sec_table("变量识别结果", ["变量", "识别类型", "有效样本", "唯一值数", "Shapiro-Wilk p"], profile_rows, description="自动求解器会先识别变量形态，再根据变量组合推荐更合适的相关或一致性分析方法。"),
+        _sec_table("变量识别结果", ["变量", "识别类型", "有效样本", "唯一值数", "Shapiro-Wilk p"], profile_rows, description="相关与一致性推荐会先识别变量形态，再根据变量组合推荐更合适的相关或一致性分析方法。"),
         _sec_table("推荐方法", ["优先级", "推荐方法", "推荐理由"], rec_rows or [["1", "相关性分析", "当前数据可先从基础相关分析开始查看变量间关系。"]]),
     ]
     if result_headers and result_rows:
-        sections.append(_sec_table("自动求解结果", result_headers, result_rows, note="注：此处展示的是自动求解器根据当前变量组合选出的首选结果。"))
+        sections.append(_sec_table("推荐结果", result_headers, result_rows, note="注：此处展示的是相关与一致性推荐根据当前变量组合选出的首选结果。"))
     sections.append(_sec_advice(
-        "自动求解器适合在你不确定该先用 Pearson、Spearman、Cochran's Q、Kappa 还是 ICC 时快速给出方向；"
+        "相关与一致性推荐适合在你不确定该先用 Pearson、Spearman、Cochran's Q、Kappa 还是 ICC 时快速给出方向；"
         "如果你已经明确研究问题，比如关注一致性而不是相关性，仍建议直接使用对应的专业方法页。"
     ))
     smart_text = "；".join(smart_parts) if smart_parts else f"自动推荐的首选方法为“{primary}”。"
@@ -199,6 +199,6 @@ def run(df, params):
         "name": METHOD_META["label"],
         "headers": result_headers or ["优先级", "推荐方法", "推荐理由"],
         "rows": result_rows or rec_rows,
-        "description": f"自动求解完成，首选推荐方法为“{primary}”。",
+        "description": f"推荐完成，首选推荐方法为“{primary}”。",
         "sections": sections,
     }

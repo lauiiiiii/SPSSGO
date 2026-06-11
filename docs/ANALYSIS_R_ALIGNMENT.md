@@ -1,10 +1,10 @@
 # 分析方法 R 对齐清单
 
-这份文档只管统计口径对齐，不管前端展示。截图里这些方法后续对齐 SPSSAU/SPSSPRO 时，统计计算优先放到 `backend/r_scripts/`，Python 方法文件只做参数整理、临时数据写入、调用 R、解析 JSON。
+这份文档只管统计口径对齐，不管前端展示。截图里这些方法后续对齐 SPSSAU/SPSSPRO 时，统计计算默认优先放到 `backend/r_scripts/`，Python 方法文件只做参数整理、临时数据写入、调用 R、解析 JSON；明确标注为 Python 显式公式复现的方法除外。
 
 ## 硬规则
 
-- 对齐适配时不要在 Python 里临时拼统计公式、手算检验量或复刻 R 包结果。
+- 对齐适配时不要在 Python 里临时拼统计公式、手算检验量或复刻 R 包结果；明确标注为 Python 显式公式复现的方法必须把公式 helper 和测试一起补齐。
 - Python 层只保留 `METHOD_META`、参数校验、列名解析、R bridge、错误兜底和结果透传。
 - R 脚本负责模型公式、检验、事后比较、拟合指标、效应量和核心表格口径。
 - 一个方法一个 R 脚本，脚本名默认和 `METHOD_KEY` 一致，例如 `n_way_anova.R`。
@@ -49,12 +49,12 @@
 | `friedman_test` | 多配对样本Friedman检验 | `friedman_test.R` | Friedman 统计量和多重比较用 R |
 | `goodness_of_fit_chi_square` | 卡方拟合优度检验 | `goodness_of_fit_chi_square.R` | 拟合优度卡方和期望分布用 R |
 | `cochrans_q_test` | Cochran's Q检验 | `cochrans_q_test.R` | Q 检验和配对二分类口径用 R |
-| `kappa_consistency` | Kappa一致性检验 | `kappa_consistency.R` | Kappa、标准误、置信区间用 R |
+| `kappa_consistency` | Kappa一致性检验 | statsmodels.cohens_kappa / fleiss_kappa | 简单 Kappa、线性加权 Kappa、平方加权 Kappa 主表 SE/SE0/Z/P/CI 走 Fleiss-Cohen-Everitt 1969 大样本渐近方差（statsmodels.cohens_kappa 内部实现）：标准误(假定原假设) 用于检验、标准误 用于 95% CI，两者对应两个不同方差公式；Fleiss Kappa 主表 SE/Z/P/CI 走 Fleiss-Levin-Paik 2003 (3rd ed.) p.609 H0=0 下大样本渐近方差，主表两个 SE 列同值；po、pe、Kappa 按 Cohen 1960 / Fleiss 1971 原始公式显式手算（确定性公式，唯一解）；简单 Kappa 详细结论附 Cohen 1960 经典手算近似 SE=sqrt(po(1-po)/(N(1-pe))) 作为量级参考；权重列支持字符串型 ID 列的数字部分抽取兜底（例如"学生1..学生50"抽成 1..50 当频数权重）；新增评价者交叉表 section，方便和外部参考软件的列联表逐格对照 |
 | `kendall_consistency` | Kendall一致性检验 | `kendall_consistency.R` | Kendall W 和显著性检验用 R |
-| `intraclass_correlation` | 组内相关系数 | `intraclass_correlation.R` | 已有 R 脚本；ICC 多口径继续放 R |
-| `correlation_auto_solver` | 相关性分析自动求解器 | `correlation_auto_solver.R` | 自动分派规则可在 Python，具体检验用 R |
-| `mds` | 多维尺度分析 | `mds.R` | 距离、拟合和坐标求解用 R |
-| `spearman_correlation` | Spearman 等级相关 | `spearman_correlation.R` | 秩相关、P 值和样本量处理用 R |
+| `intraclass_correlation` | ICC组内相关系数 | `intraclass_correlation.R` | 已有 R 脚本；ICC 多口径继续放 R |
+| `correlation_auto_solver` | 相关与一致性推荐 | `correlation_auto_solver.R` | 自动分派规则可在 Python，具体检验用 R |
+| `mds` | 多维尺度分析MDS | Python 显式公式复现 | 按距离矩阵双中心化和特征分解求二维坐标；原始数据可按列/按行构造欧氏距离矩阵，距离矩阵模式支持下三角矩阵补全 |
+| `spearman_correlation` | Spearman 等级相关 | 复用 `pearson_correlation` 的 Spearman 口径 | 单独入口固定使用 `Spearman相关系数`，表格、P 值、热力图、样本量和常量变量处理跟相关性分析保持一致 |
 
 ## 综合评价
 

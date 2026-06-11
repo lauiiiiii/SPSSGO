@@ -1690,17 +1690,23 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variable | 分类变量 | 单选，定类变量 | 放入分类变量 |
+| variable | 变量 | 单选，定类变量 | 请输入变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| expected_ratios | 期望比例 | 对象 | 可选，按类别填写期望比例百分数；不填时默认等比例。 |
 
 前端槽位示例：
 
 ```json
 {
-  "variable": "分类变量1"
+  "variable": "分类变量1",
+  "expected_ratios": {
+    "本科生": "50",
+    "研究生": "50"
+  }
 }
 ```
 
@@ -1755,26 +1761,29 @@ Authorization: Bearer <access_token>
 ### `kappa_consistency` - Kappa一致性检验
 
 - 分类：数据检验
-- 说明：评估两个评价者或两次分类结果之间的一致性
+- 说明：评估两个及以上评价者或分类结果之间的一致性。简单 Kappa、线性/平方加权 Kappa 主表 SE/SE0/Z/P/CI 走 Fleiss-Cohen-Everitt 1969 大样本渐近方差（statsmodels.cohens_kappa）：标准误(假定原假设) 用于检验、标准误 用于 CI，两者对应两个不同方差公式；Fleiss Kappa 主表 SE/Z/P/CI 走 Fleiss-Levin-Paik 2003 H0=0 下大样本渐近方差，主表两个 SE 列同值；po/pe/Kappa 按 Cohen 1960 / Fleiss 1971 原始公式手算（确定性公式，唯一解）；简单 Kappa 详细结论里附 Cohen 1960 经典手算近似 SE=sqrt(po(1-po)/(N(1-pe))) 作为量级参考；权重列支持字符串型 ID 列的数字部分抽取兜底（"学生1..学生50"→1..50 当频数权重）；新增评价者交叉表 section，方便和外部参考软件的列联表逐格对照
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| rater1 | 评价者1 | 单选，定类变量 | 放入第一个分类变量 |
-| rater2 | 评价者2 | 单选，定类变量 | 放入第二个分类变量 |
+| variables | 变量X | 多选，任意变量 | 放入两个及以上定量或定类变量 |
+| weight | 权重 | 单选，定量变量 | 可选，放入一个样本权重变量；无有效正权重时自动按未加权分析 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| kappa_type | 方法 | 单选 | 可选：简单Kappa、线性加权Kappa、平方加权Kappa、Fleiss Kappa系数。简单 Kappa 和加权 Kappa 主表 SE/SE0/Z/P/CI 走 Fleiss-Cohen-Everitt 1969 大样本渐近方差（statsmodels.cohens_kappa）；Fleiss Kappa 走 Fleiss-Levin-Paik 2003 H0=0 下大样本渐近方差；简单 Kappa 详细结论里附 Cohen 1960 经典手算近似 SE=sqrt(po(1-po)/(N(1-pe))) 作量级参考；两个变量输出 Cohen Kappa，三个及以上变量默认输出两两 Kappa，选择 Fleiss Kappa 时输出整体一致性。 |
 
 前端槽位示例：
 
 ```json
 {
-  "rater1": "分类变量1",
-  "rater2": "分类变量1"
+  "variables": ["分类变量1", "分类变量2"],
+  "weight": "权重变量",
+  "kappa_type": "简单Kappa"
 }
 ```
 
@@ -1782,22 +1791,23 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "rater1": "分类变量1",
-  "rater2": "分类变量1"
+  "variables": ["分类变量1", "分类变量2"],
+  "weight": "权重变量",
+  "kappa_type": "简单Kappa"
 }
 ```
 
 ### `kendall_consistency` - Kendall一致性检验
 
 - 分类：数据检验
-- 说明：评估多个评价对象排序结果之间的一致性程度
+- 说明：评估多位评价者对同一批评价对象排序结果的一致性程度
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价变量 | 多选，定量变量，至少 2 个 | 放入多个评价者或多轮排序结果 |
+| variables | 评价对象变量 | 多选，定量变量，至少 2 个 | 放入被评价对象/指标列；每行代表一位评价者或专家的评分 |
 
 额外选项：
 
@@ -1825,7 +1835,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `intraclass_correlation` - 组内相关系数
+### `intraclass_correlation` - ICC组内相关系数
 
 - 分类：数据检验
 - 说明：评估多个评价者或重复测量之间的一致性可靠性
@@ -1835,11 +1845,13 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价变量 | 多选，定量变量，至少 2 个 | 放入多个评价者或重复测量变量 |
+| variables | 评价变量 | 多选，定量变量，至少 2 个 | 放入多个评价者或重复测量变量；ID列若被拖入也会按普通定量列参与计算 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| icc_type | ICC类型 | `双向混合/随机 绝对一致性` | `双向混合/随机 绝对一致性`、`双向混合/随机 一致性`、`单向随机 绝对一致性` | 选择 ICC 模型类型，输出该类型下的单一度量和平均度量两行结果 |
 
 前端槽位示例：
 
@@ -1848,7 +1860,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "icc_type": "双向混合/随机 绝对一致性"
 }
 ```
 
@@ -1859,11 +1872,12 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "icc_type": "双向混合/随机 绝对一致性"
 }
 ```
 
-### `correlation_auto_solver` - 相关性分析自动求解器
+### `correlation_auto_solver` - 相关与一致性推荐
 
 - 分类：数据检验
 - 说明：自动识别变量特征并推荐合适的相关或一致性分析方法
@@ -1939,21 +1953,24 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `mds` - 多维尺度分析
+### `mds` - 多维尺度分析MDS
 
 - 分类：数据检验
-- 说明：基于变量间距离关系建立二维空间坐标，用于观察接近结构
+- 说明：基于距离矩阵把对象映射到低维空间，用于观察对象之间的相似与差异结构
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 分析变量 | 多选，定量变量，至少 2 个 | 放入需要比较结构接近性的变量 |
+| variables | 分析变量 | 多选，定量变量，至少 2 个 | 放入需要构造距离矩阵或已经组成距离矩阵的变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| data_format | 数据格式 | "根据数据创建距离矩阵" | 根据数据创建距离矩阵, 数据为距离矩阵 |  |
+| analysis_dimension | 分析维度 | "按变量（列）" | 按变量（列）, 按变量（行） |  |
 
 前端槽位示例：
 
@@ -1962,7 +1979,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "data_format": "根据数据创建距离矩阵",
+  "analysis_dimension": "按变量（列）"
 }
 ```
 
@@ -1973,7 +1992,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "data_format": "根据数据创建距离矩阵",
+  "analysis_dimension": "按变量（列）"
 }
 ```
 
