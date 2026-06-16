@@ -63,7 +63,7 @@
 | METHOD_KEY | 方法 | R 脚本 |
 | --- | --- | --- |
 | `ahp_professional` | 层次分析法（AHP专业版） | `ahp_professional.R` |
-| `ahp_simplified` | 层次分析法（AHP简化版） | `ahp_simplified.R` |
+| `ahp_simplified` | 层次分析法（AHP快速版） | `ahp_simplified.R` |
 | `exploratory_factor_analysis` | 因子分析（探索性） | `exploratory_factor_analysis.R` |
 | `data_envelopment_analysis` | 数据包络分析 | `data_envelopment_analysis.R` |
 | `fuzzy_comprehensive_evaluation` | 模糊综合评价 | `fuzzy_comprehensive_evaluation.R` |

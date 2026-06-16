@@ -2003,27 +2003,45 @@ Authorization: Bearer <access_token>
 ### `ahp_professional` - 层次分析法（AHP专业版）
 
 - 分类：综合评价
-- 说明：提供判断矩阵、一致性检验和综合得分的更完整 AHP 输出
+- 说明：构建目标-指标-方案三层 AHP 决策模型，输出权重、一致性检验和方案排序
 - 参数构建器：`direct`
 
-变量槽位：
+专用参数：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 准则指标 | 多选，定量变量，至少 2 个 | 放入用于构造 AHP 权重的准则变量 |
-
-额外选项：
-
-无额外选项。
+| goal | 目标名称 | 字符串 | 默认 `中心主题` |
+| criteria | 指标列表 | 对象数组，2-20 个 | 每项格式为 `{ "id": "c1", "label": "指标1" }` |
+| alternatives | 方案列表 | 对象数组，2-20 个 | 每项格式为 `{ "id": "a1", "label": "方案1" }` |
+| criteria_matrix | 指标判断矩阵 | 二维数字数组 | 完整互反矩阵，对角线为 1 |
+| alternative_matrices | 方案判断矩阵 | 对象 | key 为指标 id，value 为该指标下的方案互反矩阵 |
+| weight_method | 计算方法 | 字符串 | `sum_product`、`root`、`eigen`，默认 `sum_product` |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "goal": "中心主题",
+  "criteria": [
+    { "id": "c1", "label": "指标1" },
+    { "id": "c2", "label": "指标2" },
+    { "id": "c3", "label": "指标3" }
+  ],
+  "alternatives": [
+    { "id": "a1", "label": "方案1" },
+    { "id": "a2", "label": "方案2" }
+  ],
+  "criteria_matrix": [
+    [1, 3, 5],
+    [0.3333333333, 1, 2],
+    [0.2, 0.5, 1]
+  ],
+  "alternative_matrices": {
+    "c1": [[1, 3], [0.3333333333, 1]],
+    "c2": [[1, 0.2], [5, 1]],
+    "c3": [[1, 2], [0.5, 1]]
+  },
+  "weight_method": "sum_product"
 }
 ```
 
@@ -2031,37 +2049,64 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "goal": "中心主题",
+  "criteria": [
+    { "id": "c1", "label": "指标1" },
+    { "id": "c2", "label": "指标2" },
+    { "id": "c3", "label": "指标3" }
+  ],
+  "alternatives": [
+    { "id": "a1", "label": "方案1" },
+    { "id": "a2", "label": "方案2" }
+  ],
+  "criteria_matrix": [
+    [1, 3, 5],
+    [0.3333333333, 1, 2],
+    [0.2, 0.5, 1]
+  ],
+  "alternative_matrices": {
+    "c1": [[1, 3], [0.3333333333, 1]],
+    "c2": [[1, 0.2], [5, 1]],
+    "c3": [[1, 2], [0.5, 1]]
+  },
+  "weight_method": "sum_product"
 }
 ```
 
-### `ahp_simplified` - 层次分析法（AHP简化版）
+### `ahp_simplified` - 层次分析法（AHP快速版）
 
 - 分类：综合评价
-- 说明：基于指标平均重要度近似构造判断矩阵并计算权重
+- 说明：支持手填判断矩阵或按变量自动估权，快速计算 AHP 权重和一致性检验
 - 参数构建器：`direct`
 
-变量槽位：
+专用参数：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 准则指标 | 多选，定量变量，至少 2 个 | 放入用于构造 AHP 权重的准则变量 |
-
-额外选项：
-
-无额外选项。
+| input_mode | 输入方式 | 字符串 | `matrix` 手填判断矩阵；`data_auto` 按变量均值自动估权 |
+| criteria | 指标名称 | 字符串数组 | `matrix` 模式必填，2-10 个 |
+| matrix | 判断矩阵 | 二维数字数组 | `matrix` 模式必填，完整互反矩阵，对角线为 1 |
+| variables | 准则指标 | 定量变量数组 | `data_auto` 模式必填，至少 2 个 |
+| weight_method | 计算方法 | 字符串 | `sum_product`、`root`、`eigen`，默认 `sum_product` |
+| include_missing_analysis | 输出缺失分析 | 布尔 | 仅 `data_auto` 模式在前端展示 |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "input_mode": "matrix",
+  "criteria": [
+    "指标1",
+    "指标2",
+    "指标3"
+  ],
+  "matrix": [
+    [1, 3, 5],
+    [0.3333333333, 1, 2],
+    [0.2, 0.5, 1]
+  ],
+  "weight_method": "sum_product",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2069,10 +2114,13 @@ Authorization: Bearer <access_token>
 
 ```json
 {
+  "input_mode": "data_auto",
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "weight_method": "sum_product",
+  "include_missing_analysis": true
 }
 ```
 

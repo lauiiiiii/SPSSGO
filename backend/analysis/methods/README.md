@@ -101,7 +101,7 @@
 | 文件 | METHOD_KEY | 方法 |
 | --- | --- | --- |
 | `ahp_professional.py` | `ahp_professional` | 层次分析法（AHP专业版） |
-| `ahp_simplified.py` | `ahp_simplified` | 层次分析法（AHP简化版） |
+| `ahp_simplified.py` | `ahp_simplified` | 层次分析法（AHP快速版） |
 | `exploratory_factor_analysis.py` | `exploratory_factor_analysis` | 因子分析（探索性） |
 | `data_envelopment_analysis.py` | `data_envelopment_analysis` | 数据包络分析 |
 | `fuzzy_comprehensive_evaluation.py` | `fuzzy_comprehensive_evaluation` | 模糊综合评价 |

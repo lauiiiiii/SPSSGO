@@ -33,6 +33,8 @@
 - `kendall_consistency.R`：Kendall一致性检验（Kendall's W，行内平均秩和并列秩修正）
 - `discrimination.R`：区分度/项目分析
 - `n_way_anova.R`：多因素方差分析（无交互主效应模型、截距、事后比较）
+- `ahp_simplified.R`：AHP 快速版（手填判断矩阵、按变量均值自动估权、一致性检验）
+- `ahp_professional.R`：AHP 专业版（目标-指标-方案三层模型、局部权重、综合得分）
 
 运行 `reliability.R` 需要：
 
@@ -75,6 +77,12 @@
 - 已安装 `jsonlite` 包
 
 运行多因素方差分析需要：
+
+- 已安装 R
+- `Rscript` 可执行
+- 已安装 `jsonlite` 包
+
+运行 AHP 快速版/专业版需要：
 
 - 已安装 R
 - `Rscript` 可执行
