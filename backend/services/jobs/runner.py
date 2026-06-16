@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from backend.ai_engine import generate_plan
 from backend.analysis import METHOD_REGISTRY, build_execute_params
 from backend.analysis.common import append_optional_missing_analysis
+from backend.config import SESSION_WRITE_LOCK_TTL_SECONDS
 from backend.database import (
     delete_results_for_job,
     get_current_dataset_version_for_session,
@@ -28,6 +29,7 @@ from backend.domain import CANCELED, CREATED, DONE, ERROR, FAILED, EXECUTING, PL
 from backend.file_parser import build_data_context, parse_data_file_async
 from backend.observability import finish_job_execution, record_job_transition, start_job_execution
 from backend.runtime_control import session_write_lock
+from backend.services.dataset_version_service import activate_dataset_version, create_dataset_version_from_dataframe, save_current_metadata_snapshot
 from backend.services.jobs.aux_runner import (
     run_ai_interpretation,
     run_dataset_ingest,
@@ -58,6 +60,55 @@ def _materialized_dataset(session_id: str, storage_key: str):
         yield path
     finally:
         storage_service.release_materialized(path)
+
+
+def _unique_score_column_name(existing_columns: set[str], base_name: str) -> str:
+    candidate = base_name
+    suffix = 2
+    while candidate in existing_columns:
+        candidate = f"{base_name}_{suffix}"
+        suffix += 1
+    existing_columns.add(candidate)
+    return candidate
+
+
+def _build_score_dataframe(df, score_columns: list[dict]) -> tuple:
+    """把 R 返回的内部得分列落到 DataFrame，列名冲突时按现有约定递增避让。"""
+    next_df = df.copy()
+    existing_columns = set(str(column) for column in next_df.columns)
+    created_columns = []
+    for item in score_columns or []:
+        base_name = str(item.get("base_name") or "").strip()
+        values = item.get("values") or []
+        if not base_name or len(values) != len(next_df.index):
+            continue
+        column_name = _unique_score_column_name(existing_columns, base_name)
+        next_df[column_name] = values
+        created_columns.append(column_name)
+    return next_df, created_columns
+
+
+async def _create_efa_score_dataset_version(job: dict, version: dict, df, score_columns: list[dict]) -> tuple[dict, list[str]] | tuple[None, list]:
+    """EFA 保存得分时创建并激活新数据版本，缺失行得分保持为空。"""
+    next_df, created_columns = _build_score_dataframe(df, score_columns)
+    if not created_columns:
+        return None, []
+
+    async with session_write_lock(
+        job["session_id"],
+        holder=f"execute_method:{job['id']}",
+        ttl_seconds=SESSION_WRITE_LOCK_TTL_SECONDS,
+        wait_timeout=None,
+    ):
+        next_version, _ = await create_dataset_version_from_dataframe(
+            job["session_id"],
+            job["owner_id"],
+            next_df,
+            source_job_id=job["id"],
+        )
+        await save_current_metadata_snapshot(job["session_id"], next_version["storage_key"])
+        activated_version = await activate_dataset_version(job["session_id"], next_version["id"])
+    return activated_version, created_columns
 
 
 async def run_job(job_id: str):
@@ -229,6 +280,19 @@ async def _run_execute_method_job(job: dict):
     result = append_optional_missing_analysis(result, df, params)
     timings["missing_analysis_ms"] = (time.perf_counter() - stage_start) * 1000
 
+    target_version = version
+    created_columns = []
+    created_dataset_version = False
+    if method == "exploratory_factor_analysis":
+        stage_start = time.perf_counter()
+        score_columns = result.get("score_columns") if isinstance(result, dict) else None
+        if score_columns:
+            next_version, created_columns = await _create_efa_score_dataset_version(job, version, df, score_columns)
+            if next_version:
+                target_version = next_version
+                created_dataset_version = True
+        timings["dataset_writeback_ms"] = (time.perf_counter() - stage_start) * 1000
+
     stage_start = time.perf_counter()
     items = normalize_analysis_items(result)
     await delete_results_for_job(job["id"])
@@ -243,7 +307,7 @@ async def _run_execute_method_job(job: dict):
             sections=item["sections"],
             owner_id=job["owner_id"],
             job_id=job["id"],
-            dataset_version_id=version["id"],
+            dataset_version_id=target_version["id"],
         )
     await update_session(session_id, status=DONE)
     timings["save_results_ms"] = (time.perf_counter() - stage_start) * 1000
@@ -257,7 +321,14 @@ async def _run_execute_method_job(job: dict):
         len(df.columns),
         {key: round(value, 1) for key, value in timings.items()},
     )
-    return {"success": True, "count": len(items), "dataset_version_id": version["id"]}
+    return {
+        "success": True,
+        "count": len(items),
+        "dataset_version_id": target_version["id"],
+        "dataset_version_no": target_version.get("version_no"),
+        "created_dataset_version": created_dataset_version,
+        "created_columns": created_columns,
+    }
 
 
 async def _run_execute_plan_job(job: dict):

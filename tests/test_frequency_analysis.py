@@ -32,6 +32,8 @@ class FrequencyAnalysisTests(unittest.TestCase):
         self.assertEqual(len(chart_section["charts"]), 2)
         self.assertEqual(chart_section["charts"][0]["chartType"], "category_distribution")
         self.assertEqual(chart_section["charts"][0]["data"]["total"], 4)
+        self.assertEqual(chart_section["charts"][0]["data"]["fields"]["variable"], "q1")
+        self.assertEqual(chart_section["charts"][0]["data"]["fields"]["x"], "q1")
 
     def test_value_labels_are_used(self):
         result = frequency_table(

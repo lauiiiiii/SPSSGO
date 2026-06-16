@@ -32,6 +32,8 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.metrics import cohen_kappa_score
 from sklearn.manifold import MDS
 
+from backend.analysis_chart_schema import normalize_chart_schema, normalize_chart_section
+
 
 def _fmt(val, decimals=3):
     if val is None:
@@ -218,7 +220,7 @@ def _sec_refs(items):
 
 
 def _sec_charts(title, charts, description=None):
-    section = {"type": "charts", "title": title, "charts": charts}
+    section = normalize_chart_section({"type": "charts", "title": title, "charts": charts})
     if description:
         section["description"] = description
     return section
@@ -231,7 +233,7 @@ def _hist_chart(var_name, series):
     unique_count = len(values.unique())
     bin_count = min(10, max(5, unique_count))
     counts, bin_edges = np.histogram(values, bins=bin_count)
-    return {
+    return normalize_chart_schema({
         "chartType": "histogram",
         "title": f"{var_name}直方图",
         "varName": var_name,
@@ -239,7 +241,7 @@ def _hist_chart(var_name, series):
             "binEdges": [round(float(edge), 4) for edge in bin_edges],
             "counts": [int(count) for count in counts],
         },
-    }
+    })
 
 
 def _box_chart(var_name, series):
@@ -255,7 +257,7 @@ def _box_chart(var_name, series):
     whisker_low = float(non_outliers.min()) if len(non_outliers) > 0 else q1
     whisker_high = float(non_outliers.max()) if len(non_outliers) > 0 else q3
     outliers = [round(float(value), 4) for value in values[(values < lower_fence) | (values > upper_fence)].tolist()]
-    return {
+    return normalize_chart_schema({
         "chartType": "boxplot",
         "title": f"{var_name}箱型图",
         "varName": var_name,
@@ -267,7 +269,7 @@ def _box_chart(var_name, series):
             "whiskerHigh": round(whisker_high, 4),
             "outliers": outliers,
         },
-    }
+    })
 
 
 def _build_missing_table(df, variables):

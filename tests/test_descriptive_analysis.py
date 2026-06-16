@@ -36,6 +36,8 @@ class DescriptiveAnalysisTests(unittest.TestCase):
         self.assertEqual(chart_section["charts"][0]["chartType"], "metric_comparison")
         self.assertEqual(chart_section["charts"][0]["data"]["metric"], "平均值")
         self.assertEqual(chart_section["charts"][0]["data"]["labels"], ["q1", "q2"])
+        self.assertEqual(chart_section["charts"][0]["data"]["fields"]["value"], "平均值")
+        self.assertEqual(chart_section["charts"][0]["data"]["axisLabels"]["y"], "平均值")
 
     def test_descriptive_returns_variable_missing_table(self):
         result = descriptive(self.df, {"variables": ["q1", "q2"]})

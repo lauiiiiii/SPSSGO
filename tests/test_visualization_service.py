@@ -24,6 +24,7 @@ class VisualizationServiceTests(unittest.TestCase):
         self.assertEqual(chart["data"]["labels"], ["B", "A"])
         self.assertEqual(chart["data"]["counts"], [2, 2])
         self.assertEqual(chart["data"]["total"], 4)
+        self.assertEqual(chart["data"]["fields"]["variable"], "group")
         self.assertIn("N=4", warnings[0])
 
     def test_histogram_uses_numeric_variable(self):
@@ -40,6 +41,8 @@ class VisualizationServiceTests(unittest.TestCase):
         self.assertEqual(chart["chartType"], "scatter_plot")
         self.assertEqual(chart["data"]["total"], 3)
         self.assertEqual(chart["data"]["points"][0], {"x": 1.0, "y": 10.0})
+        self.assertEqual(chart["data"]["fields"], {"x": "x", "y": "y"})
+        self.assertEqual(chart["data"]["axisLabels"], {"x": "x", "y": "y"})
         self.assertIn("N=3", warnings[0])
 
     def test_invalid_variable_type_raises(self):

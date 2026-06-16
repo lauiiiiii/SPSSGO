@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 from fastapi import HTTPException
 
+from backend.analysis_chart_schema import normalize_chart_schema
 from backend.file_parser import parse_data_file
 from backend.database import get_current_dataset_version_for_session, save_result
 from backend.services.session_data_service import materialized_session_data, resolve_session_data_source
@@ -44,6 +45,7 @@ async def save_visualization_result(session_id: str, payload: dict[str, Any]) ->
     chart = payload.get("chart") or {}
     if not chart or not isinstance(chart, dict):
         raise HTTPException(400, "缺少可保存的图表")
+    chart = normalize_chart_schema(chart)
     title = str(payload.get("title") or chart.get("title") or chart.get("data", {}).get("displayTitle") or "可视化图表").strip()
     warnings = [str(item) for item in (payload.get("warnings") or []) if str(item).strip()]
     config = payload.get("config") or {}
@@ -153,11 +155,11 @@ def _build_category_chart(df: pd.DataFrame, chart_type: str, column: str, option
         "defaultMode": mode_map[chart_type],
         "defaultShowDataLabels": bool(options.get("show_labels", True)),
     }
-    return {
+    return normalize_chart_schema({
         "chartType": "category_distribution",
         "title": _title(options, f"{column}分布图"),
         "data": data,
-    }, _valid_warning(len(df), len(valid))
+    }), _valid_warning(len(df), len(valid))
 
 
 def _build_numeric_chart(df: pd.DataFrame, chart_type: str, column: str, options: dict[str, Any]):
@@ -173,7 +175,7 @@ def _histogram_chart(column: str, series: pd.Series, options: dict[str, Any]) ->
     values = series.astype(float)
     bins = _normalize_bins(options.get("bins"), len(values))
     counts, edges = _histogram(values.tolist(), bins)
-    return {
+    return normalize_chart_schema({
         "chartType": "histogram",
         "title": _title(options, f"{column}直方图"),
         "varName": column,
@@ -181,7 +183,7 @@ def _histogram_chart(column: str, series: pd.Series, options: dict[str, Any]) ->
             "binEdges": edges,
             "counts": counts,
         },
-    }
+    })
 
 
 def _normalize_bins(value: Any, n: int) -> int:
@@ -209,12 +211,12 @@ def _histogram(values: list[float], bins: int):
 
 
 def _boxplot_chart(column: str, series: pd.Series, options: dict[str, Any]) -> dict[str, Any]:
-    return {
+    return normalize_chart_schema({
         "chartType": "boxplot",
         "title": _title(options, f"{column}箱线图"),
         "varName": column,
         "data": _box_stats(series),
-    }
+    })
 
 
 def _box_stats(series: pd.Series) -> dict[str, Any]:
@@ -247,28 +249,32 @@ def _build_xy_numeric_chart(df: pd.DataFrame, chart_type: str, x_column: str, y_
         clean = clean.sort_values("x")
         labels = [_format_number(value) for value in clean["x"].tolist()]
         values = [_round(float(value)) for value in clean["y"].tolist()]
-        chart = {
+        chart = normalize_chart_schema({
             "chartType": "metric_comparison",
             "title": _title(options, f"{x_column}与{y_column}折线图"),
             "data": {
                 "metric": y_column,
+                "xVariable": x_column,
+                "yVariable": y_column,
                 "labels": labels,
                 "values": values,
                 "defaultMode": "line",
                 "displayTitle": _title(options, f"{x_column}与{y_column}折线图"),
             },
-        }
+        })
         return chart, _valid_warning(len(df), len(clean))
-    chart = {
+    chart = normalize_chart_schema({
         "chartType": "scatter_plot",
         "title": _title(options, f"{x_column}与{y_column}散点图"),
         "data": {
+            "xVariable": x_column,
+            "yVariable": y_column,
             "xLabel": x_column,
             "yLabel": y_column,
             "points": _sample_points(clean),
             "total": int(len(clean)),
         },
-    }
+    })
     warnings = _valid_warning(len(df), len(clean))
     if len(clean) > MAX_SCATTER_POINTS:
         warnings.append(f"散点图最多展示 {MAX_SCATTER_POINTS} 个点，已按顺序抽样。")
@@ -295,7 +301,7 @@ def _build_grouped_chart(df: pd.DataFrame, chart_type: str, group_column: str, y
         boxes = []
         for label, item in clean.groupby("group_label", sort=False):
             boxes.append({"label": str(label), **_box_stats(item["y"])})
-        return {
+        return normalize_chart_schema({
             "chartType": "grouped_boxplot",
             "title": _title(options, f"{group_column}分组箱线图"),
             "data": {
@@ -303,22 +309,24 @@ def _build_grouped_chart(df: pd.DataFrame, chart_type: str, group_column: str, y
                 "groupVariable": group_column,
                 "boxes": boxes,
             },
-        }, _valid_warning(len(df), len(clean))
+        }), _valid_warning(len(df), len(clean))
     summary = clean.groupby("group_label", sort=False)["y"].mean()
     if options.get("sort", "count_desc") != "original":
         summary = summary.sort_values(ascending=False)
     title = _title(options, f"{group_column}分组均值图")
-    return {
+    return normalize_chart_schema({
         "chartType": "metric_comparison",
         "title": title,
         "data": {
             "metric": f"{y_column}均值",
+            "groupVariable": group_column,
+            "yVariable": y_column,
             "labels": [str(label) for label in summary.index.tolist()],
             "values": [_round(float(value)) for value in summary.tolist()],
             "defaultMode": "bar",
             "displayTitle": title,
         },
-    }, _valid_warning(len(df), len(clean))
+    }), _valid_warning(len(df), len(clean))
 
 
 def _round(value: float) -> float:

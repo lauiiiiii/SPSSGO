@@ -1,9 +1,12 @@
+from backend.analysis_chart_schema import normalize_chart_sections
+
+
 def normalize_analysis_sections(sections):
     if sections is None:
         return None
     if not isinstance(sections, list):
         return sections
-    return sections
+    return normalize_chart_sections(sections)
 
 
 def normalize_analysis_item(item: dict | None) -> dict:
@@ -20,4 +23,3 @@ def normalize_analysis_item(item: dict | None) -> dict:
 def normalize_analysis_items(result) -> list[dict]:
     items = result if isinstance(result, list) else [result]
     return [normalize_analysis_item(item) for item in items]
-

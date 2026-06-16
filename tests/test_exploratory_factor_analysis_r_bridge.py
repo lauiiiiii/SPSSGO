@@ -17,7 +17,14 @@ class ExploratoryFactorAnalysisRBridgeTests(unittest.TestCase):
                 "q4": [2, 3, 4, 5, 6, 7],
             }
         )
-        self.params = {"variables": ["q1", "q2", "q3", "q4"]}
+        self.params = {
+            "variables": ["q1", "q2", "q3", "q4"],
+            "factor_count": 2,
+            "rotation_method": "promax",
+            "output_correlation_matrix": True,
+            "save_factor_scores": True,
+            "save_composite_score": True,
+        }
 
     def test_efa_uses_r_when_available(self):
         r_result = {
@@ -35,6 +42,14 @@ class ExploratoryFactorAnalysisRBridgeTests(unittest.TestCase):
         self.assertEqual(result["description"], "R EFA result")
         self.assertEqual(run_r.call_args.args[0], "exploratory_factor_analysis.R")
         self.assertIn("efa_input.csv", run_r.call_args.kwargs["temp_files"])
+        payload = run_r.call_args.kwargs["payload"]
+        self.assertEqual(payload["factor_count"], 2)
+        self.assertEqual(payload["rotation_method"], "promax")
+        self.assertTrue(payload["output_correlation_matrix"])
+        self.assertTrue(payload["save_factor_scores"])
+        self.assertTrue(payload["save_composite_score"])
+        self.assertEqual(payload["row_id_column"], "__row_id__")
+        self.assertIn("__row_id__", run_r.call_args.kwargs["temp_files"]["efa_input.csv"])
 
     def test_efa_returns_error_when_r_fails(self):
         with patch("backend.analysis.methods.exploratory_factor_analysis.is_r_runtime_available", return_value=True):

@@ -49,6 +49,10 @@ class CrossTabulationAnalysisTests(unittest.TestCase):
         chart_section = next(section for section in result["sections"] if section["type"] == "charts")
         self.assertEqual(len(chart_section["charts"]), 2)
         self.assertEqual(chart_section["charts"][0]["chartType"], "crosstab_distribution")
+        self.assertEqual(chart_section["charts"][0]["data"]["fields"]["group"], "q1_1")
+        self.assertEqual(chart_section["charts"][0]["data"]["fields"]["x"], "q1_2")
+        self.assertEqual(chart_section["charts"][0]["data"]["axisLabels"]["x"], "q1_1")
+        self.assertEqual(chart_section["charts"][0]["data"]["axisLabels"]["y"], "q1_2")
 
     def test_table_display_modes_match_spssau_switch(self):
         result = cross_tabulation_analysis(
