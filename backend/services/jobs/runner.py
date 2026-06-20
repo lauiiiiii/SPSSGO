@@ -88,8 +88,8 @@ def _build_score_dataframe(df, score_columns: list[dict]) -> tuple:
     return next_df, created_columns
 
 
-async def _create_efa_score_dataset_version(job: dict, version: dict, df, score_columns: list[dict]) -> tuple[dict, list[str]] | tuple[None, list]:
-    """EFA 保存得分时创建并激活新数据版本，缺失行得分保持为空。"""
+async def _create_score_dataset_version(job: dict, version: dict, df, score_columns: list[dict]) -> tuple[dict, list[str]] | tuple[None, list]:
+    """分析方法保存内部得分时创建并激活新数据版本，缺失行得分保持为空。"""
     next_df, created_columns = _build_score_dataframe(df, score_columns)
     if not created_columns:
         return None, []
@@ -283,11 +283,11 @@ async def _run_execute_method_job(job: dict):
     target_version = version
     created_columns = []
     created_dataset_version = False
-    if method == "exploratory_factor_analysis":
+    if method in {"exploratory_factor_analysis", "data_envelopment_analysis"}:
         stage_start = time.perf_counter()
         score_columns = result.get("score_columns") if isinstance(result, dict) else None
         if score_columns:
-            next_version, created_columns = await _create_efa_score_dataset_version(job, version, df, score_columns)
+            next_version, created_columns = await _create_score_dataset_version(job, version, df, score_columns)
             if next_version:
                 target_version = next_version
                 created_dataset_version = True

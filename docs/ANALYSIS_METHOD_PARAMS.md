@@ -10,13 +10,6 @@ Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
 
-查看单个方法参数详情：
-
-```http
-GET /api/methods/{method_key}
-Authorization: Bearer <access_token>
-```
-
 统一请求体：
 
 ```json
@@ -34,13 +27,13 @@ Authorization: Bearer <access_token>
 - 变量名必须来自 `GET /api/variables/{session_id}` 返回的变量列表。
 - 差异检验、回归/因果、数据检验、综合评价和高级问卷方法做 SPSSAU/SPSSPRO 对齐时，按 [分析方法 R 对齐清单](./ANALYSIS_R_ALIGNMENT.md) 优先走 R 脚本；Python 只做参数整理、R bridge 和结果透传。
 
-当前共整理 80 个统计分析方法。
+当前共整理 81 个统计分析方法。
 
-## 数据探查
+## 常用方法
 
 ### `frequency` - 频数分析
 
-- 分类：数据探查
+- 分类：常用方法
 - 说明：统计各类别的频次和百分比分布
 - 参数构建器：`direct`
 
@@ -48,17 +41,22 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variable | 分析变量 | 单选，任意变量 | 放入需要统计频次的变量 |
+| variables | 分析变量 | 多选，任意变量，至少 1 个 | 放入需要统计频次的变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variable": "变量1"
+  "variables": [
+    "变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -66,33 +64,43 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variable": "变量1"
+  "variables": [
+    "变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
-### `cross_tabulation` - 列联（交叉）分析
+### `cross_tabulation` - 卡方（交叉）分析
 
-- 分类：数据探查
-- 说明：查看两个分类变量的交叉分布，并给出卡方检验与关联强度
+- 分类：常用方法
+- 说明：用于探索多组变量之间交叉列联分布和关联强度
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 行变量 | 单选，定类变量 | 放入第一个分类变量 |
-| var2 | 列变量 | 单选，定类变量 | 放入第二个分类变量 |
+| group_var | 变量 | 单选，任意变量 | 放入 1 个分组变量 |
+| variables | 变量X | 多选，任意变量，至少 1 个 | 放入 1 个或多个需要交叉分析的 X 变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| percent_base | 占比口径 | "百分数(按列)" | 百分数(按列), 百分数(按行) |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "var1": "分类变量1",
-  "var2": "分类变量1"
+  "group_var": "变量1",
+  "variables": [
+    "变量1"
+  ],
+  "percent_base": "百分数(按列)",
+  "include_missing_analysis": false
 }
 ```
 
@@ -100,14 +108,18 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "var1": "分类变量1",
-  "var2": "分类变量1"
+  "group_var": "变量1",
+  "variables": [
+    "变量1"
+  ],
+  "percent_base": "百分数(按列)",
+  "include_missing_analysis": false
 }
 ```
 
 ### `descriptive` - 描述性统计
 
-- 分类：数据探查
+- 分类：常用方法
 - 说明：计算各变量的均值、标准差、最小值、最大值等描述性指标
 - 参数构建器：`direct`
 
@@ -143,20 +155,23 @@ Authorization: Bearer <access_token>
 
 ### `category_summary` - 分类汇总
 
-- 分类：数据探查
-- 说明：按分类变量分组汇总一个或多个定量变量的样本量、均值和极值
+- 分类：常用方法
+- 说明：按分类变量分组汇总一个或多个定量变量的统计量
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分类变量 | 单选，定类变量 | 放入用于分组汇总的分类变量 |
-| summary_vars | 汇总变量 | 多选，定量变量，至少 1 个 | 放入需要按组汇总的定量变量 |
+| group_var | 变量 | 单选，定类变量 | 放入用于分组汇总的分类变量 |
+| summary_vars | 变量 | 多选，定量变量，至少 1 个 | 放入需要按组汇总的定量变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| summary_type | 类型 | ["均值"] | n, 均值, 计数, 中位数, 标准差, 平均值±标准差, 求和, 最大值, 最小值, 25分位数, 75分位数, 90分位数, 95分位数, 99分位数, 标准误, 均值95% CI(LL), 均值95% CI(UL), 极差, 四分位间距, 方差, 峰度, 偏度 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -165,7 +180,11 @@ Authorization: Bearer <access_token>
   "group_var": "分类变量1",
   "summary_vars": [
     "数值变量1"
-  ]
+  ],
+  "summary_type": [
+    "均值"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -176,14 +195,18 @@ Authorization: Bearer <access_token>
   "group_var": "分类变量1",
   "summary_vars": [
     "数值变量1"
-  ]
+  ],
+  "summary_type": [
+    "均值"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
 ### `normality_test` - 正态性分析
 
-- 分类：数据探查
-- 说明：使用 Shapiro-Wilk 检验判断变量是否服从正态分布
+- 分类：常用方法
+- 说明：综合输出正态性检验表、直方图、P-P 图和 Q-Q 图
 - 参数构建器：`direct`
 
 变量槽位：
@@ -194,7 +217,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -202,7 +227,8 @@ Authorization: Bearer <access_token>
 {
   "variables": [
     "数值变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -212,21 +238,22 @@ Authorization: Bearer <access_token>
 {
   "variables": [
     "数值变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
 ### `data_overview` - 数据探查
 
-- 分类：数据探查
-- 说明：快速查看数据集规模、变量类型、缺失情况和变量明细
+- 分类：常用方法
+- 说明：全面检查数据集规模、变量类型、缺失与异常，评估数据可用度
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 变量 | 多选，任意变量，至少 1 个 | 放入需要概览的一个或多个变量 |
+| variables | 变量 | 多选，任意变量，至少 1 个 | 放入需要探查的一个或多个变量 |
 
 额外选项：
 
@@ -264,23 +291,24 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 分析变量 | 多选，定量变量，至少 2 个 | 放入同一量表的所有题项 |
+| dimension1_vars | 维度1 | 多选，定量变量 | 放入维度1对应的题项 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| type | 类型 | "Cronbach's α" | Cronbach's α |  |
+| type | 类型 | "Cronbach's α" | Cronbach's α, 折半系数, McDonald Omega, theta系数 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
+  "dimension1_vars": [
+    "数值变量1"
   ],
-  "type": "Cronbach's α"
+  "type": "Cronbach's α",
+  "include_missing_analysis": false
 }
 ```
 
@@ -289,11 +317,11 @@ Authorization: Bearer <access_token>
 ```json
 {
   "items_groups": {
-    "分析变量": [
-      "数值变量1",
-      "数值变量2"
+    "维度1": [
+      "数值变量1"
     ]
-  }
+  },
+  "type": "Cronbach's α"
 }
 ```
 
@@ -311,7 +339,10 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| factor_count | 维度个数设置 | "auto" |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -321,7 +352,9 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "factor_count": "auto",
+  "include_missing_analysis": false
 }
 ```
 
@@ -334,7 +367,8 @@ Authorization: Bearer <access_token>
     "数值变量2",
     "数值变量3"
   ],
-  "scale_name": "量表"
+  "scale_name": "量表",
+  "factor_count": "auto"
 }
 ```
 
@@ -352,7 +386,10 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| correlation_method | 相关系数 | "Pearson相关系数" | Pearson相关系数, Spearman相关系数, Kendall相关系数 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -361,7 +398,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "correlation_method": "Pearson相关系数",
+  "include_missing_analysis": false
 }
 ```
 
@@ -372,7 +411,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "correlation_method": "Pearson相关系数",
+  "include_missing_analysis": false
 }
 ```
 
@@ -390,7 +431,10 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| count_value | 计数值 | "1" | 1, 2, 0 | 默认按照数字1作为选中项标记进行计算，可设置数字2或者数字0作为某项种类的标记。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -399,7 +443,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -410,7 +456,159 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+### `choice_multi_multi` - 多选-多选（交叉分析）
+
+- 分类：问卷分析包
+- 说明：分析两组多选题选项之间的联合选择分布和差异情况
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| variables_a | 二分类0-1变量 | 多选，定类变量，至少 2 个 | 放入第一组多选题变量，变量数至少为2 |
+| variables_b | 二分类0-1变量 | 多选，定类变量，至少 2 个 | 放入第二组多选题变量，变量数至少为2 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| count_value | 计数值 | "1" | 1, 2, 0 | 默认按照数字1作为选中项标记进行计算，可设置数字2或者数字0作为某项种类的标记。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "variables_a": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "variables_b": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "variables_a": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "variables_b": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+### `choice_multi_single` - 多选-单选（对比分析）
+
+- 分类：问卷分析包
+- 说明：分析多选题选项在不同单选分组中的分布与差异情况
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| multiple_vars | 二分类0-1变量 | 多选，定类变量，至少 2 个 | 放入同一题目的多选拆分变量 |
+| single_var | 单选分组变量 | 单选，定类变量 | 放入用于分组的单选题变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| count_value | 计数值 | "1" | 1, 2, 0 | 默认按照数字1作为选中项标记进行计算，可设置数字2或者数字0作为某项种类的标记。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "multiple_vars": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "single_var": "分类变量1",
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "multiple_vars": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "single_var": "分类变量1",
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+### `choice_single_multi` - 单选-多选（对比分析）
+
+- 分类：问卷分析包
+- 说明：基于卡方检验分析单选题与多选题选项之间是否存在显著差异
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| single_var | 单选变量 | 单选，定类变量 | 放入单选题变量 |
+| multiple_vars | 二分类0-1变量 | 多选，定类变量，至少 2 个 | 放入同一题目的多选拆分变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| count_value | 计数值 | "1" | 1, 2, 0 | 默认按照数字1作为选中项标记进行计算，可设置数字2或者数字0作为某项种类的标记。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "single_var": "分类变量1",
+  "multiple_vars": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "single_var": "分类变量1",
+  "multiple_vars": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "count_value": "1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -429,14 +627,17 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "var1": "分类变量1",
-  "var2": "分类变量1"
+  "var2": "分类变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -445,33 +646,38 @@ Authorization: Bearer <access_token>
 ```json
 {
   "var1": "分类变量1",
-  "var2": "分类变量1"
+  "var2": "分类变量1",
+  "include_missing_analysis": false
 }
 ```
 
 ### `correspondence_analysis` - 对应分析
 
 - 分类：问卷分析包
-- 说明：对两个分类变量的列联表进行降维，观察类别之间的接近关系
+- 说明：用于可视化探索多组定类变量之间的关系
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 行变量 | 单选，定类变量 | 放入第一个分类变量 |
-| var2 | 列变量 | 单选，定类变量 | 放入第二个分类变量 |
+| variables | 变量 | 多选，定类变量，至少 2 个 | 放入用于对应分析的定类变量，变量数至少为2 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "var1": "分类变量1",
-  "var2": "分类变量1"
+  "variables": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -479,8 +685,11 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "var1": "分类变量1",
-  "var2": "分类变量1"
+  "variables": [
+    "分类变量1",
+    "分类变量2"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -501,7 +710,10 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| second_order_model | 二阶因子模型 | false |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -519,7 +731,9 @@ Authorization: Bearer <access_token>
   ],
   "factor4_vars": [
     "数值变量1"
-  ]
+  ],
+  "second_order_model": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -539,7 +753,9 @@ Authorization: Bearer <access_token>
   ],
   "factor4_vars": [
     "数值变量1"
-  ]
+  ],
+  "second_order_model": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -558,7 +774,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -569,7 +787,8 @@ Authorization: Bearer <access_token>
   ],
   "dysfunctional_vars": [
     "分类变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -582,7 +801,8 @@ Authorization: Bearer <access_token>
   ],
   "dysfunctional_vars": [
     "分类变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -605,6 +825,8 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | test_value | 检验值 | "0" | 0, 1, 3, 5 |  |
+| output_normality | 输出正态性检验图 | false |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -613,7 +835,9 @@ Authorization: Bearer <access_token>
   "test_vars": [
     "数值变量1"
   ],
-  "test_value": "0"
+  "test_value": "0",
+  "output_normality": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -624,35 +848,39 @@ Authorization: Bearer <access_token>
   "test_vars": [
     "数值变量1"
   ],
-  "test_value": "0"
+  "test_value": "0",
+  "output_normality": false,
+  "include_missing_analysis": false
 }
 ```
 
 ### `summary_t_test` - 摘要T检验
 
 - 分类：差异对比分析包
-- 说明：以简化摘要形式呈现T检验核心结果
-- 参数构建器：`t_test`
+- 说明：适用于只有汇总数据时，检验均值或均值差是否符合指定假设
+- 参数构建器：`direct`
 
 变量槽位：
 
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入二分类分组变量 |
-| test_vars | 检验变量 | 多选，定量变量，至少 1 个 | 放入检验变量 |
+无变量槽位。
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| test_type | 检验类型 | "one_sample" | one_sample, independent |  |
+| confidence_level | 置信水平 | "95" | 90, 95, 99 |  |
+| alternative | 假设检验 | "等于" | 等于, 大于, 小于 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
-  "test_vars": [
-    "数值变量1"
-  ]
+  "test_type": "one_sample",
+  "confidence_level": "95",
+  "alternative": "等于",
+  "include_missing_analysis": false
 }
 ```
 
@@ -660,10 +888,10 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
-  "dependent": [
-    "数值变量1"
-  ]
+  "test_type": "one_sample",
+  "confidence_level": "95",
+  "alternative": "等于",
+  "include_missing_analysis": false
 }
 ```
 
@@ -678,16 +906,17 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
 | group_var | 分组变量 | 单选，定类变量 | 放入分组变量（3组及以上） |
-| test_vars | 检验变量 | 多选，定量变量 | 放入需要比较的定量变量 |
+| test_vars | 检验变量 | 多选，定量变量，至少 1 个 | 放入需要比较的定量变量 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | method | 比较方法 | "LSD方法(默认)" | LSD方法(默认), Scheffe, Tukey, Bonferroni校正, sidak, Tamhane T2(方差不齐), SNK Q检验, Duncan检验, Games-Howell(方差不齐) |  |
-| use_letters | 字母标记法 | false | true, false |  |
-| include_effect_size | 效应量 | false | true, false |  |
-| show_p_marks | P值标识 | true | true, false |  |
+| use_letters | 字母标记法 | false |  |  |
+| include_effect_size | 效应量 | false |  |  |
+| show_p_marks | P值标识 | true |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -700,7 +929,8 @@ Authorization: Bearer <access_token>
   "method": "LSD方法(默认)",
   "use_letters": false,
   "include_effect_size": false,
-  "show_p_marks": true
+  "show_p_marks": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -715,7 +945,8 @@ Authorization: Bearer <access_token>
   "method": "LSD方法(默认)",
   "use_letters": false,
   "include_effect_size": false,
-  "show_p_marks": true
+  "show_p_marks": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -729,7 +960,7 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| factors | 分组变量X | 多选，定类变量 | 放入2个分组因素 |
+| factors | 分组变量X | 多选，定类变量，至少 2 个 | 放入2个分组因素 |
 | dependent | 因变量Y | 单选，定量变量 | 放入因变量 |
 | covariates | 协变量 | 多选，定量变量 | 可选，放入需要控制的协变量 |
 
@@ -737,9 +968,10 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| include_interaction | 分析交互效应 | true | true, false |  |
-| do_post_hoc | 事后多重比较 | false | true, false |  |
+| include_interaction | 分析交互效应 | true |  |  |
+| do_post_hoc | 事后多重比较 | false |  |  |
 | post_hoc_method | 方法选择 | "LSD" | LSD, bonf, sidak |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -750,10 +982,13 @@ Authorization: Bearer <access_token>
     "分类变量2"
   ],
   "dependent": "数值变量1",
-  "covariates": [],
+  "covariates": [
+    "数值变量1"
+  ],
   "include_interaction": true,
   "do_post_hoc": false,
-  "post_hoc_method": "LSD"
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -766,10 +1001,13 @@ Authorization: Bearer <access_token>
     "分类变量2"
   ],
   "dependent": "数值变量1",
-  "covariates": [],
+  "covariates": [
+    "数值变量1"
+  ],
   "include_interaction": true,
   "do_post_hoc": false,
-  "post_hoc_method": "LSD"
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -783,7 +1021,7 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| factors | 分组变量X | 多选，定类变量 | 放入3个分组因素 |
+| factors | 分组变量X | 多选，定类变量，至少 3 个 | 放入3个分组因素 |
 | dependent | 因变量Y | 单选，定量变量 | 放入因变量 |
 | covariates | 协变量 | 多选，定量变量 | 可选，放入需要控制的协变量 |
 
@@ -791,12 +1029,13 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| include_interaction | 分析交互效应 | true | true, false |  |
-| second_order_interaction | 二阶交互效应 | true | true, false |  |
-| third_order_interaction | 三阶交互效应 | false | true, false |  |
-| include_effect_size | 效应量 | false | true, false |  |
-| do_post_hoc | 事后多重比较 | false | true, false |  |
+| include_interaction | 分析交互效应 | true |  |  |
+| second_order_interaction | 二阶交互效应 | true |  |  |
+| third_order_interaction | 三阶交互效应 | false |  |  |
+| include_effect_size | 效应量 | false |  |  |
+| do_post_hoc | 事后多重比较 | false |  |  |
 | post_hoc_method | 方法选择 | "LSD" | LSD, Tukey法, Bonferroni校正, Sidak法 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -808,13 +1047,16 @@ Authorization: Bearer <access_token>
     "分类变量3"
   ],
   "dependent": "数值变量1",
-  "covariates": [],
+  "covariates": [
+    "数值变量1"
+  ],
   "include_interaction": true,
   "second_order_interaction": true,
   "third_order_interaction": false,
   "include_effect_size": false,
   "do_post_hoc": false,
-  "post_hoc_method": "LSD"
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -828,13 +1070,16 @@ Authorization: Bearer <access_token>
     "分类变量3"
   ],
   "dependent": "数值变量1",
-  "covariates": [],
+  "covariates": [
+    "数值变量1"
+  ],
   "include_interaction": true,
   "second_order_interaction": true,
   "third_order_interaction": false,
   "include_effect_size": false,
   "do_post_hoc": false,
-  "post_hoc_method": "LSD"
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -855,9 +1100,10 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| do_post_hoc | 事后多重比较 | false | true, false |  |
+| do_post_hoc | 事后多重比较 | false |  |  |
 | post_hoc_method | 方法选择 | "LSD" | LSD, Tukey法, Bonferroni校正, Sidak法 | 默认不进行事后多重比较，可选比如LSD等事后多重比较检验方法。 |
-| include_effect_size | 效应量 | false | true, false | 选中后结果表格中会输出效应量。 |
+| include_effect_size | 效应量 | false |  | 选中后结果表格中会输出效应量。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -870,7 +1116,8 @@ Authorization: Bearer <access_token>
   ],
   "do_post_hoc": false,
   "post_hoc_method": "LSD",
-  "include_effect_size": false
+  "include_effect_size": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -885,38 +1132,34 @@ Authorization: Bearer <access_token>
   ],
   "do_post_hoc": false,
   "post_hoc_method": "LSD",
-  "include_effect_size": false
+  "include_effect_size": false,
+  "include_missing_analysis": false
 }
 ```
 
 ### `summary_oneway_anova` - 摘要单因素方差分析
 
 - 分类：差异对比分析包
-- 说明：以简化摘要形式呈现单因素方差分析核心结果
-- 参数构建器：`anova`
+- 说明：适用于只有汇总数据时，检验多组均值是否存在差异
+- 参数构建器：`direct`
 
 变量槽位：
 
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入分组变量 |
-| test_vars | 检验变量 | 多选，定量变量，至少 1 个 | 放入检验变量 |
+无变量槽位。
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| post_hoc | 事后比较 | "Bonferroni" | LSD, Bonferroni, Tukey |  |
+| confidence_level | 置信度级别 | "95" | 99, 95, 90 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
-  "test_vars": [
-    "数值变量1"
-  ],
-  "post_hoc": "Bonferroni"
+  "confidence_level": "95",
+  "include_missing_analysis": false
 }
 ```
 
@@ -924,11 +1167,8 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
-  "dependent": [
-    "数值变量1"
-  ],
-  "post_hoc": "Bonferroni"
+  "confidence_level": "95",
+  "include_missing_analysis": false
 }
 ```
 
@@ -942,23 +1182,36 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入分组变量 |
-| covariates | 协变量 | 多选，定量变量，至少 1 个 | 放入协变量 |
 | dependent | 因变量 | 单选，定量变量 | 放入因变量 |
+| group_var | 分组变量 | 多选，定类变量，至少 1 个 | 放入1个或多个分组变量 |
+| covariates | 协变量 | 多选，定量变量，至少 1 个 | 放入协变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_interaction | 平行性检验 | false |  | 模型中建立分组变量与协变量之间的交互项，用于检查回归斜率齐性。 |
+| include_effect_size | 效应量 | false |  | 选中后主体间效应表会输出偏η²。 |
+| do_post_hoc | 事后多重比较 | false |  |  |
+| post_hoc_method | 方法选择 | "LSD" | LSD, Bonferroni校正, Sidak法, Tukey法 | 默认不进行事后多重比较，可选 LSD 等方法。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
+  "dependent": "数值变量1",
+  "group_var": [
+    "分类变量1"
+  ],
   "covariates": [
     "数值变量1"
   ],
-  "dependent": "数值变量1"
+  "include_interaction": false,
+  "include_effect_size": false,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -966,11 +1219,18 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
+  "dependent": "数值变量1",
+  "group_var": [
+    "分类变量1"
+  ],
   "covariates": [
     "数值变量1"
   ],
-  "dependent": "数值变量1"
+  "include_interaction": false,
+  "include_effect_size": false,
+  "do_post_hoc": false,
+  "post_hoc_method": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -984,22 +1244,31 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入分组变量 |
 | dependent_vars | 因变量 | 多选，定量变量，至少 2 个 | 放入两个及以上因变量 |
+| group_var | 分组变量 | 多选，定类变量，至少 1 个 | 放入1个或多个分组变量 |
+| covariates | 协变量 | 多选，定量变量 | 可选，放入协变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
   "dependent_vars": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "group_var": [
+    "分类变量1"
+  ],
+  "covariates": [
+    "数值变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1007,40 +1276,54 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
   "dependent_vars": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "group_var": [
+    "分类变量1"
+  ],
+  "covariates": [
+    "数值变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
-### `one_sample_equivalence_test` - 单样本等价性检验
+### `one_sample_equivalence_test` - 单样本等价检验
 
 - 分类：差异对比分析包
-- 说明：使用 TOST 检验单样本均值是否落在等价区间内
+- 说明：单样本等价检验用于检验单个总体的参数是否与某个目标值处于预先定义的等价区间内。
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variable | 检验变量 | 单选，定量变量 | 放入检验变量 |
+| variable | 变量 | 单选，定量变量 | 拖入变量到此区域 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| reference_value | 参考值 | "0" | 0, 1, 5 |  |
-| margin | 等价界值 | "1" | 0.5, 1, 2 |  |
+| alternative | 备择假设 | "下限<检验均值-目标值<上限" | 下限<检验均值-目标值<上限, 检验均值>目标值, 检验均值<目标值, 检验均值-目标值>下限, 检验均值-目标值<上限 |  |
+| target_value | 目标值 | "0" |  |  |
+| lower | 下限 | "-0.1" |  |  |
+| upper | 上限 | "0.1" |  |  |
+| scale_by_target | 乘以目标值 | true |  | 勾选后，下限和上限按目标值比例换算，例如目标值为2、上下限为±0.1时，等价区间为±0.2。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "variable": "数值变量1",
-  "reference_value": "0",
-  "margin": "1"
+  "alternative": "下限<检验均值-目标值<上限",
+  "target_value": "0",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_target": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1049,37 +1332,57 @@ Authorization: Bearer <access_token>
 ```json
 {
   "variable": "数值变量1",
-  "reference_value": "0",
-  "margin": "1"
+  "alternative": "下限<检验均值-目标值<上限",
+  "target_value": "0",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_target": true,
+  "include_missing_analysis": false
 }
 ```
 
-### `two_sample_equivalence_test` - 双样本等价性检验
+### `two_sample_equivalence_test` - 双样本等价检验
 
 - 分类：差异对比分析包
-- 说明：使用 TOST 检验两个独立样本均值差是否落在等价区间内
+- 说明：双样本等价检验用于验证两个独立总体的参数均值差异是否在预设的等价区间内。
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入二分类分组变量 |
-| test_var | 检验变量 | 单选，定量变量 | 放入检验变量 |
+| test_var | 检验样本 | 单选，定量变量 | 拖入变量到此区域 |
+| group_var | 二分类 | 单选，定类变量 | 拖入变量到此区域 |
+| reference_var | 参考样本 | 单选，定量变量 | 拖入变量到此区域 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| margin | 等价界值 | "1" | 0.5, 1, 2 |  |
+| data_format | 检验数据形式 | "样本在同一列" | 样本在同一列, 样本在不同列 |  |
+| reference_level | 参考水平 | "" |  |  |
+| relationship | 相关假设 | "检验均值 - 参考均值" | 检验均值 - 参考均值, 检验均值/参考均值, 检验均值/参考均值(通过对数变换) |  |
+| alternative | 备择假设 | "下限<检验均值 - 参考均值<上限" | 下限<检验均值 - 参考均值<上限, 检验均值>参考均值, 检验均值<参考均值, 检验均值 - 参考均值>下限, 检验均值 - 参考均值<上限 |  |
+| lower | 下限 | "-0.1" |  |  |
+| upper | 上限 | "0.1" |  |  |
+| scale_by_reference | 乘以参考均值 | true |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
   "test_var": "数值变量1",
-  "margin": "1"
+  "group_var": "分类变量1",
+  "reference_var": "数值变量1",
+  "data_format": "样本在同一列",
+  "reference_level": "",
+  "relationship": "检验均值 - 参考均值",
+  "alternative": "下限<检验均值 - 参考均值<上限",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_reference": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1087,38 +1390,56 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
   "test_var": "数值变量1",
-  "margin": "1"
+  "group_var": "分类变量1",
+  "reference_var": "数值变量1",
+  "data_format": "样本在同一列",
+  "reference_level": "",
+  "relationship": "检验均值 - 参考均值",
+  "alternative": "下限<检验均值 - 参考均值<上限",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_reference": true,
+  "include_missing_analysis": false
 }
 ```
 
-### `paired_equivalence_test` - 配对样本等价性检验
+### `paired_equivalence_test` - 配对样本等价检验
 
 - 分类：差异对比分析包
-- 说明：使用 TOST 检验配对样本差值是否落在等价区间内
+- 说明：配对样本等价检验用于验证配对数据的差异是否在预设等价区间内。
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 变量1 | 单选，定量变量 | 放入第一个配对变量 |
-| var2 | 变量2 | 单选，定量变量 | 放入第二个配对变量 |
+| test_var | 检验变量 | 单选，定量变量 | 拖入变量到此区域 |
+| reference_var | 参考变量 | 单选，定量变量 | 拖入变量到此区域 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| margin | 等价界值 | "1" | 0.5, 1, 2 |  |
+| relationship | 相关假设 | "检验均值 - 参考均值" | 检验均值 - 参考均值, 检验均值/参考均值, 检验均值/参考均值(通过对数变换) |  |
+| alternative | 备择假设 | "下限<检验均值 - 参考均值<上限" | 下限<检验均值 - 参考均值<上限, 检验均值>参考均值, 检验均值<参考均值, 检验均值 - 参考均值>下限, 检验均值 - 参考均值<上限 |  |
+| lower | 下限 | "-0.1" |  |  |
+| upper | 上限 | "0.1" |  |  |
+| scale_by_reference | 乘以参考均值 | true |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "var1": "数值变量1",
-  "var2": "数值变量1",
-  "margin": "1"
+  "test_var": "数值变量1",
+  "reference_var": "数值变量1",
+  "relationship": "检验均值 - 参考均值",
+  "alternative": "下限<检验均值 - 参考均值<上限",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_reference": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1126,9 +1447,14 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "var1": "数值变量1",
-  "var2": "数值变量1",
-  "margin": "1"
+  "test_var": "数值变量1",
+  "reference_var": "数值变量1",
+  "relationship": "检验均值 - 参考均值",
+  "alternative": "下限<检验均值 - 参考均值<上限",
+  "lower": "-0.1",
+  "upper": "0.1",
+  "scale_by_reference": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1150,6 +1476,7 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | post_hoc | 事后比较 | "LSD" | LSD, Bonferroni, Tukey |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1159,7 +1486,8 @@ Authorization: Bearer <access_token>
   "test_vars": [
     "数值变量1"
   ],
-  "post_hoc": "LSD"
+  "post_hoc": "LSD",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1178,26 +1506,33 @@ Authorization: Bearer <access_token>
 ### `chi_square` - 卡方检验
 
 - 分类：差异对比分析包
-- 说明：检验两个分类变量之间是否存在显著关联
+- 说明：用于探索多组定类变量之间的差异性分析
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 行变量 | 单选，定类变量 | 放入第一个分类变量 |
-| var2 | 列变量 | 单选，定类变量 | 放入第二个分类变量 |
+| var1 | 变量X | 单选，定类变量 | 放入 1 个定类分组变量 |
+| variables | 变量Y | 多选，定类变量，至少 1 个 | 放入 1 个或多个定类分析变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| test_type | 类型 | "Pearson卡方检验" | Pearson卡方检验, Yates校正卡方检验, Fisher精确检验, 自动卡方检验 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "var1": "分类变量1",
-  "var2": "分类变量1"
+  "variables": [
+    "分类变量1"
+  ],
+  "test_type": "Pearson卡方检验",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1206,26 +1541,33 @@ Authorization: Bearer <access_token>
 ```json
 {
   "var1": "分类变量1",
-  "var2": "分类变量1"
+  "variables": [
+    "分类变量1"
+  ],
+  "test_type": "Pearson卡方检验",
+  "include_missing_analysis": false
 }
 ```
 
 ### `independent_t_test` - 独立样本T检验
 
 - 分类：差异对比分析包
-- 说明：比较两个独立组别在某个连续变量上的均值差异
-- 参数构建器：`t_test`
+- 说明：比较两个独立组别在一个或多个定量变量上的均值差异
+- 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 分组变量 | 单选，定类变量 | 放入分组变量（如性别，须为2组） |
-| test_vars | 检验变量 | 多选，定量变量，至少 1 个 | 放入需要检验差异的定量变量 |
+| group_var | 变量X | 单选，定类变量 | 样本在同一列时放入二分类变量 |
+| test_vars | 变量Y | 多选，定量变量，至少 1 个 | 放入需要检验差异的定量变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| data_format | 检验数据形式 | "样本在同一列" | 样本在同一列, 样本在不同列 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1234,7 +1576,9 @@ Authorization: Bearer <access_token>
   "group_var": "分类变量1",
   "test_vars": [
     "数值变量1"
-  ]
+  ],
+  "data_format": "样本在同一列",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1243,9 +1587,11 @@ Authorization: Bearer <access_token>
 ```json
 {
   "group_var": "分类变量1",
-  "dependent": [
+  "test_vars": [
     "数值变量1"
-  ]
+  ],
+  "data_format": "样本在同一列",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1259,12 +1605,14 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| var1 | 变量X1 | 多选，定量变量 | 放入第一组配对测量变量 |
-| var2 | 变量X2 | 多选，定量变量 | 放入第二组配对测量变量，数量和顺序需与变量X1一致 |
+| var1 | 变量X1 | 多选，定量变量，至少 1 个 | 放入第一组配对测量变量 |
+| var2 | 变量X2 | 多选，定量变量，至少 1 个 | 放入第二组配对测量变量，数量和顺序需与变量X1一致 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1274,8 +1622,9 @@ Authorization: Bearer <access_token>
     "数值变量1"
   ],
   "var2": [
-    "数值变量2"
-  ]
+    "数值变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1287,17 +1636,81 @@ Authorization: Bearer <access_token>
     "数值变量1"
   ],
   "var2": [
-    "数值变量2"
-  ]
+    "数值变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
 ## 回归 & 因果分析包
 
-### `mediation` - 中介效应分析
+### `mediation` - 中介效应
 
 - 分类：回归&因果分析包
-- 说明：使用 R/lavaan 检验中介变量 M 在自变量 X 和因变量 Y 之间的中介作用
+- 说明：用于探究是否是哪些变量影响 X-->Y 这个流程的因素。
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| y | 变量Y | 单选，定量变量 | 拖入因变量Y |
+| x | 变量X | 多选，定量变量，至少 1 个 | 拖入变量X |
+| mediators | 中介变量M | 多选，定量变量，至少 1 个 | 拖入中介变量M |
+| controls | 控制变量 | 多选，定量变量 | 拖入控制变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| bootstrap_reps | bootstrap抽样次数 | "auto" | {'value': 'auto', 'label': '自动'}, {'value': '1000', 'label': '1000'}, {'value': '500', 'label': '500'}, {'value': '2000', 'label': '2000'}, {'value': '5000', 'label': '5000'} |  |
+| bootstrap_method | bootstrap类型 | "percentile" | {'value': 'percentile', 'label': '百分位bootstrap法'}, {'value': 'bias_corrected', 'label': '偏差校正bootstrap法'} |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "y": "数值变量1",
+  "x": [
+    "数值变量1"
+  ],
+  "mediators": [
+    "数值变量1"
+  ],
+  "controls": [
+    "数值变量1"
+  ],
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "y": "数值变量1",
+  "x": [
+    "数值变量1"
+  ],
+  "mediators": [
+    "数值变量1"
+  ],
+  "controls": [
+    "数值变量1"
+  ],
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
+}
+```
+
+### `parallel_mediation` - 平行中介效应
+
+- 分类：回归&因果分析包
+- 说明：检验多个中介变量是否并行传递自变量对因变量的影响
 - 参数构建器：`direct`
 
 变量槽位：
@@ -1305,20 +1718,26 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
 | x | 自变量(X) | 单选，定量变量 | 放入自变量 |
-| m | 中介变量(M) | 单选，定量变量 | 放入中介变量 |
+| mediators | 中介变量(M) | 多选，定量变量，至少 2 个 | 放入并行中介变量 |
 | y | 因变量(Y) | 单选，定量变量 | 放入因变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "x": "数值变量1",
-  "m": "数值变量1",
-  "y": "数值变量1"
+  "mediators": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "y": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1327,36 +1746,56 @@ Authorization: Bearer <access_token>
 ```json
 {
   "x": "数值变量1",
-  "m": "数值变量1",
-  "y": "数值变量1"
+  "mediators": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "y": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
-### `multiple_regression` - 多元线性回归
+### `serial_mediation` - 链式中介
 
 - 分类：回归&因果分析包
-- 说明：分析多个自变量对一个因变量的预测作用
-- 参数构建器：`regression`
+- 说明：检验多个中介变量按顺序传递影响的链式作用
+- 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| dependent | 因变量(Y) | 单选，定量变量 | 放入因变量 |
-| predictors | 自变量(X) | 多选，定量变量，至少 1 个 | 放入一个或多个自变量 |
+| y | 变量Y | 单选，定量变量 | 拖入因变量Y |
+| x | 变量X | 多选，定量变量，至少 1 个 | 拖入变量X |
+| mediators | 链式中介变量M | 多选，定量变量，至少 2 个 | 按链式顺序拖入中介变量M |
+| controls | 控制变量 | 多选，定量变量 | 拖入控制变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| bootstrap_reps | bootstrap抽样次数 | "auto" | {'value': 'auto', 'label': '自动'}, {'value': '1000', 'label': '1000'}, {'value': '500', 'label': '500'}, {'value': '2000', 'label': '2000'}, {'value': '5000', 'label': '5000'} |  |
+| bootstrap_method | bootstrap类型 | "percentile" | {'value': 'percentile', 'label': '百分位bootstrap法'}, {'value': 'bias_corrected', 'label': '偏差校正bootstrap法'} |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "dependent": "数值变量1",
-  "predictors": [
+  "y": "数值变量1",
+  "x": [
     "数值变量1"
-  ]
+  ],
+  "mediators": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "controls": [
+    "数值变量1"
+  ],
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1364,17 +1803,101 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "dependent": "数值变量1",
-  "predictors": [
+  "y": "数值变量1",
+  "x": [
     "数值变量1"
-  ]
+  ],
+  "mediators": [
+    "数值变量1",
+    "数值变量2"
+  ],
+  "controls": [
+    "数值变量1"
+  ],
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
 }
 ```
 
-### `vif` - 多重共线性 VIF
+### `moderated_mediation` - 调节中介
 
 - 分类：回归&因果分析包
-- 说明：检测多个自变量之间是否存在多重共线性
+- 说明：检验调节变量 Z 是否改变 X 通过中介变量 M 影响 Y 的间接效应
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| y | 因变量Y | 单选，定量变量 | 拖入因变量Y |
+| x | 自变量X | 单选，定量变量 | 拖入自变量X |
+| mediators | 中介变量M | 多选，定量变量，至少 1 个 | 拖入中介变量M |
+| z | 调节变量Z | 单选，定量变量 | 拖入调节变量Z |
+| controls | 控制变量 | 多选，定量变量 | 拖入控制变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| moderate_x_m | X→M | false |  |  |
+| moderate_m_y | M→Y | false |  |  |
+| moderate_x_y | X→Y | false |  |  |
+| moderator_levels | 调节水平值 | "mean_sd" | {'value': 'mean_sd', 'label': '均值±1SD'}, {'value': 'quantile', 'label': '分位数'} |  |
+| bootstrap_reps | bootstrap抽样次数 | "auto" | {'value': 'auto', 'label': '自动'}, {'value': '1000', 'label': '1000'}, {'value': '500', 'label': '500'}, {'value': '2000', 'label': '2000'}, {'value': '5000', 'label': '5000'} |  |
+| bootstrap_method | bootstrap类型 | "percentile" | {'value': 'percentile', 'label': '百分位bootstrap法'}, {'value': 'bias_corrected', 'label': '偏差校正bootstrap法'} |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "y": "数值变量1",
+  "x": "数值变量1",
+  "mediators": [
+    "数值变量1"
+  ],
+  "z": "数值变量1",
+  "controls": [
+    "数值变量1"
+  ],
+  "moderate_x_m": false,
+  "moderate_m_y": false,
+  "moderate_x_y": false,
+  "moderator_levels": "mean_sd",
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "y": "数值变量1",
+  "x": "数值变量1",
+  "mediators": [
+    "数值变量1"
+  ],
+  "z": "数值变量1",
+  "controls": [
+    "数值变量1"
+  ],
+  "moderate_x_m": false,
+  "moderate_m_y": false,
+  "moderate_x_y": false,
+  "moderator_levels": "mean_sd",
+  "bootstrap_reps": "auto",
+  "bootstrap_method": "percentile",
+  "include_missing_analysis": false
+}
+```
+
+### `vif` - 共线性分析
+
+- 分类：回归&因果分析包
+- 说明：检测多个自变量之间是否存在共线性
 - 参数构建器：`direct`
 
 变量槽位：
@@ -1385,7 +1908,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1394,7 +1919,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1405,7 +1931,51 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
+}
+```
+
+### `multiple_regression` - 线性回归（最小二乘法）
+
+- 分类：回归&因果分析包
+- 说明：一元/多元线性回归，用最小二乘法分析 X 对 Y 的线性影响
+- 参数构建器：`regression`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| dependent | 因变量(Y) | 单选，定量变量 | 放入单个定量因变量 |
+| predictors | 自变量(X) | 多选，任意变量，至少 1 个 | 放入一个或多个定量/定类自变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "dependent": "数值变量1",
+  "predictors": [
+    "变量1"
+  ],
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "dependent": "数值变量1",
+  "predictors": [
+    "变量1"
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1419,21 +1989,32 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| x | 自变量(X) | 单选，定量变量 | 放入自变量 |
-| w | 调节变量(W) | 单选，定量变量 | 放入调节变量 |
 | y | 因变量(Y) | 单选，定量变量 | 放入因变量 |
+| x | 自变量(X) | 单选，任意变量 | 放入自变量 |
+| w | 调节变量(W) | 单选，任意变量 | 放入调节变量 |
+| controls | 控制变量 | 多选，定量变量 | 可选，放入需要控制的变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| moderation_type | 调节类型 | "X定量W定量(默认)" | X定量W定量(默认), X定量W定类, X定类W定量 | 因变量Y固定为定量变量；当X或W为定类变量时会按哑变量进入模型。 |
+| data_process | 数据处理 | "中心化(默认)" | 中心化(默认), 标准化, 不处理 | 仅处理定量自变量X和定量调节变量W；因变量和控制变量不处理。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "x": "数值变量1",
-  "w": "数值变量1",
-  "y": "数值变量1"
+  "y": "数值变量1",
+  "x": "变量1",
+  "w": "变量1",
+  "controls": [
+    "数值变量1"
+  ],
+  "moderation_type": "X定量W定量(默认)",
+  "data_process": "中心化(默认)",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1441,9 +2022,15 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "x": "数值变量1",
-  "w": "数值变量1",
-  "y": "数值变量1"
+  "y": "数值变量1",
+  "x": "变量1",
+  "w": "变量1",
+  "controls": [
+    "数值变量1"
+  ],
+  "moderation_type": "X定量W定量(默认)",
+  "data_process": "中心化(默认)",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1465,9 +2052,10 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| test_value | 检验值 | "0" | 任意数字 | 自动选择关闭时生效，可输入任意数字。 |
+| test_value | 检验值 | "0" |  | 自动选择关闭时生效，可输入任意数字。 |
 | auto_test_value | 自动选择检验值 | true |  | 勾选后每个变量使用自身均值作为检验值，和 SPSSPRO 的自动检验值口径保持一致。 |
 | output_normality | 输出正态性检验图 | true |  |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1478,7 +2066,8 @@ Authorization: Bearer <access_token>
   ],
   "test_value": "0",
   "auto_test_value": true,
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1491,7 +2080,8 @@ Authorization: Bearer <access_token>
   ],
   "test_value": "0",
   "auto_test_value": true,
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1513,6 +2103,7 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | output_normality | 输出正态性检验图 | true |  | 输出每组配对差值的正态性检验和直方图，便于和配对样本T检验互相参照。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1522,9 +2113,10 @@ Authorization: Bearer <access_token>
     "数值变量1"
   ],
   "var2": [
-    "数值变量2"
+    "数值变量1"
   ],
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1536,9 +2128,10 @@ Authorization: Bearer <access_token>
     "数值变量1"
   ],
   "var2": [
-    "数值变量2"
+    "数值变量1"
   ],
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1560,16 +2153,18 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | output_normality | 输出正态性检验图 | true |  | 输出各检验变量的正态性检验和直方图，便于和独立样本T检验互相参照。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
+  "group_var": "变量1",
   "test_vars": [
     "数值变量1"
   ],
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1577,11 +2172,12 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
+  "group_var": "变量1",
   "test_vars": [
     "数值变量1"
   ],
-  "output_normality": true
+  "output_normality": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1595,27 +2191,28 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group_var | 变量X | 单选，定类变量 | 请输入分组变量 |
-| test_vars | 变量Y | 多选，定量变量 | 请输入变量 |
+| group_var | 变量X | 单选，任意变量 | 请输入分组变量 |
+| test_vars | 变量Y | 多选，定量变量，至少 1 个 | 请输入变量 |
 
 额外选项：
 
-| 参数 key | 名称 | 类型 | 默认值 | 说明 |
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| output_normality | 输出正态性检验图 | 布尔 | true | 输出各检验变量的正态性检验和直方图，便于和单因素方差分析互相参照。 |
-| pairwise_compare | 输出两两比较 | 布尔 | true | 整体检验显著时，可参考Mann-Whitney两两比较定位差异来源。 |
+| output_normality | 输出正态性检验图 | true |  | 输出各检验变量的正态性检验和直方图，便于和单因素方差分析互相参照。 |
+| pairwise_compare | 输出两两比较 | true |  | 整体检验显著时，可参考Mann-Whitney两两比较定位差异来源。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group_var": "分类变量1",
+  "group_var": "变量1",
   "test_vars": [
-    "数值变量1",
-    "数值变量2"
+    "数值变量1"
   ],
   "output_normality": true,
-  "pairwise_compare": true
+  "pairwise_compare": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1623,13 +2220,13 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group_var": "分类变量1",
+  "group_var": "变量1",
   "test_vars": [
-    "数值变量1",
-    "数值变量2"
+    "数值变量1"
   ],
   "output_normality": true,
-  "pairwise_compare": true
+  "pairwise_compare": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1651,18 +2248,20 @@ Authorization: Bearer <access_token>
 | --- | --- | --- | --- | --- |
 | output_normality | 输出正态性检验图 | true |  | 输出各变量正态性检验和直方图，便于和重复测量方差分析互相参照。 |
 | pairwise_compare | 输出两两比较 | true |  | Friedman显著时，可参考Wilcoxon两两比较定位差异来源。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "variables": [
-    "数值变量1",
-    "数值变量2",
-    "数值变量3"
+    "变量1",
+    "变量2",
+    "变量3"
   ],
   "output_normality": true,
-  "pairwise_compare": true
+  "pairwise_compare": true,
+  "include_missing_analysis": false
 }
 ```
 
@@ -1671,19 +2270,20 @@ Authorization: Bearer <access_token>
 ```json
 {
   "variables": [
-    "数值变量1",
-    "数值变量2",
-    "数值变量3"
+    "变量1",
+    "变量2",
+    "变量3"
   ],
   "output_normality": true,
-  "pairwise_compare": true
+  "pairwise_compare": true,
+  "include_missing_analysis": false
 }
 ```
 
 ### `goodness_of_fit_chi_square` - 卡方拟合优度检验
 
 - 分类：数据检验
-- 说明：检验样本分布是否符合给定理论分布
+- 说明：判断期望频数与观察频数是否有显著差异
 - 参数构建器：`direct`
 
 变量槽位：
@@ -1694,19 +2294,16 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| expected_ratios | 期望比例 | 对象 | 可选，按类别填写期望比例百分数；不填时默认等比例。 |
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
   "variable": "分类变量1",
-  "expected_ratios": {
-    "本科生": "50",
-    "研究生": "50"
-  }
+  "include_missing_analysis": false
 }
 ```
 
@@ -1714,7 +2311,8 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variable": "分类变量1"
+  "variable": "分类变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1728,11 +2326,13 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 二分类变量 | 多选，定类变量，至少 3 个 | 放入三个及以上二分类变量 |
+| variables | 变量 | 多选，定类变量，至少 3 个 | 放入三个及以上二分类变量 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1742,7 +2342,8 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2",
     "分类变量3"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1754,36 +2355,42 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2",
     "分类变量3"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
 ### `kappa_consistency` - Kappa一致性检验
 
 - 分类：数据检验
-- 说明：评估两个及以上评价者或分类结果之间的一致性。简单 Kappa、线性/平方加权 Kappa 主表 SE/SE0/Z/P/CI 走 Fleiss-Cohen-Everitt 1969 大样本渐近方差（statsmodels.cohens_kappa）：标准误(假定原假设) 用于检验、标准误 用于 CI，两者对应两个不同方差公式；Fleiss Kappa 主表 SE/Z/P/CI 走 Fleiss-Levin-Paik 2003 H0=0 下大样本渐近方差，主表两个 SE 列同值；po/pe/Kappa 按 Cohen 1960 / Fleiss 1971 原始公式手算（确定性公式，唯一解）；简单 Kappa 详细结论里附 Cohen 1960 经典手算近似 SE=sqrt(po(1-po)/(N(1-pe))) 作为量级参考；权重列支持字符串型 ID 列的数字部分抽取兜底（"学生1..学生50"→1..50 当频数权重）；新增评价者交叉表 section，方便和外部参考软件的列联表逐格对照
+- 说明：评估两个评价者或两次分类结果之间的一致性
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 变量X | 多选，任意变量 | 放入两个及以上定量或定类变量 |
-| weight | 权重 | 单选，定量变量 | 可选，放入一个样本权重变量；无有效正权重时自动按未加权分析 |
+| variables | 变量X | 多选，任意变量，至少 2 个 | 放入两个及以上定量或定类变量 |
+| weight | 权重 | 单选，定量变量 | 可选，放入一个样本权重变量；无有效正权重时按未加权分析 |
 
 额外选项：
 
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| kappa_type | 方法 | 单选 | 可选：简单Kappa、线性加权Kappa、平方加权Kappa、Fleiss Kappa系数。简单 Kappa 和加权 Kappa 主表 SE/SE0/Z/P/CI 走 Fleiss-Cohen-Everitt 1969 大样本渐近方差（statsmodels.cohens_kappa）；Fleiss Kappa 走 Fleiss-Levin-Paik 2003 H0=0 下大样本渐近方差；简单 Kappa 详细结论里附 Cohen 1960 经典手算近似 SE=sqrt(po(1-po)/(N(1-pe))) 作量级参考；两个变量输出 Cohen Kappa，三个及以上变量默认输出两两 Kappa，选择 Fleiss Kappa 时输出整体一致性。 |
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| kappa_type | 方法 | "简单Kappa" | 简单Kappa, 线性加权Kappa, 平方加权Kappa, Fleiss Kappa系数 | 加权Kappa适合有序分类；Fleiss Kappa需要三列及以上评价结果。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": ["分类变量1", "分类变量2"],
-  "weight": "权重变量",
-  "kappa_type": "简单Kappa"
+  "variables": [
+    "变量1",
+    "变量2"
+  ],
+  "weight": "数值变量1",
+  "kappa_type": "简单Kappa",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1791,9 +2398,13 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": ["分类变量1", "分类变量2"],
-  "weight": "权重变量",
-  "kappa_type": "简单Kappa"
+  "variables": [
+    "变量1",
+    "变量2"
+  ],
+  "weight": "数值变量1",
+  "kappa_type": "简单Kappa",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1811,7 +2422,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1820,7 +2433,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1831,7 +2445,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1851,7 +2466,8 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| icc_type | ICC类型 | `双向混合/随机 绝对一致性` | `双向混合/随机 绝对一致性`、`双向混合/随机 一致性`、`单向随机 绝对一致性` | 选择 ICC 模型类型，输出该类型下的单一度量和平均度量两行结果 |
+| icc_type | ICC类型 | "双向混合/随机 绝对一致性" | 双向混合/随机 绝对一致性, 双向混合/随机 一致性, 单向随机 绝对一致性 | 选择ICC模型类型：绝对一致、一致性或单向随机。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1861,7 +2477,8 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
-  "icc_type": "双向混合/随机 绝对一致性"
+  "icc_type": "双向混合/随机 绝对一致性",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1873,7 +2490,8 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
-  "icc_type": "双向混合/随机 绝对一致性"
+  "icc_type": "双向混合/随机 绝对一致性",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1891,7 +2509,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1900,7 +2520,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "变量1",
     "变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1911,7 +2532,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "变量1",
     "变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1929,7 +2551,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1938,7 +2562,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1949,7 +2574,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -1971,6 +2597,7 @@ Authorization: Bearer <access_token>
 | --- | --- | --- | --- | --- |
 | data_format | 数据格式 | "根据数据创建距离矩阵" | 根据数据创建距离矩阵, 数据为距离矩阵 |  |
 | analysis_dimension | 分析维度 | "按变量（列）" | 按变量（列）, 按变量（行） |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -1981,7 +2608,8 @@ Authorization: Bearer <access_token>
     "数值变量2"
   ],
   "data_format": "根据数据创建距离矩阵",
-  "analysis_dimension": "按变量（列）"
+  "analysis_dimension": "按变量（列）",
+  "include_missing_analysis": false
 }
 ```
 
@@ -1994,7 +2622,8 @@ Authorization: Bearer <access_token>
     "数值变量2"
   ],
   "data_format": "根据数据创建距离矩阵",
-  "analysis_dimension": "按变量（列）"
+  "analysis_dimension": "按变量（列）",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2006,105 +2635,21 @@ Authorization: Bearer <access_token>
 - 说明：构建目标-指标-方案三层 AHP 决策模型，输出权重、一致性检验和方案排序
 - 参数构建器：`direct`
 
-专用参数：
+变量槽位：
 
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| goal | 目标名称 | 字符串 | 默认 `中心主题` |
-| criteria | 指标列表 | 对象数组，2-20 个 | 每项格式为 `{ "id": "c1", "label": "指标1" }` |
-| alternatives | 方案列表 | 对象数组，2-20 个 | 每项格式为 `{ "id": "a1", "label": "方案1" }` |
-| criteria_matrix | 指标判断矩阵 | 二维数字数组 | 完整互反矩阵，对角线为 1 |
-| alternative_matrices | 方案判断矩阵 | 对象 | key 为指标 id，value 为该指标下的方案互反矩阵 |
-| weight_method | 计算方法 | 字符串 | `sum_product`、`root`、`eigen`，默认 `sum_product` |
+无变量槽位。
 
-前端槽位示例：
+额外选项：
 
-```json
-{
-  "goal": "中心主题",
-  "criteria": [
-    { "id": "c1", "label": "指标1" },
-    { "id": "c2", "label": "指标2" },
-    { "id": "c3", "label": "指标3" }
-  ],
-  "alternatives": [
-    { "id": "a1", "label": "方案1" },
-    { "id": "a2", "label": "方案2" }
-  ],
-  "criteria_matrix": [
-    [1, 3, 5],
-    [0.3333333333, 1, 2],
-    [0.2, 0.5, 1]
-  ],
-  "alternative_matrices": {
-    "c1": [[1, 3], [0.3333333333, 1]],
-    "c2": [[1, 0.2], [5, 1]],
-    "c3": [[1, 2], [0.5, 1]]
-  },
-  "weight_method": "sum_product"
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "goal": "中心主题",
-  "criteria": [
-    { "id": "c1", "label": "指标1" },
-    { "id": "c2", "label": "指标2" },
-    { "id": "c3", "label": "指标3" }
-  ],
-  "alternatives": [
-    { "id": "a1", "label": "方案1" },
-    { "id": "a2", "label": "方案2" }
-  ],
-  "criteria_matrix": [
-    [1, 3, 5],
-    [0.3333333333, 1, 2],
-    [0.2, 0.5, 1]
-  ],
-  "alternative_matrices": {
-    "c1": [[1, 3], [0.3333333333, 1]],
-    "c2": [[1, 0.2], [5, 1]],
-    "c3": [[1, 2], [0.5, 1]]
-  },
-  "weight_method": "sum_product"
-}
-```
-
-### `ahp_simplified` - 层次分析法（AHP快速版）
-
-- 分类：综合评价
-- 说明：支持手填判断矩阵或按变量自动估权，快速计算 AHP 权重和一致性检验
-- 参数构建器：`direct`
-
-专用参数：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| input_mode | 输入方式 | 字符串 | `matrix` 手填判断矩阵；`data_auto` 按变量均值自动估权 |
-| criteria | 指标名称 | 字符串数组 | `matrix` 模式必填，2-10 个 |
-| matrix | 判断矩阵 | 二维数字数组 | `matrix` 模式必填，完整互反矩阵，对角线为 1 |
-| variables | 准则指标 | 定量变量数组 | `data_auto` 模式必填，至少 2 个 |
-| weight_method | 计算方法 | 字符串 | `sum_product`、`root`、`eigen`，默认 `sum_product` |
-| include_missing_analysis | 输出缺失分析 | 布尔 | 仅 `data_auto` 模式在前端展示 |
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| weight_method | 计算方法 | "sum_product" | {'value': 'sum_product', 'label': '和积法'}, {'value': 'root', 'label': '方根法'}, {'value': 'eigen', 'label': '特征向量法'} |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "input_mode": "matrix",
-  "criteria": [
-    "指标1",
-    "指标2",
-    "指标3"
-  ],
-  "matrix": [
-    [1, 3, 5],
-    [0.3333333333, 1, 2],
-    [0.2, 0.5, 1]
-  ],
   "weight_method": "sum_product",
   "include_missing_analysis": false
 }
@@ -2114,17 +2659,58 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "input_mode": "data_auto",
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ],
   "weight_method": "sum_product",
-  "include_missing_analysis": true
+  "include_missing_analysis": false
 }
 ```
 
-### `exploratory_factor_analysis` - 因子分析（探索性）
+### `ahp_simplified` - 层次分析法（AHP快速版）
+
+- 分类：综合评价
+- 说明：支持手填判断矩阵或按变量自动估权，快速计算 AHP 权重和一致性检验
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| variables | 准则指标 | 多选，定量变量 | 数据自动估权模式下放入用于构造 AHP 权重的准则变量 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| input_mode | 输入方式 | "matrix" | {'value': 'matrix', 'label': '手填判断矩阵'}, {'value': 'data_auto', 'label': '按变量自动估权'} |  |
+| weight_method | 计算方法 | "sum_product" | {'value': 'sum_product', 'label': '和积法'}, {'value': 'root', 'label': '方根法'}, {'value': 'eigen', 'label': '特征向量法'} |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "variables": [
+    "数值变量1"
+  ],
+  "input_mode": "matrix",
+  "weight_method": "sum_product",
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "variables": [
+    "数值变量1"
+  ],
+  "input_mode": "matrix",
+  "weight_method": "sum_product",
+  "include_missing_analysis": false
+}
+```
+
+### `exploratory_factor_analysis` - 探索性因子分析（EFA）
 
 - 分类：综合评价
 - 说明：通过探索性因子分析识别潜在结构与指标归类
@@ -2138,7 +2724,15 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| factor_count_mode | 因子个数 | "auto" | {'value': 'auto', 'label': '自动抽取'}, {'value': 'fixed', 'label': '固定个数'} | 自动抽取按特征根大于1的准则确定因子数；固定个数可手动指定提取的因子数量。 |
+| factor_count | 固定因子数 | 2 |  | 当因子个数选择「固定个数」时生效，需输入正整数。 |
+| save_factor_scores | 保存因子得分 | false |  | 将因子得分保存为新的标题，选中后每次分析均会新增生成标题，标题名称类似为FactorScore_****。 |
+| output_correlation_matrix | 相关系数矩阵 | false |  | 选中后会输出相关系数矩阵，用于分析相关关系情况。 |
+| save_composite_score | 保存综合得分 | false |  | 将综合得分保存为新的标题，选中后每次分析均会新增生成标题，标题名称类似为CompScore_****。 |
+| rotation_method | 旋转方法 | "varimax" | {'value': 'varimax', 'label': '最大方差法Varimax(默认)'}, {'value': 'promax', 'label': '最优斜交法Promax'} | 旋转方法用于让因子结构更清晰，Varimax适合相互独立因子，Promax适合因子间可能相关的情况。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2148,7 +2742,14 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "factor_count_mode": "auto",
+  "factor_count": 2,
+  "save_factor_scores": false,
+  "output_correlation_matrix": false,
+  "save_composite_score": false,
+  "rotation_method": "varimax",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2160,14 +2761,21 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "factor_count_mode": "auto",
+  "factor_count": 2,
+  "save_factor_scores": false,
+  "output_correlation_matrix": false,
+  "save_composite_score": false,
+  "rotation_method": "varimax",
+  "include_missing_analysis": false
 }
 ```
 
 ### `data_envelopment_analysis` - 数据包络分析
 
 - 分类：综合评价
-- 说明：使用 CCR 模型近似计算各决策单元的相对效率
+- 说明：使用 BCC/CCR 模型比较决策单元的相对投入产出效率
 - 参数构建器：`direct`
 
 变量槽位：
@@ -2176,10 +2784,16 @@ Authorization: Bearer <access_token>
 | --- | --- | --- | --- |
 | input_vars | 投入指标 | 多选，定量变量，至少 1 个 | 放入投入指标 |
 | output_vars | 产出指标 | 多选，定量变量，至少 1 个 | 放入产出指标 |
+| index_var | 索引项 | 单选，任意变量 | 可选，放入决策单元名称或编号 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| dea_type | 类型 | "BCC" | {'value': 'BCC', 'label': 'BCC（默认）'}, {'value': 'CCR', 'label': 'CCR'} | BCC 为可变规模报酬模型，可拆分技术效益和规模效益；CCR 为固定规模报酬模型。 |
+| non_negative_translation | 非负平移 | true |  | 如果有数据小于等于0，此时平移单位为：最小值的绝对值+0.01，保证数据全部为正数可正常计算。 |
+| save_efficiency | 保存效益 | false |  | 点击后会新生成标题来保存效益值，选中后每次分析均会得到新标题。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2190,7 +2804,12 @@ Authorization: Bearer <access_token>
   ],
   "output_vars": [
     "数值变量1"
-  ]
+  ],
+  "index_var": "变量1",
+  "dea_type": "BCC",
+  "non_negative_translation": true,
+  "save_efficiency": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2203,25 +2822,39 @@ Authorization: Bearer <access_token>
   ],
   "output_vars": [
     "数值变量1"
-  ]
+  ],
+  "index_var": "变量1",
+  "dea_type": "BCC",
+  "non_negative_translation": true,
+  "save_efficiency": false,
+  "include_missing_analysis": false
 }
 ```
 
 ### `fuzzy_comprehensive_evaluation` - 模糊综合评价
 
 - 分类：综合评价
-- 说明：通过模糊隶属度和加权合成得到综合评价结果
+- 说明：通过指标权重、模糊算子和评价集隶属度得到综合评价结果
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入评价指标 |
+| variables | 评价项 | 多选，定量变量，至少 2 个 | 放入评价指标 |
+| index_var | 索引项 | 单选，定类变量 | 可选，放入样本名称或编号 |
+| weight_var | 评价指标权重 | 单选，定量变量 | 可选，选择自定义权重时按评价项顺序读取前 N 个有效数值 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| weight_method | 变量权重 | "entropy" | {'value': 'entropy', 'label': '熵权法'}, {'value': 'equal', 'label': '不设置权重'}, {'value': 'custom', 'label': '自定义权重'} | 熵权法按指标离散程度自动赋权；不设置权重表示等权；自定义权重需放入评价指标权重列或通过 API 传 custom_weights/weights。 |
+| fuzzy_operator | 模糊算子 | "weighted_average" | {'value': 'main_factor_decision', 'label': '主因素决定型：M(∧,V)', 'recommendation': '更多考虑指标权重，输入数据在一定程度上不会有明显影响，不推荐使用。'}, {'value': 'main_factor_prominent', 'label': '主因素突出型：M(*,V)', 'recommendation': '在主因素决定型基础上修正输入数据的上界程度，不推荐使用。'}, {'value': 'bounded_sum_min', 'label': '取小与有界型：M(∧,+)', 'recommendation': '更多使用输入数据信息，推荐使用。'}, {'value': 'weighted_average', 'label': '加权平均型：M(*,+)', 'recommendation': '综合利用指标权重和输入数据信息，推荐使用。'} | 主因素决定型 M(∧,V)：更多考虑指标权重，不推荐。
+主因素突出型 M(*,V)：修正输入数据上界，不推荐。
+取小与有界型 M(∧,+)：更多使用输入数据信息，推荐。
+加权平均型 M(*,+)：综合利用权重和输入信息，推荐。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2230,7 +2863,11 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "index_var": "分类变量1",
+  "weight_method": "entropy",
+  "fuzzy_operator": "weighted_average",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2241,34 +2878,51 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "index_var": "分类变量1",
+  "weight_method": "entropy",
+  "fuzzy_operator": "weighted_average",
+  "include_missing_analysis": false
 }
 ```
 
 ### `topsis` - 优劣解距离法(TOPSIS)
 
 - 分类：综合评价
-- 说明：基于与理想解和负理想解的距离进行综合排序
+- 说明：基于正负理想解距离评价方案优劣，支持等权、熵权和自定义权重
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
+| positive_vars | 变量 | 多选，定量变量 | 拖入正向指标 |
+| negative_vars | 变量 | 多选，定量变量 | 拖入负向指标 |
+| index_var | 变量 | 单选，定类变量 | 可选，放入样本名称或编号 |
+| weight_var | 变量 | 单选，定量变量 | 选择自定义权重时，按指标顺序读取前 N 个有效数值 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| weight_method | 变量权重 | "entropy" | {'value': 'entropy', 'label': '熵权法'}, {'value': 'equal', 'label': '不设置权重'}, {'value': 'custom', 'label': '自定义权重'} | 熵权法对应 SPSSAU 的熵权TOPSIS；不设置权重对应普通 TOPSIS；自定义权重需放入指标权重列或通过 API 传 custom_weights/weights。 |
+| save_process | 保存过程值 | false |  | 选中后生成新数据版本，保存 D+、D-、相对接近度 C 和排序结果。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "positive_vars": [
+    "数值变量1"
+  ],
+  "negative_vars": [
+    "数值变量1"
+  ],
+  "index_var": "分类变量1",
+  "weight_method": "entropy",
+  "save_process": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2276,37 +2930,58 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "positive_vars": [
+    "数值变量1"
+  ],
+  "negative_vars": [
+    "数值变量1"
+  ],
+  "index_var": "分类变量1",
+  "weight_method": "entropy",
+  "save_process": false,
+  "include_missing_analysis": false
 }
 ```
 
-### `rsr` - 秩和比综合评价法(RSR)
+### `rsr` - 秩和比综合评价法(RSR/WRSR)
 
 - 分类：综合评价
-- 说明：通过指标排序后的秩和比值进行综合评价
+- 说明：通过指标秩次计算 RSR/WRSR 综合得分，支持正负向指标、权重和 Probit 分档
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
+| positive_vars | 变量 | 多选，定量变量 | 拖入越大越好的指标 |
+| negative_vars | 变量 | 多选，定量变量 | 拖入越小越好的指标 |
+| index_var | 变量 | 单选，定类变量 | 可选，放入样本名称或编号 |
+| weight_var | 变量 | 单选，定量变量 | 选择自定义权重时，按指标顺序读取前 N 个有效数值 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| rank_method | 编秩方法 | "integer" | {'value': 'integer', 'label': '整次法'}, {'value': 'fractional', 'label': '非整次法'} | 整次法按样本排序秩次计算，并列值取平均秩；非整次法按极差线性换算为非整秩。 |
+| division_count | 分档数量 | "3" | {'value': '3', 'label': '3档'}, {'value': '4', 'label': '4档'}, {'value': '5', 'label': '5档'}, {'value': '6', 'label': '6档'}, {'value': '7', 'label': '7档'} | 支持 3-7 档；分档阈值基于 Probit 回归结果生成。 |
+| weight_method | 变量权重 | "equal" | {'value': 'equal', 'label': '不设置权重'}, {'value': 'entropy', 'label': '熵权法'}, {'value': 'custom', 'label': '自定义权重'} | 不设置权重为普通 RSR；熵权法和自定义权重为加权 WRSR。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "positive_vars": [
+    "数值变量1"
+  ],
+  "negative_vars": [
+    "数值变量1"
+  ],
+  "index_var": "分类变量1",
+  "rank_method": "integer",
+  "division_count": "3",
+  "weight_method": "equal",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2314,44 +2989,63 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
+  "positive_vars": [
+    "数值变量1"
+  ],
+  "negative_vars": [
+    "数值变量1"
+  ],
+  "index_var": "分类变量1",
+  "rank_method": "integer",
+  "division_count": "3",
+  "weight_method": "equal",
+  "include_missing_analysis": false
 }
 ```
 
 ### `coupling_coordination` - 耦合协调度
 
 - 分类：综合评价
-- 说明：衡量多个子系统之间的耦合关系与协调发展水平
+- 说明：衡量多个系统或指标之间的耦合关系与协调发展水平，支持正负向指标、协调指数、权重和数据区间化
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| group1_vars | 子系统1指标 | 多选，定量变量，至少 1 个 | 放入子系统1指标 |
-| group2_vars | 子系统2指标 | 多选，定量变量，至少 1 个 | 放入子系统2指标 |
-| group3_vars | 子系统3指标 | 多选，定量变量 | 可选：放入子系统3指标 |
+| positive_vars | 变量 | 多选，定量变量 | 拖入越大越好的指标 |
+| negative_vars | 变量 | 多选，定量变量 | 拖入越小越好的指标 |
+| coordination_index_var | 变量 | 单选，定量变量 | 可选，放入已计算好的协调指数T |
+| label_vars | 变量 | 多选，定类变量 | 可选，最多 2 个标签变量，用于标识样本 |
+| weight_var | 变量 | 单选，定量变量 | 选择自定义权重时，按指标顺序读取前 N 个有效数值 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| weight_method | 指标权重 | "equal" | {'value': 'equal', 'label': '不设置权重'}, {'value': 'entropy', 'label': '熵权法'}, {'value': 'custom', 'label': '自定义权重'} | 默认各指标权重相等；熵权法按离散程度赋权；自定义权重需放入指标权重列或通过 API 传 custom_weights/weights。 |
+| data_intervalization | 数据区间化 | true |  | 将同趋势化后的数据压缩到 0.01~0.99，避免 0 值导致耦合度退化或不稳定。 |
+| save_process | 保存计算值 | false |  | 选中后生成新数据版本，保存耦合度C、协调指数T、耦合协调度D和协调等级。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "group1_vars": [
+  "positive_vars": [
     "数值变量1"
   ],
-  "group2_vars": [
+  "negative_vars": [
     "数值变量1"
   ],
-  "group3_vars": [
-    "数值变量1"
-  ]
+  "coordination_index_var": "数值变量1",
+  "label_vars": [
+    "分类变量1"
+  ],
+  "weight_method": "equal",
+  "data_intervalization": true,
+  "save_process": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2359,33 +3053,40 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "group1_vars": [
+  "positive_vars": [
     "数值变量1"
   ],
-  "group2_vars": [
+  "negative_vars": [
     "数值变量1"
   ],
-  "group3_vars": [
-    "数值变量1"
-  ]
+  "coordination_index_var": "数值变量1",
+  "label_vars": [
+    "分类变量1"
+  ],
+  "weight_method": "equal",
+  "data_intervalization": true,
+  "save_process": false,
+  "include_missing_analysis": false
 }
 ```
 
-### `coefficient_variation` - 变异系数法
+### `coefficient_variation` - 变异系数法（信息量权重）
 
 - 分类：综合评价
-- 说明：使用变异系数衡量指标离散程度并进行客观赋权
+- 说明：使用变异系数衡量指标离散程度并进行客观赋权，兼容 SPSSAU 信息量权重口径
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
+| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入需要计算信息量权重的定量指标 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2394,7 +3095,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2405,7 +3107,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2419,20 +3122,33 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
+| positive_vars | 正向指标 / 变量 | 多选，定量变量 | 拖入越大越好的指标 |
+| negative_vars | 负向指标 / 变量 | 多选，定量变量 | 拖入越小越好的指标 |
+| index_var | 索引项 / 变量 | 单选，定类变量 | 可选，放入样本名称或编号 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| non_negative_translation | 非负平移 | false |  | 如果熵权计算矩阵中有数据小于等于0，平移单位为最小值的绝对值+0.01，保证数据全部为正数后计算。 |
+| save_composite_score | 保存综合得分 | false |  | 选中后生成新数据版本，保存本次熵值法综合得分。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
+  "positive_vars": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "negative_vars": [
+    "数值变量3"
+  ],
+  "index_var": "分类变量1",
+  "non_negative_translation": false,
+  "save_composite_score": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2440,10 +3156,17 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": [
+  "positive_vars": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "negative_vars": [
+    "数值变量3"
+  ],
+  "index_var": "分类变量1",
+  "non_negative_translation": false,
+  "save_composite_score": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2457,11 +3180,14 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
+| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入需要计算 CRITIC 权重的定量指标 |
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| save_composite_score | 保存综合得分 | false |  | 选中后生成新数据版本，按 CRITIC 权重保存综合得分；未设置方向时默认各指标越大越好。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2470,7 +3196,9 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "save_composite_score": false,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2481,14 +3209,16 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "save_composite_score": false,
+  "include_missing_analysis": false
 }
 ```
 
 ### `independent_weight_coefficient` - 独立性权系数法
 
 - 分类：综合评价
-- 说明：依据指标独立性和离散程度构造综合客观权重
+- 说明：依据各指标与其他指标之间的复相关系数确定客观权重，复相关系数越大说明信息重复越多、权重越小
 - 参数构建器：`direct`
 
 变量槽位：
@@ -2499,7 +3229,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2508,7 +3240,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2519,115 +3252,46 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
 ### `grey_relational_analysis` - 灰色关联分析
 
 - 分类：综合评价
-- 说明：通过比较序列与参考序列的接近程度评估关联强弱
+- 说明：通过特征序列与母序列的几何形态相似程度评估关联强弱
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| reference_var | 参考序列 | 单选，定量变量 | 放入参考变量 |
-| compare_vars | 比较序列 | 多选，定量变量，至少 1 个 | 放入比较变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "reference_var": "数值变量1",
-  "compare_vars": [
-    "数值变量1"
-  ]
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "reference_var": "数值变量1",
-  "compare_vars": [
-    "数值变量1"
-  ]
-}
-```
-
-### `vikor` - 多准则妥协排序法（VIKOR）
-
-- 分类：综合评价
-- 说明：根据群体效用与个体遗憾构建折中排序
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| variables | 评价指标 | 多选，定量变量，至少 2 个 | 放入综合评价指标 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "variables": [
-    "数值变量1",
-    "数值变量2"
-  ]
-}
-```
-
-### `ism` - 解释结构模型（ISM）
-
-- 分类：综合评价
-- 说明：基于变量间关系构建多层级的解释结构
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| variables | 结构变量 | 多选，定量变量，至少 3 个 | 放入需要构建结构层级的变量 |
+| feature_vars | 变量 | 多选，定量变量，至少 2 个 | 放入至少 2 个需要和母序列比较的定量变量 |
+| mother_var | 变量 | 单选，定量变量 | 放入 1 个作为关联对象的定量变量 |
+| index_var | 变量 | 单选，定类变量 | 可选，放入观测点名称或编号 |
 
 额外选项：
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| threshold | 关系阈值 | "0.3" | 0.3, 0.4, 0.5 |  |
+| dimensionless_method | 无量纲处理方式 | "mean" | initial=初值化, mean=均值化, none=不处理 | 初值化适合稳定递增或递减的数据；均值化适合没有明显升降趋势的数据；不处理直接使用原始数值。 |
+| rho | 分辨系数ρ | 0.5 | 0<ρ<1 | 分辨系数ρ∈(0,1)，ρ越小分辨力越大，通常取ρ=0.5。 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "variables": [
+  "feature_vars": [
     "数值变量1",
-    "数值变量2",
-    "数值变量3"
+    "数值变量2"
   ],
-  "threshold": "0.3"
+  "mother_var": "数值变量3",
+  "index_var": "分类变量1",
+  "dimensionless_method": "mean",
+  "rho": 0.5,
+  "include_missing_analysis": false
 }
 ```
 
@@ -2635,145 +3299,118 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "variables": [
+  "feature_vars": [
     "数值变量1",
-    "数值变量2",
-    "数值变量3"
+    "数值变量2"
   ],
-  "threshold": "0.3"
+  "mother_var": "数值变量3",
+  "index_var": "分类变量1",
+  "dimensionless_method": "mean",
+  "rho": 0.5,
+  "include_missing_analysis": false
+}
+```
+
+旧参数 `reference_var` / `compare_vars` 仍可兼容，当前入口优先使用 `mother_var` / `feature_vars`。
+
+### `vikor` - 多准则妥协解排序法（VIKOR）
+
+- 分类：综合评价
+- 说明：根据群体效用与个体遗憾构建折中排序，支持正负向指标、熵权/等权/自定义权重和决策系数 v
+- 参数构建器：`direct`
+
+变量槽位：
+
+| 参数 key | 名称 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| positive_vars | 正向指标 | 多选，定量变量 | 拖入正向指标（越大越好） |
+| negative_vars | 负向指标 | 多选，定量变量 | 拖入负向指标（越小越好） |
+| index_var | 索引项 | 单选，分类变量 | 可选，放入样本名称或编号 |
+| weight_var | 指标权重 | 单选，定量变量 | 自定义权重时按指标顺序读取前 N 个有效数值 |
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| weight_method | 加权方式 | entropy | entropy / equal / custom | 熵权法、权重相同、自定义权重 |
+| v_coefficient | 决策机制系数v | 0.5 | 0~1 数值 | v>0.5 侧重群体效用，v<0.5 侧重个体遗憾 |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
+
+前端槽位示例：
+
+```json
+{
+  "positive_vars": ["q2"],
+  "negative_vars": ["q3", "q4"],
+  "index_var": "样本编号",
+  "weight_method": "entropy",
+  "v_coefficient": 0.5,
+  "include_missing_analysis": false
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "positive_vars": ["q2"],
+  "negative_vars": ["q3", "q4"],
+  "weight_method": "entropy",
+  "v_coefficient": 0.5,
+  "include_missing_analysis": false
+}
+```
+
+### `ism` - 解释结构模型法（ISM）
+
+- 分类：综合评价
+- 说明：通过可达矩阵分析要素间的层级结构关系，支持邻接矩阵/可达矩阵输入和多种分解方式
+- 参数构建器：`direct`
+
+变量槽位：无（使用矩阵输入）
+
+额外选项：
+
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| elements | 要素名称 | [] | 字符串数组 | 要素名称列表，至少 2 个 |
+| matrix | 矩阵数据 | [] | n×n 二维数组 | 邻接矩阵或可达矩阵（0/1 方阵） |
+| data_type | 数据类型 | adjacency | adjacency / reachability | 邻接矩阵或可达矩阵 |
+| decomposition_method | 分解方式 | up | hierarchy / up / down | 层次分解、结果优先-UP型、原因优先-DOWN型 |
+
+前端槽位示例：
+
+```json
+{
+  "elements": ["要素1", "要素2", "要素3", "要素4"],
+  "matrix": [
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+    [0, 0, 0, 0]
+  ],
+  "data_type": "adjacency",
+  "decomposition_method": "up"
+}
+```
+
+`POST /api/execute-method/{session_id}` 最终 `params` 示例：
+
+```json
+{
+  "elements": ["要素1", "要素2", "要素3", "要素4"],
+  "matrix": [
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+    [0, 0, 0, 0]
+  ],
+  "data_type": "adjacency",
+  "decomposition_method": "up"
 }
 ```
 
 ## 高级问卷分析包
-
-### `choice_multi_multi` - 选择题【多选&多选】
-
-- 分类：高级问卷分析包
-- 说明：比较两组多选题之间的联合选择结构，适合研究题项组合与共现关系
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| variables_a | 多选题A | 多选，定类变量，至少 2 个 | 放入第一组多选题变量 |
-| variables_b | 多选题B | 多选，定类变量，至少 2 个 | 放入第二组多选题变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "variables_a": [
-    "分类变量1",
-    "分类变量2"
-  ],
-  "variables_b": [
-    "分类变量1",
-    "分类变量2"
-  ]
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "variables_a": [
-    "分类变量1",
-    "分类变量2"
-  ],
-  "variables_b": [
-    "分类变量1",
-    "分类变量2"
-  ]
-}
-```
-
-### `choice_multi_single` - 选择题【多选&单选】
-
-- 分类：高级问卷分析包
-- 说明：比较不同单选分组在多选题上的选择偏好差异
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| multiple_vars | 多选题变量 | 多选，定类变量，至少 2 个 | 放入同一题目的多选拆分变量 |
-| single_var | 单选分组变量 | 单选，定类变量 | 放入用于分组的单选题变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "multiple_vars": [
-    "分类变量1",
-    "分类变量2"
-  ],
-  "single_var": "分类变量1"
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "multiple_vars": [
-    "分类变量1",
-    "分类变量2"
-  ],
-  "single_var": "分类变量1"
-}
-```
-
-### `choice_single_multi` - 选择题【单选&多选】
-
-- 分类：高级问卷分析包
-- 说明：从单选结果出发，分析不同单选人群在多选题上的偏好扩展
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| single_var | 单选变量 | 单选，定类变量 | 放入单选题变量 |
-| multiple_vars | 多选题变量 | 多选，定类变量，至少 2 个 | 放入同一题目的多选拆分变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "single_var": "分类变量1",
-  "multiple_vars": [
-    "分类变量1",
-    "分类变量2"
-  ]
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "single_var": "分类变量1",
-  "multiple_vars": [
-    "分类变量1",
-    "分类变量2"
-  ]
-}
-```
 
 ### `nps` - NPS净推荐值分析
 
@@ -2789,13 +3426,16 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
 ```json
 {
-  "score_var": "数值变量1"
+  "score_var": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2803,7 +3443,8 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "score_var": "数值变量1"
+  "score_var": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2821,7 +3462,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2830,7 +3473,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2841,7 +3485,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2860,7 +3505,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2870,7 +3517,8 @@ Authorization: Bearer <access_token>
   "attribute_vars": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2882,7 +3530,8 @@ Authorization: Bearer <access_token>
   "attribute_vars": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2900,7 +3549,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2909,7 +3560,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2920,7 +3572,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2938,7 +3591,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2947,7 +3602,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2958,7 +3614,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -2979,7 +3636,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -2988,7 +3647,8 @@ Authorization: Bearer <access_token>
   "too_cheap": "数值变量1",
   "cheap": "数值变量1",
   "expensive": "数值变量1",
-  "too_expensive": "数值变量1"
+  "too_expensive": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -2999,7 +3659,8 @@ Authorization: Bearer <access_token>
   "too_cheap": "数值变量1",
   "cheap": "数值变量1",
   "expensive": "数值变量1",
-  "too_expensive": "数值变量1"
+  "too_expensive": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -3020,6 +3681,7 @@ Authorization: Bearer <access_token>
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
 | combo_size | 组合大小 | "3" | 2, 3, 4 |  |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3029,7 +3691,8 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2"
   ],
-  "combo_size": "3"
+  "combo_size": "3",
+  "include_missing_analysis": false
 }
 ```
 
@@ -3041,7 +3704,8 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2"
   ],
-  "combo_size": "3"
+  "combo_size": "3",
+  "include_missing_analysis": false
 }
 ```
 
@@ -3060,7 +3724,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3069,7 +3735,8 @@ Authorization: Bearer <access_token>
   "satisfaction_var": "数值变量1",
   "attribute_vars": [
     "数值变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3080,7 +3747,8 @@ Authorization: Bearer <access_token>
   "satisfaction_var": "数值变量1",
   "attribute_vars": [
     "数值变量1"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3100,7 +3768,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3108,7 +3778,8 @@ Authorization: Bearer <access_token>
 {
   "choice_var": "分类变量1",
   "brand_var": "分类变量1",
-  "price_var": "数值变量1"
+  "price_var": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -3118,7 +3789,8 @@ Authorization: Bearer <access_token>
 {
   "choice_var": "分类变量1",
   "brand_var": "分类变量1",
-  "price_var": "数值变量1"
+  "price_var": "数值变量1",
+  "include_missing_analysis": false
 }
 ```
 
@@ -3137,7 +3809,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3147,7 +3821,8 @@ Authorization: Bearer <access_token>
   "attribute_vars": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3159,7 +3834,8 @@ Authorization: Bearer <access_token>
   "attribute_vars": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3177,7 +3853,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3186,7 +3864,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3197,7 +3876,8 @@ Authorization: Bearer <access_token>
   "variables": [
     "分类变量1",
     "分类变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3218,7 +3898,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3228,7 +3910,8 @@ Authorization: Bearer <access_token>
   "predictors": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3240,7 +3923,8 @@ Authorization: Bearer <access_token>
   "predictors": [
     "数值变量1",
     "数值变量2"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3258,7 +3942,9 @@ Authorization: Bearer <access_token>
 
 额外选项：
 
-无额外选项。
+| 参数 key | 名称 | 默认值 | 可选值 | 说明 |
+| --- | --- | --- | --- | --- |
+| include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
 
@@ -3268,7 +3954,8 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
+  ],
+  "include_missing_analysis": false
 }
 ```
 
@@ -3280,94 +3967,7 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2",
     "数值变量3"
-  ]
-}
-```
-
-### `parallel_mediation` - 平行中介效应
-
-- 分类：高级回归&因果分析包
-- 说明：检验多个中介变量是否并行传递自变量对因变量的影响
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| x | 自变量(X) | 单选，定量变量 | 放入自变量 |
-| mediators | 中介变量(M) | 多选，定量变量，至少 2 个 | 放入并行中介变量 |
-| y | 因变量(Y) | 单选，定量变量 | 放入因变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "x": "数值变量1",
-  "mediators": [
-    "数值变量1",
-    "数值变量2"
   ],
-  "y": "数值变量1"
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "x": "数值变量1",
-  "mediators": [
-    "数值变量1",
-    "数值变量2"
-  ],
-  "y": "数值变量1"
-}
-```
-
-### `serial_mediation` - 链式中介效应
-
-- 分类：高级回归&因果分析包
-- 说明：检验多个中介变量按顺序传递影响的链式作用
-- 参数构建器：`direct`
-
-变量槽位：
-
-| 参数 key | 名称 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| x | 自变量(X) | 单选，定量变量 | 放入自变量 |
-| mediators | 链式中介变量(M) | 多选，定量变量，至少 2 个 | 按顺序放入中介变量 |
-| y | 因变量(Y) | 单选，定量变量 | 放入因变量 |
-
-额外选项：
-
-无额外选项。
-
-前端槽位示例：
-
-```json
-{
-  "x": "数值变量1",
-  "mediators": [
-    "数值变量1",
-    "数值变量2"
-  ],
-  "y": "数值变量1"
-}
-```
-
-`POST /api/execute-method/{session_id}` 最终 `params` 示例：
-
-```json
-{
-  "x": "数值变量1",
-  "mediators": [
-    "数值变量1",
-    "数值变量2"
-  ],
-  "y": "数值变量1"
+  "include_missing_analysis": false
 }
 ```

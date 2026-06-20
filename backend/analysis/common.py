@@ -309,9 +309,19 @@ def _collect_analysis_variables(params, df):
         "items",
         "items_groups",
         "group_vars",
+        "feature_vars",
+        "mother_var",
+        "reference_var",
+        "compare_vars",
+        "positive_vars",
+        "negative_vars",
         "dependent",
         "predictors",
         "test_vars",
+        "input_vars",
+        "output_vars",
+        "index_var",
+        "weight_var",
         "group_var",
         "summary_vars",
         "var1",
@@ -460,7 +470,22 @@ def build_preview_result(name, params, message, suggestions=None):
 
 def build_slot_param_example(meta):
     example = {}
+    option_defaults = {}
+    for option in meta.get("options", []):
+        key = option.get("key")
+        if not key:
+            continue
+        if "default" in option:
+            option_defaults[key] = option.get("default")
+        else:
+            choices = option.get("choices") or [""]
+            first_choice = choices[0]
+            option_defaults[key] = first_choice.get("value") if isinstance(first_choice, dict) else first_choice
+
     for slot in meta.get("slots", []):
+        visible_if = slot.get("visible_if")
+        if visible_if and not all(option_defaults.get(key) == value for key, value in visible_if.items()):
+            continue
         slot_type = slot.get("type", "single")
         accept = slot.get("accept", "any")
         key = slot.get("key")
@@ -482,7 +507,7 @@ def build_slot_param_example(meta):
         key = option.get("key")
         if not key:
             continue
-        example[key] = option.get("default") or (option.get("choices") or [""])[0]
+        example[key] = option_defaults.get(key, "")
     return example
 
 

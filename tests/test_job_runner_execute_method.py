@@ -26,7 +26,7 @@ class _AsyncLock:
         return False
 
 
-class ExecuteMethodJobEfaWritebackTests(unittest.IsolatedAsyncioTestCase):
+class ExecuteMethodJobScoreWritebackTests(unittest.IsolatedAsyncioTestCase):
     async def test_efa_score_columns_create_and_activate_new_dataset_version(self):
         df = pd.DataFrame(
             {
@@ -129,3 +129,52 @@ class ExecuteMethodJobEfaWritebackTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["created_columns"], [])
         create_version.assert_not_awaited()
         self.assertEqual(save_result.await_args_list[0].kwargs["dataset_version_id"], 6)
+
+    async def test_dea_score_columns_create_and_activate_new_dataset_version(self):
+        df = pd.DataFrame({"x1": [1, 2, 3], "y1": [1, 2, 3]})
+        job = {
+            "id": "job-3",
+            "session_id": "sess-3",
+            "owner_id": 9,
+            "dataset_version_id": 7,
+            "payload": {"method": "data_envelopment_analysis", "params": {"input_vars": ["x1"], "output_vars": ["y1"], "save_efficiency": True}},
+        }
+        current_version = {"id": 7, "version_no": 1, "storage_key": "v1.parquet"}
+        next_version = {"id": 10, "version_no": 2, "storage_key": "v2.parquet"}
+        method_result = {
+            "name": "数据包络分析",
+            "headers": ["决策单元", "综合效益"],
+            "rows": [["1", "1.000"]],
+            "description": "ok",
+            "sections": [],
+            "score_columns": [
+                {"base_name": "DEA_综合效益", "values": [1.0, 0.8, 1.0]},
+            ],
+        }
+
+        async def passthrough_to_thread(func, *args, **kwargs):
+            return func(*args, **kwargs)
+
+        with patch("backend.services.jobs.runner.get_dataset_version", new=AsyncMock(return_value=current_version)):
+            with patch("backend.services.jobs.runner.get_current_dataset_version_for_session", new=AsyncMock(return_value=current_version)):
+                with patch("backend.services.jobs.runner.parse_data_file_async", new=AsyncMock(return_value=(df, {}))):
+                    with patch("backend.services.jobs.runner.inject_analysis_metadata", new=AsyncMock(return_value=job["payload"]["params"])):
+                        with patch("backend.services.jobs.runner.append_optional_missing_analysis", return_value=method_result):
+                            with patch("backend.services.jobs.runner.asyncio.to_thread", new=passthrough_to_thread):
+                                with patch.dict(runner.METHOD_REGISTRY, {"data_envelopment_analysis": lambda _df, _params: method_result}, clear=False):
+                                    with patch("backend.services.jobs.runner._materialized_dataset", new=_Materialized()):
+                                        with patch("backend.services.jobs.runner.session_write_lock", return_value=_AsyncLock()):
+                                            with patch("backend.services.jobs.runner.create_dataset_version_from_dataframe", new=AsyncMock(return_value=(next_version, {"row_count": 3}))) as create_version:
+                                                with patch("backend.services.jobs.runner.save_current_metadata_snapshot", new=AsyncMock()):
+                                                    with patch("backend.services.jobs.runner.activate_dataset_version", new=AsyncMock(return_value=next_version)):
+                                                        with patch("backend.services.jobs.runner.delete_results_for_job", new=AsyncMock()):
+                                                            with patch("backend.services.jobs.runner.save_result", new=AsyncMock()) as save_result:
+                                                                with patch("backend.services.jobs.runner.update_session", new=AsyncMock()):
+                                                                    result = await runner._run_execute_method_job(job)
+
+        self.assertTrue(result["created_dataset_version"])
+        self.assertEqual(result["created_columns"], ["DEA_综合效益"])
+        created_df = create_version.await_args.args[2]
+        self.assertIn("DEA_综合效益", created_df.columns)
+        self.assertEqual(created_df["DEA_综合效益"].tolist(), [1.0, 0.8, 1.0])
+        self.assertEqual(save_result.await_args_list[0].kwargs["dataset_version_id"], 10)

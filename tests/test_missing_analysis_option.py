@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from backend.analysis.common import append_optional_missing_analysis
+from backend.analysis.common import append_optional_missing_analysis, build_slot_param_example
 from backend.analysis.registry import METHOD_META
 from backend.analysis.methods.frequency import frequency_table
 from backend.analysis.methods.descriptive import descriptive
@@ -58,6 +58,49 @@ class MissingAnalysisOptionTests(unittest.TestCase):
             1,
         )
 
+    def test_slot_param_example_preserves_false_default(self):
+        sample = build_slot_param_example({
+            "slots": [],
+            "options": [{"key": "save_efficiency", "type": "checkbox", "default": False}],
+        })
+
+        self.assertIs(sample["save_efficiency"], False)
+
+    def test_missing_table_collects_directional_composite_variables(self):
+        result = {
+            "name": "方向型综合评价",
+            "headers": [],
+            "rows": [],
+            "description": "ok",
+            "sections": [],
+        }
+
+        result = append_optional_missing_analysis(
+            result,
+            self.df,
+            {"positive_vars": ["q1"], "negative_vars": ["q2"], "include_missing_analysis": True},
+        )
+
+        missing = next(section for section in result["sections"] if section["title"] == "缺失分析")
+        self.assertEqual([row[0] for row in missing["rows"]], ["q1", "q2"])
+
+    def test_missing_table_collects_grey_relational_variables(self):
+        result = {
+            "name": "灰色关联分析",
+            "headers": [],
+            "rows": [],
+            "description": "ok",
+            "sections": [],
+        }
+
+        result = append_optional_missing_analysis(
+            result,
+            self.df,
+            {"feature_vars": ["q1"], "mother_var": ["q2"], "include_missing_analysis": True},
+        )
+
+        missing = next(section for section in result["sections"] if section["title"] == "缺失分析")
+        self.assertEqual([row[0] for row in missing["rows"]], ["q1", "q2"])
 
 if __name__ == "__main__":
     unittest.main()

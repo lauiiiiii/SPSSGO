@@ -113,7 +113,7 @@
 | `critic_weight.py` | `critic_weight` | CRITIC权重法 |
 | `independent_weight_coefficient.py` | `independent_weight_coefficient` | 独立性权系数法 |
 | `grey_relational_analysis.py` | `grey_relational_analysis` | 灰色关联分析 |
-| `vikor.py` | `vikor` | 多准则妥协排序法（VIKOR） |
+| `vikor.py` | `vikor` | 多准则妥协解排序法（VIKOR） |
 | `ism.py` | `ism` | 解释结构模型（ISM） |
 
 ## 高级问卷分析包
