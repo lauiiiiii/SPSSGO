@@ -652,6 +652,33 @@ for (row in latent_cov_rows) {
   )
 }
 
+# ── 可复现 R 代码（用于增加分析透明度） ──
+r_code_model_lines <- c()
+for (fn in names(factor_map)) {
+  r_code_model_lines <- c(r_code_model_lines, paste0("  ", fn, " =~ ", paste(factor_map[[fn]], collapse = " + ")))
+}
+if (second_order_model) {
+  for (model in second_order_models) {
+    r_code_model_lines <- c(r_code_model_lines, paste0("  ", model$name, " =~ ", paste(model$members, collapse = " + ")))
+  }
+}
+r_code_model_block <- paste(r_code_model_lines, collapse = "\n")
+
+r_code <- paste0(
+  "library(lavaan)\n\n",
+  "# 读取数据（请将 \"your_data.csv\" 替换为实际数据文件路径）\n",
+  "data <- read.csv(\"your_data.csv\")\n\n",
+  "# 模型设定\n",
+  "model <- '\n",
+  r_code_model_block,
+  "\n'\n\n",
+  "# 拟合\n",
+  "fit <- cfa(model, data = data, std.lv = FALSE, missing = \"listwise\")\n\n",
+  "# 查看结果\n",
+  "summary(fit, standardized = TRUE, fit.measures = TRUE)\n",
+  "parameterEstimates(fit, standardized = TRUE)"
+)
+
 sections[[length(sections) + 1]] <- sec_table(
   "输出结果1：因子基本汇总表",
   summary_headers,
@@ -763,6 +790,7 @@ if (length(fit_issue) > 0) {
 } else {
   smart <- paste0(smart, " 主要拟合指标整体较为稳定。")
 }
+sections[[length(sections) + 1]] <- list(type = "text", title = "可复现 R 代码", content = r_code, description = "以下为本次分析实际执行的 R 代码，可直接复制到 R 环境中复现结果。数据文件请自行替换。")
 sections[[length(sections) + 1]] <- sec_refs(c(
   paste(
     "[1] Rosseel, Y. lavaan: An R Package for Structural",
@@ -777,7 +805,8 @@ result <- list(
   headers = loading_headers,
   rows = loading_rows,
   description = smart,
-  sections = sections
+  sections = sections,
+  r_code = r_code
 )
 
 cat(jsonlite::toJSON(

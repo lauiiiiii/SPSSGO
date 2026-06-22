@@ -46,7 +46,7 @@ def test_critic_weight_meta_and_spssau_spsspro_granularity():
     ]
     assert "Σ(1-rjk)" in _section(result, "分析步骤")["content"]
 
-    chart = _section(result, "输出结果2：指标重要度直方图")["charts"][0]
+    chart = _section(result, "输出结果2：权重值")["charts"][0]
     assert chart["chartType"] == "metric_comparison"
     assert chart["data"]["metric"] == "权重(%)"
     assert chart["data"]["labels"] == ["q2", "q3", "q1"]

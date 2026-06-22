@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 变异系数法入口：对齐 SPSSPRO“变异系数法”和 SPSSAU“信息量权重”的共同权重口径。
+# 变异系数法入口：对齐 SPSSPRO"变异系数法"和 SPSSAU"信息量权重"的共同权重口径。
 # 这里只做指标客观赋权，综合得分回写后续单独接，别把排序表硬塞进权重报告。
 from backend.analysis.common import *
 
@@ -34,6 +34,16 @@ def _error(message):
     return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": message}
 
 
+def _as_list(value):
+    if value is None or value == "":
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return []
+
+
 def _weight_rows(variables, means, stds, cv, weights):
     return [
         [
@@ -48,13 +58,14 @@ def _weight_rows(variables, means, stds, cv, weights):
 
 
 def _weight_chart(rows):
+    ordered = sorted(rows, key=lambda row: float(row[4]), reverse=True)
     return {
         "chartType": "metric_comparison",
-        "title": "指标重要度直方图",
+        "title": "权重值",
         "data": {
             "metric": "权重(%)",
-            "labels": [row[0] for row in rows],
-            "values": [float(row[4]) for row in rows],
+            "labels": [row[0] for row in ordered],
+            "values": [float(row[4]) for row in ordered],
             "defaultMode": "bar",
             "displayModes": [
                 {"value": "bar", "label": "柱形图"},
@@ -63,6 +74,19 @@ def _weight_chart(rows):
             "axisLabels": {"x": "指标", "y": "权重(%)"},
         },
     }
+
+
+def _describe_rows(data, variables):
+    rows = []
+    for variable in variables:
+        series = pd.to_numeric(data[variable], errors="coerce").dropna()
+        rows.append([
+            variable,
+            str(len(series)),
+            _fmt(series.mean(), 3),
+            _fmt(series.std(ddof=1), 3) if len(series) > 1 else "0.000",
+        ])
+    return rows
 
 
 def _weight_description(rows, valid_count):
@@ -78,12 +102,20 @@ def _weight_description(rows, valid_count):
 def _chart_description(rows):
     ordered = sorted(rows, key=lambda row: float(row[4]), reverse=True)
     return (
-        "图中按权重大小展示各指标的重要度。"
+        "图中按权重百分比展示各指标重要度，默认按权重由高到低排序。"
         f"权重排序前三的指标为{', '.join(row[0] for row in ordered[:3])}，解释时应结合指标业务含义判断其实际重要性。"
     )
 
 
-def _academic_interpretation(rows, valid_count):
+def _analysis_steps():
+    return (
+        "1. 计算各指标的平均值和样本标准差。\n"
+        "2. 按 V_i=σ_i/X_i 计算各指标变异系数，变异系数越大表示样本差异越大。\n"
+        "3. 按 W_i=V_i/ΣV_i 对变异系数进行归一化，得到各指标权重。"
+    )
+
+
+def _result_explanation(rows, valid_count):
     top = max(rows, key=lambda row: float(row[4]))
     return (
         f"本次采用变异系数法（信息量权重）对 {len(rows)} 个指标进行客观赋权，有效样本量为 N={valid_count}。"
@@ -104,7 +136,15 @@ def _advice():
 
 
 def run(df, params):
-    variables = _resolve_cols(df, params.get("variables", []))
+    """
+    执行变异系数法（信息量权重）分析。
+
+    @param df: 当前数据集，样本为行、指标为列
+    @param params: variables
+    @return: 对齐 SPSSAU 的变异系数法结果、图表和描述统计 sections
+    """
+    params = params or {}
+    variables = _resolve_cols(df, _as_list(params.get("variables", [])))
     if len(variables) < 2:
         return _error("变异系数法（信息量权重）至少需要 2 个数值型指标。")
     data = df[variables].apply(pd.to_numeric, errors="coerce").dropna()
@@ -125,7 +165,28 @@ def run(df, params):
 
     headers = ["项", "平均值", "标准差", "CV系数", "权重(%)"]
     rows = _weight_rows(variables, means, stds, cv, weights)
+    top_weight = max(rows, key=lambda row: float(row[4]))
+
     sections = [
+        _sec_table(
+            "算法配置",
+            ["项", "值"],
+            [
+                ["评价指标", "、".join(variables)],
+            ],
+            description="SPSSGO 采用 SPSSAU 变异系数法入口：放入定量指标后计算平均值、标准差、变异系数和权重。",
+        ),
+        _sec_table(
+            "样本处理",
+            ["项", "样本量"],
+            [
+                ["原始样本量", str(len(df))],
+                ["有效样本量", str(len(data))],
+                ["排除样本量", str(len(df) - len(data))],
+            ],
+            description="若某样本在任意评价指标上缺失，该样本不进入变异系数法计算。",
+        ),
+        _sec_advice(_analysis_steps(), title="分析步骤"),
         _sec_table(
             "输出结果1：权重计算结果",
             headers,
@@ -133,21 +194,20 @@ def run(df, params):
             description=_weight_description(rows, len(data)),
         ),
         _sec_charts(
-            "输出结果2：指标重要度直方图",
+            "输出结果2：权重值",
             [_weight_chart(rows)],
             _chart_description(rows),
         ),
-        _sec_advice(
-            "1. 计算各指标的平均值和样本标准差。\n"
-            "2. 按 V_i=σ_i/X_i 计算各指标变异系数，变异系数越大表示样本差异越大。\n"
-            "3. 按 W_i=V_i/ΣV_i 对变异系数进行归一化，得到各指标权重。",
-            title="分析步骤",
+        _sec_table(
+            "输出结果3：描述统计",
+            ["项", "样本量", "平均值", "标准差"],
+            _describe_rows(data, variables),
+            description="描述统计展示进入变异系数法模型的有效样本量、平均值和样本标准差。",
         ),
-        _sec_advice(_academic_interpretation(rows, len(data)), title="结果解释"),
+        _sec_advice(_result_explanation(rows, len(data)), title="详细结论"),
         _sec_advice(_advice()),
         _sec_smart(
-            f"变异系数法（信息量权重）完成，权重最高的指标为 "
-            f"{max(rows, key=lambda row: float(row[4]))[0]}。"
+            f"变异系数法（信息量权重）完成，有效样本量 N={len(data)}；权重最高的指标为 {top_weight[0]}（{top_weight[4]}%）。"
         ),
         _sec_refs(_REFS_CV),
     ]
@@ -155,6 +215,6 @@ def run(df, params):
         "name": METHOD_META["label"],
         "headers": headers,
         "rows": rows,
-        "description": f"变异系数法（信息量权重）完成，共计算 {len(variables)} 个指标权重。",
+        "description": f"变异系数法（信息量权重）完成，共计算 {len(variables)} 个指标权重，有效样本量 N={len(data)}。",
         "sections": sections,
     }

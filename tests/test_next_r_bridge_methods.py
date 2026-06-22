@@ -35,7 +35,7 @@ class NextRBridgeMethodsTests(unittest.TestCase):
             {
                 "module": path_analysis,
                 "call": path_analysis.run,
-                "params": {"dependent": "y", "predictors": ["x", "m"]},
+                "params": {"independent_vars": ["x", "m"], "dependent_vars": ["y", "r1"]},
                 "script": "path_analysis.R",
                 "temp_file": "path_analysis_input.csv",
                 "failure_text": "R 路径分析执行失败",
@@ -126,6 +126,15 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                 "failure_text": "R 区分度分析执行失败",
                 "unavailable_text": "区分度分析需要 R 引擎执行",
             },
+            {
+                "module": discrimination,
+                "call": discrimination.run,
+                "params": {"variables": ["x", "m", "m2"], "percentile": 25},
+                "script": "discrimination.R",
+                "temp_file": "discrimination_input.csv",
+                "failure_text": "R 区分度分析执行失败",
+                "unavailable_text": "区分度分析需要 R 引擎执行",
+            },
         ]
 
     def test_methods_use_r_when_available(self):
@@ -171,6 +180,11 @@ class NextRBridgeMethodsTests(unittest.TestCase):
                     payload = run_r.call_args.kwargs["payload"]
                     self.assertEqual(payload["variables"], ["r1", "r2"])
                     self.assertEqual(payload["icc_type"], "单向随机 绝对一致性")
+                if case["script"] == "discrimination.R":
+                    payload = run_r.call_args.kwargs["payload"]
+                    self.assertEqual(payload["variables"], ["x", "m", "m2"])
+                    expected_percentile = case["params"].get("percentile", 27)
+                    self.assertEqual(payload["percentile"], expected_percentile)
                 if case["module"] is mediation:
                     payload = run_r.call_args.kwargs["payload"]
                     self.assertEqual(payload["x"], ["x"])

@@ -107,7 +107,7 @@ def _weight_chart(rows):
     ordered = sorted(rows, key=lambda row: float(row[4]), reverse=True)
     return {
         "chartType": "metric_comparison",
-        "title": "指标重要度直方图",
+        "title": "权重值",
         "data": {
             "metric": "权重(%)",
             "labels": [row[0] for row in ordered],
@@ -215,7 +215,7 @@ def run(df, params):
             description="上表展示 CRITIC 法权重计算结果：指标变异性为样本标准差，指标冲突性由相关系数矩阵计算得到，权重为信息量归一化结果。",
         ),
         _sec_charts(
-            "输出结果2：指标重要度直方图",
+            "输出结果2：权重值",
             [_weight_chart(rows)],
             "图中按权重百分比展示各指标重要度，默认按权重由高到低排序。",
         ),

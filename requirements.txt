@@ -8,6 +8,7 @@ statsmodels
 pingouin
 factor_analyzer
 openpyxl
+xlrd>=2.0.1
 python-docx
 aiofiles
 aiomysql

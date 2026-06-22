@@ -283,7 +283,7 @@ async def _run_execute_method_job(job: dict):
     target_version = version
     created_columns = []
     created_dataset_version = False
-    if method in {"exploratory_factor_analysis", "data_envelopment_analysis"}:
+    if method in {"exploratory_factor_analysis", "data_envelopment_analysis", "conjoint"}:
         stage_start = time.perf_counter()
         score_columns = result.get("score_columns") if isinstance(result, dict) else None
         if score_columns:

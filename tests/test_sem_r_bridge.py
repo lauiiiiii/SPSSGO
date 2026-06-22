@@ -27,7 +27,7 @@ class SemRBridgeTests(unittest.TestCase):
         r_result = {
             "success": True,
             "name": "结构方程模型(SEM)",
-            "headers": ["因变量", "自变量"],
+            "headers": ["内因变量", "外因变量"],
             "rows": [["F2", "F1"]],
             "description": "R SEM result",
             "sections": [{"type": "table", "title": "结构路径系数", "headers": [], "rows": []}],

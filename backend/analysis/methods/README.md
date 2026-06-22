@@ -123,7 +123,7 @@
 | `nps.py` | `nps` | NPS净推荐值分析 |
 | `discrimination.py` | `discrimination` | 区分度分析 |
 | `conjoint.py` | `conjoint` | 联合分析 |
-| `entropy_weight.py` | `entropy_weight` | 权重分析(熵权法) |
+| `entropy_weight.py` | `entropy_weight` | 权重分析 |
 | `maxdiff.py` | `maxdiff` | MaxDiff模型 |
 | `price_breakpoint.py` | `price_breakpoint` | 价格断裂点模型 |
 | `turf.py` | `turf` | TURF分析 |

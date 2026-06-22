@@ -3451,7 +3451,7 @@ Authorization: Bearer <access_token>
 ### `discrimination` - 区分度分析
 
 - 分类：高级问卷分析包
-- 说明：检验题项是否能够有效区分高水平与低水平样本
+- 说明：检验题项是否能够有效区分高水平与低水平样本，支持分位数选择（25/27/30），输出三组对比（低分组/中间组/高分组）
 - 参数构建器：`direct`
 
 变量槽位：
@@ -3464,6 +3464,7 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
+| percentile | 分位数 | 27 | 25, 27, 30 | 按总分排序后取前后指定百分比作为高分组和低分组，中间为中间组 |
 | include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
@@ -3474,6 +3475,7 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
+  "percentile": 27,
   "include_missing_analysis": false
 }
 ```
@@ -3486,6 +3488,7 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
+  "percentile": 27,
   "include_missing_analysis": false
 }
 ```
@@ -3507,7 +3510,9 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
-| include_missing_analysis | 输出缺失分析 | false |  |  |
+| save_utility | 保存效用值 | false | true / false | 点击后会新生成标题来标识效用值，选中后每次分析均会得到新标题。 |
+| save_residual | 保存残差和预测值 | false | true / false | 将残差和预测值分别以标题形式保存起来，选中后每次分析均会得到新标题。 |
+| include_missing_analysis | 输出缺失分析 | false | | |
 
 前端槽位示例：
 
@@ -3518,6 +3523,8 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2"
   ],
+  "save_utility": false,
+  "save_residual": false,
   "include_missing_analysis": false
 }
 ```
@@ -3531,14 +3538,16 @@ Authorization: Bearer <access_token>
     "分类变量1",
     "分类变量2"
   ],
+  "save_utility": false,
+  "save_residual": false,
   "include_missing_analysis": false
 }
 ```
 
-### `entropy_weight` - 权重分析(熵权法)
+### `entropy_weight` - 权重分析
 
 - 分类：高级问卷分析包
-- 说明：依据指标离散程度自动分配客观权重
+- 说明：支持 AHP 权重、熵值法和优序图法计算指标权重
 - 参数构建器：`direct`
 
 变量槽位：
@@ -3551,6 +3560,7 @@ Authorization: Bearer <access_token>
 
 | 参数 key | 名称 | 默认值 | 可选值 | 说明 |
 | --- | --- | --- | --- | --- |
+| analysis_method | 分析方法 | "ranking" | {'value': 'ahp', 'label': 'AHP权重'}, {'value': 'entropy', 'label': '熵值法'}, {'value': 'ranking', 'label': '优序图法'} |  |
 | include_missing_analysis | 输出缺失分析 | false |  |  |
 
 前端槽位示例：
@@ -3561,6 +3571,7 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
+  "analysis_method": "ranking",
   "include_missing_analysis": false
 }
 ```
@@ -3573,6 +3584,7 @@ Authorization: Bearer <access_token>
     "数值变量1",
     "数值变量2"
   ],
+  "analysis_method": "ranking",
   "include_missing_analysis": false
 }
 ```
@@ -3886,15 +3898,15 @@ Authorization: Bearer <access_token>
 ### `path_analysis` - 路径分析
 
 - 分类：高级回归&因果分析包
-- 说明：分析多个观测变量之间的直接路径与间接路径
+- 说明：分析多个观测变量之间的直接路径与间接路径，输出直接效应、间接效应、总效应及修正指数
 - 参数构建器：`direct`
 
 变量槽位：
 
 | 参数 key | 名称 | 类型 | 说明 |
 | --- | --- | --- | --- |
-| dependent | 因变量(Y) | 单选，定量变量 | 放入最终结果变量 |
-| predictors | 路径变量 | 多选，定量变量，至少 2 个 | 放入参与路径模型的变量 |
+| independent_vars | 自变量(X) | 多选，定量变量，至少 1 个 | 放入外生自变量 |
+| dependent_vars | 因变量(M/Y) | 多选，定量变量，至少 2 个 | 放入参与路径的因变量/中介变量（按因果顺序排列） |
 
 额外选项：
 
@@ -3906,11 +3918,8 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "dependent": "数值变量1",
-  "predictors": [
-    "数值变量1",
-    "数值变量2"
-  ],
+  "independent_vars": ["数值变量1", "数值变量2"],
+  "dependent_vars": ["数值变量3", "数值变量4"],
   "include_missing_analysis": false
 }
 ```
@@ -3919,11 +3928,8 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "dependent": "数值变量1",
-  "predictors": [
-    "数值变量1",
-    "数值变量2"
-  ],
+  "independent_vars": ["数值变量1", "数值变量2"],
+  "dependent_vars": ["数值变量3", "数值变量4"],
   "include_missing_analysis": false
 }
 ```

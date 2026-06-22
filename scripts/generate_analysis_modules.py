@@ -112,14 +112,14 @@ PREVIEW_METHODS = {
     "path_analysis": {
         "label": "路径分析",
         "category": "高级回归&因果分析包",
-        "description": "分析多个观测变量之间的直接路径与间接路径",
+        "description": "分析多个观测变量之间的直接路径与间接路径，输出直接效应、间接效应、总效应及修正指数",
         "order": 100,
         "slots": [
-            {"key": "dependent", "label": "因变量(Y)", "type": "single", "accept": "numeric", "hint": "放入最终结果变量"},
-            {"key": "predictors", "label": "路径变量", "type": "multiple", "accept": "numeric", "min": 2, "hint": "放入参与路径模型的变量"},
+            {"key": "independent_vars", "label": "自变量(X)", "type": "multiple", "accept": "numeric", "min": 1, "hint": "放入外生自变量"},
+            {"key": "dependent_vars", "label": "因变量(M/Y)", "type": "multiple", "accept": "numeric", "min": 2, "hint": "放入参与路径的因变量/中介变量（按因果顺序排列）"},
         ],
         "options": [],
-        "message": "当前模块已独立，可继续扩展路径系数矩阵、间接效应和模型拟合摘要。",
+        "message": "当前模块已独立，支持多方程模型、直接/间接/总效应分解、修正指数和路径图。",
     },
     "sem": {
         "label": "结构方程模型(SEM)",
@@ -133,15 +133,21 @@ PREVIEW_METHODS = {
         "message": "当前模块已独立，可继续接入测量模型、路径模型和拟合指标输出。",
     },
     "entropy_weight": {
-        "label": "权重分析(熵权法)",
+        "label": "权重分析",
         "category": "高级问卷分析包",
-        "description": "依据指标离散程度自动分配客观权重",
+        "description": "支持 AHP 权重、熵值法和优序图法计算指标权重",
         "order": 160,
         "slots": [
             {"key": "variables", "label": "指标变量", "type": "multiple", "accept": "numeric", "min": 2, "hint": "放入综合评价指标"},
         ],
-        "options": [],
-        "message": "当前模块已独立，可继续扩展指标标准化、熵值、权重和综合得分。",
+        "options": [
+            {"key": "analysis_method", "label": "分析方法", "choices": [
+                {"value": "ahp", "label": "AHP权重"},
+                {"value": "entropy", "label": "熵值法"},
+                {"value": "ranking", "label": "优序图法"},
+            ], "default": "ranking"},
+        ],
+        "message": "当前模块已独立，可继续扩展 AHP 权重、熵值法、优序图法和综合得分。",
     },
     "maxdiff": {
         "label": "MaxDiff模型",

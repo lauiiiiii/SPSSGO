@@ -137,6 +137,7 @@ def confirmatory_factor_analysis(df, params):
             "rows": r_result.get("rows") or [],
             "description": r_result.get("description") or "验证性因子分析完成。",
             "sections": r_result.get("sections") or [],
+            "r_code": r_result.get("r_code") or "",
         }
     if isinstance(r_result, dict) and r_result.get("error"):
         return {"name": "验证性因子分析", "headers": [], "rows": [], "description": str(r_result["error"])}

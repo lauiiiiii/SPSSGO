@@ -81,8 +81,25 @@ def run(df, params):
 
     csv_buffer = StringIO()
     df[variables].to_csv(csv_buffer, index=False)
+
+    # 构建因子标签映射（前端传入的因子名称 → F1, F2, ...）
+    factor_labels = {}
+    for key in params.keys():
+        match = re.match(r"^factor(\d+)_vars$", str(key))
+        if match:
+            idx = int(match.group(1))
+            # 从 structural_paths 中推断因子名称，或使用默认标签
+            factor_labels[f"F{idx}"] = f"因子{idx}"
+
+    # 尝试从前端传入的 factor_labels 参数获取
+    if "factor_labels" in params:
+        for key, label in params["factor_labels"].items():
+            if key in factor_map:
+                factor_labels[key] = label
+
     payload = {
         "factor_map": factor_map,
+        "factor_labels": factor_labels,
         "structural_paths": [
             {"dependent": left, "predictors": rights}
             for left, rights in _parse_structural_paths(params, list(factor_map.keys()))
@@ -105,6 +122,8 @@ def run(df, params):
             "rows": r_result.get("rows") or [],
             "description": r_result.get("description") or "SEM 执行完成。",
             "sections": r_result.get("sections") or [],
+            "more_sections": r_result.get("more_sections") or [],
+            "r_code": r_result.get("r_code") or "",
         }
     if isinstance(r_result, dict) and r_result.get("error"):
         return {"name": METHOD_META["label"], "headers": [], "rows": [], "description": str(r_result["error"])}

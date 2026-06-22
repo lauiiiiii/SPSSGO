@@ -79,8 +79,8 @@ def main():
     require_section(serial, "特定间接效应")
     require_section(serial, "链式间接效应 Bootstrap")
 
-    path_result = METHOD_REGISTRY["path_analysis"](df, {"dependent": "y", "predictors": ["x", "m1", "m2"]})
-    path_section = require_section(path_result, "标准化路径系数概览")
+    path_result = METHOD_REGISTRY["path_analysis"](df, {"independent_vars": ["x"], "dependent_vars": ["m1", "m2", "y"]})
+    path_section = require_section(path_result, "路径系数表")
     if not path_section["rows"]:
         raise AssertionError("path analysis rows missing")
 

@@ -422,7 +422,11 @@ _REFS_CORRELATION = _REFS_GENERAL + [
     "[3] Cohen J. Statistical power analysis for the behavioral sciences (2nd ed.)[M]. Lawrence Erlbaum Associates, 1988.",
 ]
 _REFS_REGRESSION = _REFS_GENERAL + [
-    "[3] 温忠麟,叶宝娟. 中介效应分析:方法学发展、模型及应用[J]. 心理学报, 2014, 46(5):714-726.",
+    "[3] 温忠麟,叶宝娟. 中介效应分析:方法学发展、模型及应用[J]. 心理学报，2014, 46(5):714-726.",
+]
+_REFS_CONJOINT = [
+    "[1] The SPSSAU project (2026). SPSSAU (Version 26.0) [Online Application Software]. Retrieved from https://www.spssau.com.",
+    "[2] 周俊，马世澎.SPSSAU 科研数据分析方法与应用。第 1 版 [M]. 电子工业出版社，2024.",
 ]
 _REFS_MULTIPLE_RESPONSE_CROSS = _REFS_GENERAL + [
     "[3] 张文彤，邝春伟. SPSS统计分析基础教程[M]. 3版. 北京：高等教育出版社，2017.",
@@ -661,6 +665,7 @@ __all__ = [
     "MDS",
     "PARAM_BUILDERS",
     "METADATA_INJECTORS",
+    "_REFS_CONJOINT",
     "_REFS_CORRELATION",
     "_REFS_GENERAL",
     "_REFS_MULTIPLE_RESPONSE_CROSS",

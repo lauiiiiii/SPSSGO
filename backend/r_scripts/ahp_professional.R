@@ -337,8 +337,120 @@ tryCatch({
     " 个指标。"
   )
 
+  ri_table_rows <- function() {
+    n_vals <- c(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+    ri_vals <- c(0.52, 0.89, 1.12, 1.26, 1.36, 1.41, 1.46, 1.49, 1.52, 1.54, 1.56, 1.58, 1.59, 1.5943)
+    rows <- list()
+    for (i in seq_along(n_vals)) {
+      rows[[length(rows) + 1]] <- list(as.character(n_vals[[i]]), fmt_num(ri_vals[[i]], 4))
+    }
+    rows
+  }
+
+  ri_table_rows_2 <- function() {
+    n_vals <- c(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
+    ri_vals <- c(1.6064, 1.6133, 1.6207, 1.6292, 1.6358, 1.6403, 1.6462, 1.6497, 1.6556, 1.6587, 1.6631, 1.6670, 1.6693, 1.6724)
+    rows <- list()
+    for (i in seq_along(n_vals)) {
+      rows[[length(rows) + 1]] <- list(as.character(n_vals[[i]]), fmt_num(ri_vals[[i]], 4))
+    }
+    rows
+  }
+
+  matrix_with_avg <- function(matrix_value, labels) {
+    rows <- list()
+    for (i in seq_along(labels)) {
+      avg <- mean(matrix_value[i, ])
+      rows[[length(rows) + 1]] <- as.list(unname(c(
+        fmt_num(avg, 3),
+        labels[[i]],
+        unname(vapply(matrix_value[i, ], fmt_num, character(1), digits = 4))
+      )))
+    }
+    rows
+  }
+
   sections <- list(
     sec_advice(flow_text, "分析流程"),
+    sec_table("AHP层次分析判断矩阵", c("平均值", "项", criterion_labels), matrix_with_avg(criteria_matrix, criterion_labels)),
+    sec_advice(
+      paste0(
+        "AHP层次分析法计算权重时，首先需要构建判断矩阵（SPSSGO自动构建），正如上表格所示；\n",
+        "第一：判断矩阵构建方式为：计算出各分析项的平均值，接着利用平均值大小相除得到判断矩阵；\n",
+        "第二：平均值越大意味着重要性越高（请确保是此类数据），权重也会越高；\n",
+        "第三：AHP层次分析法通常适用于专家针对指标的重要性打分。"
+      ),
+      "分析建议"
+    ),
+    sec_table(
+      "AHP层次分析结果",
+      c("项", "特征向量", "权重值", "最大特征值", "CI值"),
+      ahp_result_rows(criterion_labels, criteria_calc),
+      description = paste0("权重值为归一化后的指标重要性百分比；本次计算方法为", method_label(weight_method), "。")
+    ),
+    sec_advice(
+      paste0(
+        "AHP层次分析法用于研究专家打分权重计算；\n",
+        "第一：AHP层次分析法用于计算权重，并且需要进行一致性检验；\n",
+        "第二：逐一描述各指标所得权重情况；\n",
+        "第三：SPSSGO默认使用和积法计算方法进行AHP层次分析法研究（可选为方根法）。"
+      ),
+      "分析建议"
+    ),
+    sec_smart(
+      paste0(
+        "从上表可知，针对", paste0(criterion_labels, collapse = "、"), "总共", length(criterion_labels), "项构建", length(criterion_labels), "阶判断矩阵进行AHP层次法研究（计算方法为：和积法），",
+        "分析得到特征向量为（", paste0(vapply(criteria_calc$feature_vector, fmt_num, character(1), digits = 3, trim = TRUE), collapse = ","), "），",
+        "并且总共", length(criterion_labels), "项对应的权重值分别是：",
+        paste0(vapply(criteria_calc$weights, function(w) paste0(fmt_num(w * 100, 3, TRUE), "%"), character(1)), collapse = ","), "。",
+        "除此之外，结合特征向量可计算出最大特征根（", fmt_num(criteria_calc$lambda_max, 3), "），",
+        "接着利用最大特征值计算得到CI值（", fmt_num(criteria_calc$ci, 4), "）【CI=(最大特征根-n)/(n-1)】，",
+        "CI值用于下述的一致性检验使用。"
+      )
+    ),
+    sec_table("随机一致性RI表格", c("n阶", "RI值"), ri_table_rows()),
+    sec_table("随机一致性RI表格", c("n阶", "RI值"), ri_table_rows_2()),
+    sec_advice(
+      paste0(
+        "利用AHP层次分析法进行权重计算时，需要进行一致性检验分析；\n",
+        "第一：一致性检验需要用到CI和RI这两个指标值；\n",
+        "第二：CI值已经计算得出，RI值可对应上表格进行查询得到。"
+      ),
+      "分析建议"
+    ),
+    sec_smart(
+      paste0(
+        "本次研究构建", length(criterion_labels), "阶判断矩阵，对应着上表可以查询得到随机一致性RI值为", fmt_num(criteria_calc$ri, 3), "。",
+        "RI值用于下述一致性检验计算使用。"
+      )
+    ),
+    sec_table(
+      "一致性检验结果汇总",
+      c("最大特征根", "CI值", "RI值", "CR值", "一致性检验结果"),
+      consistency_rows,
+      description = if (any(failed_items)) {
+        "存在至少一个判断矩阵 CR>=0.1，建议重新检查相关指标或方案两两比较。"
+      } else {
+        "所有判断矩阵均通过一致性检验。通常 CR<0.1 认为判断矩阵具有可接受一致性。"
+      }
+    ),
+    sec_advice(
+      paste0(
+        "利用AHP层次分析法进行权重计算时，需要进行一致性检验分析，用于研究评价权重计算结果的一致性检验结果，即计算一致性指标CR值（CR=CI/RI）。\n",
+        "第一：先描述上述计算得到的CI值【CI=(最大特征根-n)/(n-1)】；\n",
+        "第二：结合判断矩阵阶数得到RI值；\n",
+        "第三：计算CR值，并且进行一致性判断。"
+      ),
+      "分析建议"
+    ),
+    sec_smart(
+      paste0(
+        "通常情况下CR值越小，则说明判断矩阵一致性越好，一般情况下CR值小于0.1，则判断矩阵满足一致性检验；",
+        "如果CR值大于0.1，则说明不具有一致性，应该对判断矩阵进行适当调整之后再次进行分析。",
+        "本次针对", length(criterion_labels), "阶判断矩阵计算得到CI值为", fmt_num(criteria_calc$ci, 4), "，针对RI值查表为", fmt_num(criteria_calc$ri, 3), "。",
+        "因此计算得到CR值为", fmt_num(criteria_calc$cr, 4), "<0.1，意味着本次研究判断矩阵满足一致性检验，计算所得权重具有一致性。"
+      )
+    ),
     sec_charts(
       "方案得分",
       list(metric_chart("方案综合得分", "综合得分", score_labels, score_values)),
@@ -351,8 +463,8 @@ tryCatch({
       weight_rows(criterion_labels, criteria_calc$weights)
     ),
     sec_charts(
-      "指标权重分布图",
-      list(metric_chart("指标权重", "权重", criterion_labels[criteria_order], criteria_calc$weights[criteria_order])),
+      "权重值",
+      list(metric_chart("权重值", "权重(%)", criterion_labels[criteria_order], criteria_calc$weights[criteria_order] * 100, "bar")),
       "图中展示各指标对目标的权重大小。"
     ),
     sec_table(
@@ -391,7 +503,9 @@ tryCatch({
   ))
   sections[[length(sections) + 1]] <- sec_refs(list(
     "[1] Saaty T L. The Analytic Hierarchy Process[M]. McGraw-Hill, 1980.",
-    "[2] SPSSGO 团队. SPSSGO 在线数据分析平台[CP/OL]. https://www.spssgo.com."
+    "[2] 周俊,马世澎.SPSSAU科研数据分析方法与应用。第1版[M]. 电子工业出版社,2024.",
+    "[3] 韩利,梅强,陆玉梅,等. AHP-模糊综合评价方法的分析与研究[J]. 中国安全科学学报, 2004, 14(7):86-89.",
+    "[4] 谭跃进.定量分析方法[M].北京:中国人民大学出版社, 2012."
   ))
 
   result <- list(

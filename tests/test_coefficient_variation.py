@@ -38,7 +38,7 @@ def test_coefficient_variation_uses_sample_std_and_cv_weights():
     assert "有效样本量 N=6" in main["description"]
     assert "x1 的权重最高" in main["description"]
 
-    chart = _section(result, "输出结果2：指标重要度直方图")["charts"][0]
+    chart = _section(result, "输出结果2：权重值")["charts"][0]
     assert chart["chartType"] == "metric_comparison"
     assert chart["data"]["metric"] == "权重(%)"
     assert chart["data"]["labels"] == ["x1", "x2"]
@@ -48,7 +48,7 @@ def test_coefficient_variation_uses_sample_std_and_cv_weights():
         {"value": "horizontalBar", "label": "条形图"},
     ]
     assert "V_i=σ_i/X_i" in _section(result, "分析步骤")["content"]
-    assert "论文" not in _section(result, "结果解释")["content"]
+    assert "论文" not in _section(result, "详细结论")["content"]
 
 
 def test_coefficient_variation_rejects_non_positive_means():

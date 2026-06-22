@@ -6,6 +6,17 @@ from io import StringIO
 from backend.analysis.common import _resolve_cols
 from backend.r_runner import RExecutionError, is_r_runtime_available, run_r_script
 
+
+def inject_metadata(metadata_map, params):
+    """注入变量标题，让 R 脚本用题目名而非变量名显示。"""
+    enriched = dict(params or {})
+    variables = _as_list(enriched.get("variables", []))
+    enriched["variable_labels"] = {
+        variable: metadata_map.get(variable, {}).get("display_name") or variable
+        for variable in variables
+    }
+    return enriched
+
 METHOD_KEY = "ahp_simplified"
 METHOD_META = {
     "label": "层次分析法（AHP快速版）",
@@ -107,6 +118,7 @@ def run(df, params):
         payload = {
             "input_mode": input_mode,
             "variables": variables,
+            "variable_labels": params.get("variable_labels", {}),
             "weight_method": weight_method,
             "include_missing_analysis": params.get("include_missing_analysis", False),
             "data_file": "ahp_simplified_input.csv",

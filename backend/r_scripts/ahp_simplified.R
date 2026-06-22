@@ -48,10 +48,6 @@ sec_advice <- function(content, title = "分析建议") {
   list(type = "advice", title = title, content = content)
 }
 
-sec_smart <- function(content) {
-  list(type = "smart_analysis", title = "智能分析", content = content)
-}
-
 sec_refs <- function(items) {
   list(type = "references", title = "参考文献", items = items)
 }
@@ -231,29 +227,6 @@ build_matrix_from_means <- function(data) {
   outer(means, means, "/")
 }
 
-score_top_rows <- function(data, weights, row_numbers) {
-  normalized <- data
-  for (j in seq_len(ncol(normalized))) {
-    values <- normalized[, j]
-    min_value <- min(values)
-    max_value <- max(values)
-    range_value <- max_value - min_value
-    if (!is.finite(range_value) || abs(range_value) < 1e-12) {
-      normalized[, j] <- 1
-    } else {
-      normalized[, j] <- (values - min_value) / range_value + 1e-12
-    }
-  }
-  scores <- as.numeric(as.matrix(normalized) %*% weights)
-  order_idx <- order(scores, decreasing = TRUE)
-  order_idx <- head(order_idx, 10)
-  rows <- list()
-  for (idx in order_idx) {
-    rows[[length(rows) + 1]] <- list(as.character(row_numbers[[idx]]), fmt_num(scores[[idx]], 4))
-  }
-  rows
-}
-
 input <- jsonlite::fromJSON(read_utf8(input_path), simplifyVector = FALSE)
 input_dir <- dirname(normalizePath(input_path, winslash = "/", mustWork = TRUE))
 input_mode <- if (!is.null(input$input_mode) && input$input_mode == "data_auto") "data_auto" else "matrix"
@@ -264,8 +237,6 @@ if (!weight_method %in% c("sum_product", "root", "eigen")) {
 }
 
 tryCatch({
-  sample_note <- NULL
-  score_rows <- NULL
   if (input_mode == "data_auto") {
     variables <- as_vector(input$variables)
     if (length(variables) < 2) {
@@ -293,10 +264,16 @@ tryCatch({
       output_error("有效样本不足。")
       quit(status = 0)
     }
-    labels <- variables
+    # 用题目名替代变量名显示
+    variable_labels <- input$variable_labels
+    if (!is.null(variable_labels) && length(variable_labels) > 0) {
+      labels <- vapply(variables, function(v) {
+        if (!is.null(variable_labels[[v]]) && nzchar(variable_labels[[v]])) variable_labels[[v]] else v
+      }, character(1))
+    } else {
+      labels <- variables
+    }
     matrix_value <- build_matrix_from_means(data)
-    sample_note <- paste0("有效样本量 N=", nrow(data), "；该模式按指标均值比值自动构造判断矩阵，只适合快速估权参考。")
-    row_numbers <- which(complete_mask)
   } else {
     labels <- trimws(as_vector(input$criteria))
     labels <- labels[nzchar(labels)]
@@ -313,12 +290,7 @@ tryCatch({
   }
 
   calc <- calc_weights(matrix_value, weight_method)
-  if (input_mode == "data_auto") {
-    score_rows <- score_top_rows(data, calc$weights, row_numbers)
-  }
-  highest <- labels[[which.max(calc$weights)]]
   order_idx <- order(calc$weights, decreasing = TRUE)
-  consistency_result <- if (isTRUE(calc$passed)) "通过" else "不通过"
   consistency_text <- paste0(
     "本次构建 ",
     length(labels),
@@ -333,61 +305,56 @@ tryCatch({
     if (isTRUE(calc$passed)) " < 0.1，判断矩阵通过一致性检验。" else " >= 0.1，判断矩阵未通过一致性检验，建议重新调整两两比较。"
   )
 
+  # 判断矩阵增加平均值列
+  matrix_with_avg <- function(matrix_value, labels) {
+    rows <- list()
+    for (i in seq_along(labels)) {
+      avg <- mean(matrix_value[i, ])
+      rows[[length(rows) + 1]] <- as.list(unname(c(
+        fmt_num(avg, 3),
+        labels[[i]],
+        unname(vapply(matrix_value[i, ], fmt_num, character(1), digits = 4))
+      )))
+    }
+    rows
+  }
+
+  # 对齐 SPSSAU AHP 输出：判断矩阵 + 分析结果 + 一致性检验 + 分析建议 + 权重图 + 参考文献
   sections <- list(
-    sec_advice(
-      paste0(
-        "AHP 快速版用于计算指标权重。分析流程为：填写判断矩阵，计算特征向量和权重值，再通过 CI、RI 和 CR 判断矩阵是否具有可接受一致性。",
-        if (input_mode == "data_auto") " 当前结果由数据自动估权生成，不等同于专家两两比较判断，正式报告建议使用手填判断矩阵。" else ""
-      ),
-      "方法说明"
-    ),
-    sec_table("判断矩阵", c("项", labels), matrix_rows(matrix_value, labels)),
-    sec_charts(
-      "权重分布图",
-      list(metric_chart("指标权重", "权重", labels[order_idx], calc$weights[order_idx])),
-      "图中展示各指标的权重大小，条形越长表示该指标在本次 AHP 判断中越重要。"
-    ),
+    sec_table("判断矩阵", c("平均值", "项", labels), matrix_with_avg(matrix_value, labels)),
     sec_table(
       "AHP层次分析结果",
-      c("项", "特征向量", "权重值", "最大特征根", "CI值"),
+      c("项", "特征向量", "权重值", "最大特征值", "CI值"),
       ahp_result_rows(labels, calc),
       description = paste0("权重值为归一化后的指标重要性百分比；本次计算方法为", method_label(weight_method), "。")
     ),
     sec_table(
-      "一致性检验结果汇总",
+      "一致性检验结果",
       c("最大特征根", "CI值", "RI值", "CR值", "一致性检验结果"),
       consistency_summary_rows(calc),
       description = consistency_text
     ),
     sec_advice(
       paste0(
-        "利用 AHP 层次分析法进行权重计算时，需要进行一致性检验。CI=(最大特征根-n)/(n-1)，RI 为 n 阶随机一致性指标，CR=CI/RI。",
-        "通常 CR<0.1 认为判断矩阵满足一致性检验；若 CR>=0.1，应重新检查判断矩阵中逻辑冲突较大的两两比较。"
-      )
-    )
+        "AHP层次分析法用于研究专家打分权重计算；\n",
+        "第一：AHP层次分析法用于计算权重，并且需要进行一致性检验；\n",
+        "第二：逐一描述各指标所得权重情况；\n",
+        "第三：SPSSGO默认使用和积法计算方法进行AHP层次分析法研究（可选为方根法）。"
+      ),
+      "分析建议"
+    ),
+    sec_charts(
+      "权重值",
+      list(metric_chart("权重值", "权重(%)", labels[order_idx], calc$weights[order_idx] * 100, "bar")),
+      "图中展示各指标的权重大小，柱形越高表示该指标在本次 AHP 判断中越重要。"
+    ),
+    sec_refs(list(
+      "[1] Saaty T L. The Analytic Hierarchy Process[M]. McGraw-Hill, 1980.",
+      "[2] 周俊,马世澎.SPSSAU科研数据分析方法与应用。第1版[M]. 电子工业出版社,2024.",
+      "[3] 韩利,梅强,陆玉梅,等. AHP-模糊综合评价方法的分析与研究[J]. 中国安全科学学报, 2004, 14(7):86-89.",
+      "[4] 谭跃进.定量分析方法[M].北京:中国人民大学出版社, 2012."
+    ))
   )
-  if (!is.null(sample_note)) {
-    sections[[length(sections) + 1]] <- sec_table(
-      "有效样本情况",
-      c("项", "值"),
-      list(list("有效样本量", as.character(nrow(data))), list("建模方式", "按指标均值比值自动构造判断矩阵")),
-      description = sample_note
-    )
-    sections[[length(sections) + 1]] <- sec_table("综合得分 Top10", c("样本索引", "综合得分"), score_rows)
-  }
-  sections[[length(sections) + 1]] <- sec_smart(paste0(
-    "AHP 快速版完成，权重最高的指标为 ",
-    highest,
-    "，权重值为 ",
-    paste0(fmt_num(max(calc$weights) * 100, 3, TRUE), "%"),
-    "；一致性检验结果为",
-    consistency_result,
-    "。"
-  ))
-  sections[[length(sections) + 1]] <- sec_refs(list(
-    "[1] Saaty T L. The Analytic Hierarchy Process[M]. McGraw-Hill, 1980.",
-    "[2] SPSSGO 团队. SPSSGO 在线数据分析平台[CP/OL]. https://www.spssgo.com."
-  ))
 
   result <- list(
     success = TRUE,
