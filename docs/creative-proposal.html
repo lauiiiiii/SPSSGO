@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SPSSGO 创意提案</title>
+<style>
+*,::before,::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fff;--bg2:#f9fafb;--text:#111827;--sub:#6b7280;
+  --accent:#0f766e;--accent-light:#f0fdfa;--accent-border:#ccfbf1;
+  --red:#ef4444;--red-bg:#fef2f2;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+h1{font-size:clamp(56px,10vw,120px);font-weight:900;letter-spacing:-3px;line-height:1.05}
+h2{font-size:clamp(28px,4vw,52px);font-weight:800;letter-spacing:-2px;line-height:1.15}
+h3{font-size:clamp(20px,2.5vw,28px);font-weight:700;letter-spacing:-1px}
+.section{padding:120px 32px;max-width:960px;margin:0 auto}
+@media(max-width:768px){.section{padding:80px 24px}}
+.section-gray{background:var(--bg2)}
+.section-dark{background:#0f172a;color:#f1f5f9}
+
+/* ── 辅助元素 ── */
+.tag{
+  display:inline-block;font-size:12px;font-weight:700;letter-spacing:2px;
+  color:var(--accent);margin-bottom:20px;text-transform:uppercase;
+}
+.num-big{
+  font-size:clamp(60px,10vw,120px);font-weight:900;
+  letter-spacing:-4px;line-height:1;
+}
+.num-plus{color:var(--accent)}
+.subtitle{font-size:18px;color:var(--sub);max-width:580px;line-height:1.8;margin-top:20px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;padding:16px 36px;
+  border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;
+  transition:all .2s;cursor:pointer;border:none;
+}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(15,118,110,.2)}
+.btn-primary:hover{background:#0d6b63;transform:translateY(-2px);box-shadow:0 8px 28px rgba(15,118,110,.3)}
+.btn-outline{background:#fff;color:var(--text);border:2px solid #e5e7eb}
+.btn-outline:hover{background:var(--bg2);border-color:#d1d5db}
+.btn-white{background:#fff;color:#0f172a}
+.btn-white:hover{background:#f1f5f9}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:160px 32px 120px}
+@media(max-width:768px){.hero{padding:100px 24px 80px}}
+.hero h1{margin-bottom:8px}
+.hero h1 span{
+  background:linear-gradient(135deg,#0f766e,#14b8a6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero .punchline{font-size:clamp(28px,4.5vw,48px);font-weight:700;color:#374151;margin-bottom:32px}
+.hero .stats{display:flex;justify-content:center;gap:64px;margin:48px 0}
+@media(max-width:600px){.hero .stats{flex-wrap:wrap;gap:32px}}
+.hero .stat{text-align:center}
+.hero .stat-num{font-size:48px;font-weight:900;letter-spacing:-2px}
+.hero .stat-label{font-size:14px;color:var(--sub);margin-top:4px}
+.hero .hero-desc{margin-top:16px;font-size:15px;color:var(--sub);max-width:480px;margin-left:auto;margin-right:auto;line-height:1.8}
+
+/* ── 痛点页 ── */
+.pain-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;margin-top:48px}
+@media(max-width:768px){.pain-grid{grid-template-columns:1fr;gap:40px}}
+.pain-card{padding:32px;border-radius:16px;background:var(--bg);border:1px solid #f3f4f6}
+.pain-card .pain-icon{font-size:36px;margin-bottom:16px}
+.pain-card h3{margin-bottom:8px}
+.pain-card p{color:var(--sub);line-height:1.7;font-size:15px}
+
+/* ── 对比页 ── */
+.vs-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:32px;align-items:stretch;margin-top:48px}
+@media(max-width:768px){.vs-grid{grid-template-columns:1fr;gap:24px}}
+.vs-col{padding:40px 32px;border-radius:16px}
+.vs-old{background:var(--red-bg);border:1px solid #fecaca}
+.vs-new{background:var(--accent-light);border:1px solid var(--accent-border)}
+.vs-col h3{font-size:20px;margin-bottom:12px}
+.vs-col .vs-badge{font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:16px;display:inline-block;padding:3px 10px;border-radius:999px}
+.vs-old .vs-badge{color:#b91c1c;background:#fee2e2}
+.vs-new .vs-badge{color:var(--accent);background:var(--accent-light);border:1px solid var(--accent-border)}
+.vs-list{list-style:none}
+.vs-list li{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:15px;line-height:1.6}
+.vs-old .vs-list li{color:#991b1b}
+.vs-new .vs-list li{color:#134e4a}
+.vs-old .vs-list li::before{content:'✕';color:var(--red);font-weight:700;flex-shrink:0}
+.vs-new .vs-list li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0}
+.vs{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#d1d5db}
+
+/* ── 三步页 ── */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+@media(max-width:768px){.steps{grid-template-columns:1fr}}
+.step{text-align:center;padding:40px 24px}
+.step-num{width:72px;height:72px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:28px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+.step h3{margin-bottom:8px}
+.step p{color:var(--sub);line-height:1.7;font-size:15px}
+
+/* ── 界面演示 ── */
+.mockup-wrap{margin-top:48px;display:flex;justify-content:center}
+.mockup{
+  width:100%;max-width:820px;background:#fff;border-radius:16px;
+  border:1px solid #e5e7eb;overflow:hidden;
+  box-shadow:0 12px 48px rgba(0,0,0,.06);
+}
+.mockup-topbar{
+  display:flex;align-items:center;gap:12px;padding:14px 20px;
+  background:#f9fafb;border-bottom:1px solid #f3f4f6;
+}
+.mockup-topbar .dot{width:12px;height:12px;border-radius:50%}
+.mockup-topbar .dot-r{background:#ef4444}
+.mockup-topbar .dot-y{background:#f59e0b}
+.mockup-topbar .dot-g{background:#22c55e}
+.mockup-topbar .tab{
+  margin-left:16px;font-size:13px;color:#6b7280;
+  padding:4px 14px;border-radius:6px;background:#e5e7eb;
+}
+.mockup-topbar .tab-active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.mockup-body{padding:32px 36px 24px}
+.mockup-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
+.mockup-subtitle{font-size:14px;color:var(--sub);margin-bottom:20px}
+.mockup-label{font-size:14px;color:var(--text);margin-bottom:12px}
+.mockup-label .hl{color:var(--accent);font-weight:700}
+.mockup-label .cnt{color:var(--sub);font-size:13px;margin-left:6px}
+.mockup-drop{
+  border:2px dashed #d1d5db;border-radius:12px;
+  min-height:280px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:20px;transition:border-color .2s;
+}
+.mockup-drop:hover{border-color:var(--accent)}
+.mockup-drop .placeholder{color:#c4c9d1;font-size:15px}
+.mockup-footer{
+  display:flex;align-items:center;gap:16px;padding-top:8px;
+  border-top:1px solid #f3f4f6;
+}
+.mockup-btn{
+  padding:8px 22px;border-radius:8px;font-size:14px;font-weight:600;
+  cursor:pointer;border:1px solid #d1d5db;background:#fff;color:var(--text);
+}
+.mockup-btn-primary{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+  box-shadow:0 2px 8px rgba(15,118,110,.15);
+}
+.mockup-btn-primary:hover{background:#0d6b63}
+.mockup-check{
+  display:flex;align-items:center;gap:6px;font-size:14px;color:var(--sub);
+  margin-left:auto;
+}
+.mockup-check input{accent-color:var(--accent);width:16px;height:16px}
+
+/* ── 特色卖点页 ── */
+.point-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}
+@media(max-width:768px){.point-grid{grid-template-columns:1fr}}
+.point-card{padding:36px;border-radius:16px;background:var(--bg);border:1px solid #f3f4f6;transition:all .2s}
+.point-card:hover{border-color:var(--accent-border);box-shadow:0 8px 24px rgba(0,0,0,.04)}
+.point-card .point-num{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:12px}
+.point-card h3{margin-bottom:8px}
+.point-card p{color:var(--sub);line-height:1.7;font-size:15px}
+.point-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px}
+.point-icon.teal{background:var(--accent-light);color:var(--accent)}
+
+/* ── 方法全景 ── */
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:48px}
+@media(max-width:768px){.method-grid{grid-template-columns:repeat(2,1fr)}}
+.method-card{padding:20px;border-radius:12px;background:var(--bg2);border:1px solid transparent;transition:all .2s;text-align:center}
+.method-card:hover{border-color:var(--accent-border);background:var(--accent-light)}
+.method-card .method-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.method-card .method-cat{font-size:11px;color:var(--sub)}
+
+/* ── 可信页 ── */
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+@media(max-width:768px){.trust-grid{grid-template-columns:1fr}}
+.trust-card{padding:32px;border-radius:16px;background:var(--bg2);text-align:center;transition:all .2s}
+.trust-card:hover{background:var(--bg);box-shadow:0 4px 16px rgba(0,0,0,.04)}
+.trust-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
+.trust-icon.green{background:#ecfdf5;color:#059669}
+.trust-icon.teal{background:var(--accent-light);color:var(--accent)}
+.trust-icon.amber{background:#fffbeb;color:#f59e0b}
+.trust-card h4{margin-bottom:8px}
+.trust-card p{color:var(--sub);line-height:1.7;font-size:14px}
+
+/* ── 数据墙 ── */
+.fact-wall{display:grid;grid-template-columns:repeat(4,1fr);margin-top:48px}
+@media(max-width:768px){.fact-wall{grid-template-columns:repeat(2,1fr)}}
+.fact-cell{padding:40px 20px;text-align:center;border-right:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6}
+.fact-cell:nth-child(4n){border-right:none}
+.fact-cell:nth-child(n+5){border-bottom:none}
+@media(max-width:768px){.fact-cell:nth-child(2n){border-right:none}.fact-cell:nth-child(n+5){border-bottom:1px solid #f3f4f6}.fact-cell:nth-child(n+7){border-bottom:none}}
+.fact-cell .big{font-size:48px;font-weight:900;letter-spacing:-2px}
+.fact-cell .label{font-size:13px;color:var(--sub);margin-top:6px}
+
+/* ── CTA ── */
+.cta{text-align:center}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 封面 ═══════════ -->
+<section class="hero">
+  <div class="tag">创意提案</div>
+  <h1><span>SPSSGO</span></h1>
+  <p class="punchline">重新定义数据分析：一句话就够了</p>
+  <p class="hero-desc" style="font-size:17px;max-width:600px">告诉它"我想研究教学方法对成绩的影响"——就一句人话。<br>AI 理解你的研究设计、自动匹配方法、真实统计引擎运算、三线表 + 图表 + APA 解读全部自动生成。<br><strong>你只需要说一句话，剩下的交给它。</strong></p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">80<span class="num-plus">+</span></div><div class="stat-label">统计方法（目标 400+）</div></div>
+    <div class="stat"><div class="stat-num">100<span class="num-plus">%</span></div><div class="stat-label">结果可复现</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">元 / 永久免费</div></div>
+  </div>
+  <span class="btn btn-primary" style="cursor:default">立即开始</span>
+</section>
+
+<!-- ═══════════ 第1页：问题 ═══════════ -->
+<section class="section section-gray">
+  <div class="tag">问题</div>
+  <h2>每年几百万大学生，<br>被数据分析卡在毕业路上。</h2>
+  <p class="subtitle">中国每年 500 万本科毕业生、170 万硕博研究生，绝大多数都要做数据分析。但当他们打开 SPSS 的时候，发现——</p>
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="pain-icon">💸</div>
+      <h3>正版 SPSS 年费 = 一个月生活费</h3>
+      <p>数千元的授权费让大量学生只能选择盗版或放弃专业工具。毕业论文质量因此打折扣，这不应该是一门生意的代价。</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">😵</div>
+      <h3>t 检验还是方差分析？参数怎么设？</h3>
+      <p>SPSS 菜单上百个选项，学软件就要好几周。更别说理解每种方法的适用条件——这不是学生的问题，是工具设计的问题。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第2页：旧世界 vs 新世界 ═══════════ -->
+<section class="section">
+  <div class="tag">对比</div>
+  <h2>数据分析，<br>早就该被颠覆了。</h2>
+  <div class="vs-grid">
+    <div class="vs-col vs-old">
+      <span class="vs-badge">旧世界</span>
+      <h3>传统方式</h3>
+      <ul class="vs-list">
+        <li>安装数 GB 的软件，付费数千元</li>
+        <li>翻阅统计教材，确定该用什么方法</li>
+        <li>在几百个菜单选项里找到对的路径</li>
+        <li>手动整理输出，粘贴三线表到 Word</li>
+        <li>自己写分析解读，反复修改措辞</li>
+        <li>结果换了数据就得全部重来</li>
+      </ul>
+      <p style="margin-top:24px;font-weight:700;color:#991b1b;font-size:24px">半天起步，还不一定对。</p>
+    </div>
+    <div class="vs"><span style="font-size:40px">→</span></div>
+    <div class="vs-col vs-new">
+      <span class="vs-badge">新世界</span>
+      <h3>SPSSGO</h3>
+      <ul class="vs-list">
+        <li>浏览器打开，零安装，永久免费</li>
+        <li>输入研究目标，自动匹配分析方法</li>
+        <li>拖拽选变量，点击运行，即时出结果</li>
+        <li>APA 三线表、图表、解读自动生成</li>
+        <li>AI 解读直接可放入论文</li>
+        <li>相同数据相同参数，100% 可复现</li>
+      </ul>
+      <p style="margin-top:24px;font-weight:700;color:var(--accent);font-size:24px">这，就是颠覆。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第3页：三步 ═══════════ -->
+<section class="section section-gray">
+  <div class="tag">How</div>
+  <h2>就三步。</h2>
+  <p class="subtitle">不需要学统计学，不需要学软件操作。你只需要——</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>说人话</h3>
+      <p>告诉它："我想研究教学方法对学生成绩的影响，数据已上传"。AI 理解你的研究设计，自动规划分析方案。</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>点确认</h3>
+      <p>AI 先出详细分析计划——哪一步做什么、用什么参数——你看一遍，可以改，确认后统计引擎开始真实运算。</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>拿结果</h3>
+      <p>P 值、t 值、效应量、三线表、图表、解读文字，全部自动生成。勾选你需要的，一键导出 Word 报告。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第3.5页：界面演示 ══════════ -->
+<section class="section">
+  <div class="tag">Demo</div>
+  <h2>拖拽变量，点击分析。<br>就这么简单。</h2>
+  <p class="subtitle">以「权重分析」为例——选方法、拖变量、点开始。没有复杂菜单，没有参数迷宫。</p>
+  <div class="mockup-wrap">
+    <div class="mockup">
+      <div class="mockup-topbar">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span class="tab">开始分析</span>
+        <span class="tab tab-active">优序图法</span>
+        <span class="tab">AHP权重</span>
+        <span class="tab">熵值法</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-title">权重分析（熵权法）</div>
+        <div class="mockup-subtitle">依据指标离散程度自动分配客观权重</div>
+        <div class="mockup-label">放入 <span class="hl">[定量]</span> 指标变量 <span class="cnt">（变量数≥2）</span></div>
+        <div class="mockup-drop">
+          <span class="placeholder">放入综合评价指标</span>
+        </div>
+        <div class="mockup-footer">
+          <button class="mockup-btn">重置</button>
+          <button class="mockup-btn mockup-btn-primary">▶ 开始分析</button>
+          <label class="mockup-check"><input type="checkbox"> 输出缺失分析</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第4页：亮点 ═══════════ -->
+<section class="section">
+  <div class="tag">颠覆</div>
+  <h2>不是又一个统计工具。<br>我们是来颠覆这个行业的。</h2>
+  <p class="subtitle">市面上有 SPSS、SPSSAU、SPSSPRO……为什么我们还要做？因为没有人真正解决核心问题。我们要做的，是让"做数据分析"这件事，彻底换个玩法。</p>
+  <div class="point-grid">
+    <div class="point-card" style="border-left:3px solid var(--accent)">
+      <div class="point-icon teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div class="point-num">01</div>
+      <h3>独立研发的算法，不是让 AI 临时写代码</h3>
+      <p>这是和市面上所谓"AI 数据分析"最本质的区别。它们的做法：你提需求 → AI 现场写一段 Python 代码 → 跑一下 → 把结果给你。AI 幻觉严重，同一段数据跑三次可能出三个数。<br><br>底层采用自主研发的统计计算引擎，而非运行时生成代码。每个统计模型均经过专业验证，计算过程稳定、可复现、可审计。</p>
+    </div>
+    <div class="point-card" style="border-left:3px solid var(--accent)">
+      <div class="point-icon teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      </div>
+      <div class="point-num">02</div>
+      <h3>当前 80+ 方法、目标 400+，覆盖心理学、医学、工业全领域</h3>
+      <p>描述统计、t 检验、方差分析、相关回归、中介调节、EFA/CFA/SEM 结构方程、KANO、MaxDiff、AHP、TOPSIS、DEA……不需要在多个软件之间切换，一个平台搞定全部。未来扩展到心理学量表分析、医学生存分析、工业质量控制等垂直场景。</p>
+    </div>
+    <div class="point-card" style="border-left:3px solid var(--accent)">
+      <div class="point-icon teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="point-num">03</div>
+      <h3>结果直接进论文，不再二次加工</h3>
+      <p>所有输出都是 APA 规范格式。三线表一键复制到 Word，AI 解读文可直接放入论文"结果分析"章节。生成 Word 报告或分享链接给导师和合作者。</p>
+    </div>
+    <div class="point-card" style="border-left:3px solid var(--accent)">
+      <div class="point-icon teal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="point-num">04</div>
+      <h3>永久免费，AGPL-3.0 开源</h3>
+      <p>每位学生和研究者都应该平等地使用专业分析工具。核心功能永久免费，代码全部公开在 GitHub 和 Gitee。你可以审计它、修改它、部署你自己的版本。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第5页：方法全景 ═══════════ -->
+<section class="section section-gray">
+  <div class="tag">Methods</div>
+  <h2>一个平台，<br>替代你的整个统计工具箱。</h2>
+  <div class="method-grid">
+    <div class="method-card"><div class="method-name">频数分析</div><div class="method-cat">描述统计</div></div>
+    <div class="method-card"><div class="method-name">描述统计</div><div class="method-cat">描述统计</div></div>
+    <div class="method-card"><div class="method-name">交叉表分析</div><div class="method-cat">描述统计</div></div>
+    <div class="method-card"><div class="method-name">独立样本 t 检验</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">单因素方差分析</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">N 因素方差分析</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">ANCOVA</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">MANOVA</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">非参数检验</div><div class="method-cat">差异检验</div></div>
+    <div class="method-card"><div class="method-name">Pearson 相关</div><div class="method-cat">相关 & 回归</div></div>
+    <div class="method-card"><div class="method-name">Spearman 相关</div><div class="method-cat">相关 & 回归</div></div>
+    <div class="method-card"><div class="method-name">多元线性回归</div><div class="method-cat">相关 & 回归</div></div>
+    <div class="method-card"><div class="method-name">中介效应</div><div class="method-cat">中介 & 调节</div></div>
+    <div class="method-card"><div class="method-name">调节效应</div><div class="method-cat">中介 & 调节</div></div>
+    <div class="method-card"><div class="method-name">路径分析</div><div class="method-cat">中介 & 调节</div></div>
+    <div class="method-card"><div class="method-name">EFA</div><div class="method-cat">因子分析</div></div>
+    <div class="method-card"><div class="method-name">CFA</div><div class="method-cat">因子分析</div></div>
+    <div class="method-card"><div class="method-name">SEM</div><div class="method-cat">结构方程</div></div>
+    <div class="method-card"><div class="method-name">信度分析</div><div class="method-cat">因子分析</div></div>
+    <div class="method-card"><div class="method-name">KANO 模型</div><div class="method-cat">问卷方法</div></div>
+    <div class="method-card"><div class="method-name">MaxDiff</div><div class="method-cat">问卷方法</div></div>
+    <div class="method-card"><div class="method-name">联合分析</div><div class="method-cat">问卷方法</div></div>
+    <div class="method-card"><div class="method-name">AHP 层次分析</div><div class="method-cat">综合评价</div></div>
+    <div class="method-card"><div class="method-name">TOPSIS</div><div class="method-cat">综合评价</div></div>
+    <div class="method-card"><div class="method-name">DEA 数据包络</div><div class="method-cat">综合评价</div></div>
+    <div class="method-card"><div class="method-name">熵权法</div><div class="method-cat">综合评价</div></div>
+    <div class="method-card"><div class="method-name">灰色关联分析</div><div class="method-cat">综合评价</div></div>
+  </div>
+  <p style="text-align:center;margin-top:32px;color:var(--sub);font-size:15px">当前 80+ 方法，持续扩展到 400+，覆盖心理学、医学、工业等垂直领域</p>
+</section>
+
+<!-- ═══════════ 第6页：信任 ═══════════ -->
+<section class="section">
+  <div class="tag">Trust</div>
+  <h2>最重要的承诺：<br>结果真实，可复现。<br>这是颠覆者的基本修养。</h2>
+  <p class="subtitle">在 AI 满天飞、人人都在"让大模型出数"的时代，我们选择最硬核的路——独立研发真实算法，让统计引擎算，不让 AI 编。颠覆不是喊口号，是每一行代码都经得起验证。</p>
+  <div class="trust-grid">
+    <div class="trust-card">
+      <div class="trust-icon green">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h4>独立研发的真实算法</h4>
+      <p>当前 80+ 方法全部由团队独立研发的算法实现，不是让 AI 现场写的代码。目标扩展至 400+，Python + R 双引擎，每个 t 值、F 值、P 值都来自经过验证的专业统计代码。<br><strong>AI 不参与数值生成，不存在幻觉问题。</strong></p>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon teal">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      </div>
+      <h4>100% 可复现</h4>
+      <p>相同数据 + 相同参数 = 相同结果。<br>因为是真实算法在运算，不存在 AI 幻觉，每次运行完全一致。经得起导师和同行的反复检验。</p>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon amber">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <h4>你的数据，你控制</h4>
+      <p>沙箱会话隔离、密码保护。<br>不卖数据，不用于模型训练，分析完即清。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第7页：开源 ═══════════ -->
+<section class="section section-dark">
+  <div class="tag" style="color:#5eead4">Open Source</div>
+  <h2 style="color:#fff">颠覆者从不藏着掖着。<br>全部代码开源，自己拿去验证。</h2>
+  <p style="color:#94a3b8;font-size:16px;max-width:560px;line-height:1.8;margin-top:16px">AGPL-3.0 协议。GitHub + Gitee 双仓库。你可以在实验室服务器上跑自己的实例，数据不出校门。</p>
+  <div style="display:flex;gap:16px;margin-top:36px;flex-wrap:wrap">
+    <span class="btn btn-white" style="cursor:default;font-size:14px;padding:12px 24px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405z"/></svg>
+      GitHub
+    </span>
+    <span class="btn btn-white" style="cursor:default;font-size:14px;padding:12px 24px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#c71d23"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm4.75 8.2h-5.58a.95.95 0 0 0-.95.95v.7h4.25c.52 0 .95.43.95.95v.36a3.1 3.1 0 0 1-3.1 3.1H7.85a.95.95 0 0 1-.95-.95v-5.74a3.1 3.1 0 0 1 3.1-3.1h6.75c.52 0 .95.43.95.95v1.83c0 .52-.43.95-.95.95Z"/></svg>
+      Gitee
+    </span>
+  </div>
+</section>
+
+<!-- ═══════════ 第8页：数据墙 ═══════════ -->
+<section class="section">
+  <div class="tag">By The Numbers</div>
+  <h2>事实不用多。<br>每一个，都是对旧世界的回答。</h2>
+  <div class="fact-wall">
+    <div class="fact-cell"><div class="big">80<span class="num-plus">+</span></div><div class="label">统计方法（目标 400+）</div></div>
+    <div class="fact-cell"><div class="big">15<span class="num-plus">+</span></div><div class="label">数据处理管线</div></div>
+    <div class="fact-cell"><div class="big">10</div><div class="label">支持数据格式</div></div>
+    <div class="fact-cell"><div class="big">100<span class="num-plus">%</span></div><div class="label">可复现</div></div>
+    <div class="fact-cell"><div class="big">0</div><div class="label">元安装成本</div></div>
+    <div class="fact-cell"><div class="big">AGPL<br>3.0</div><div class="label">开源协议</div></div>
+    <div class="fact-cell"><div class="big">2</div><div class="label">统计引擎<br>(Python + R)</div></div>
+    <div class="fact-cell"><div class="big">∞</div><div class="label">永久免费</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ 第9页：适用场景 ═══════════ -->
+<section class="section section-gray">
+  <div class="tag">Use Cases</div>
+  <h2>为谁而做？</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
+    <div style="padding:32px;background:#fff;border-radius:14px;border:1px solid #f3f4f6">
+      <div style="font-size:32px;margin-bottom:16px">🎓</div>
+      <h4 style="margin-bottom:8px">高校师生</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">毕业论文、课程作业、学术研究。从频数描述到 SEM 结构方程，一个平台全覆盖。</p>
+    </div>
+    <div style="padding:32px;background:#fff;border-radius:14px;border:1px solid #f3f4f6">
+      <div style="font-size:32px;margin-bottom:16px">🔬</div>
+      <h4 style="margin-bottom:8px">科研人员</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">快速验证假设，可靠的分析结果，经得起同行评审的完整统计报告。</p>
+    </div>
+    <div style="padding:32px;background:#fff;border-radius:14px;border:1px solid #f3f4f6">
+      <div style="font-size:32px;margin-bottom:16px">📊</div>
+      <h4 style="margin-bottom:8px">数据分析从业者</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">市场调研、用户研究、企业分析。多格式导入，规范报告一键导出。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 第10页：愿景 ═══════════ -->
+<section class="section">
+  <div class="tag">Vision</div>
+  <h2>最终目标：<br>颠覆整个数据分析的工作方式。</h2>
+  <p class="subtitle">80+ 只是起点。我们想做的不是一个"统计计算器"，而是覆盖研究全流程的智能工作台。</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
+    <div style="padding:32px;background:var(--bg2);border-radius:14px;border:1px solid #f3f4f6;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">📐</div>
+      <h4 style="margin-bottom:8px">400+ 统计方法</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">从现有 80+ 扩展到 400+，全面覆盖心理学量表分析、医学生存分析、工业统计过程控制、经济计量等垂直领域。</p>
+    </div>
+    <div style="padding:32px;background:var(--bg2);border-radius:14px;border:1px solid #f3f4f6;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">📊</div>
+      <h4 style="margin-bottom:8px">智能绘图引擎</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">根据分析结果自动生成学术级图表——路径图、热力图、森林图、ROC 曲线——无需手动调参，直接可用于论文发表。</p>
+    </div>
+    <div style="padding:32px;background:var(--bg2);border-radius:14px;border:1px solid #f3f4f6;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">📝</div>
+      <h4 style="margin-bottom:8px">文本分析</h4>
+      <p style="color:var(--sub);line-height:1.7;font-size:14px">情感分析、主题建模、词频统计、文本分类。从访谈记录到开放式问卷，非结构化数据也能一键产出定量结论。</p>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:40px;font-size:18px;font-weight:700;color:var(--text)">一句话：你研究的全流程，打开一个网页就够了。</p>
+</section>
+
+<!-- ═══════════ 落版 ═══════════ -->
+<section class="section cta">
+  <h2>数据分析的范式，<br>该被改写了。</h2>
+  <p style="font-size:clamp(22px,3vw,32px);font-weight:700;margin:24px 0 8px;color:var(--accent)">"用自然语言驱动真实统计引擎的在线数据分析平台"</p>
+  <p style="color:var(--sub);font-size:16px;max-width:480px;margin:0 auto 36px">不用安装，不用付费，不编数据。<br>上传数据 → 说清目标 → 拿走结果。<br>这就是 SPSSGO。一个颠覆者该有的样子。</p>
+  <span class="btn btn-primary" style="cursor:default;font-size:18px;padding:18px 48px">永久免费 · 开源可验证</span>
+</section>
+
+<script>
+(function(){
+  const els=document.querySelectorAll('.section,.hero,.fact-cell,.trust-card,.point-card,.step,.pain-card,.vs-col,.method-card');
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.style.opacity='1';
+        e.target.style.transform='translateY(0)';
+      }
+    })
+  },{threshold:0.1});
+  els.forEach(el=>{
+    el.style.opacity='0';
+    el.style.transform='translateY(24px)';
+    el.style.transition='opacity .6s ease-out,transform .6s ease-out';
+    obs.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

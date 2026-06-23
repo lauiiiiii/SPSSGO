@@ -35,13 +35,15 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
+# Frontend source lives in private spssgo_frontend repo.
+# Only the built dist/ is kept here for production serving.
+frontend/*
+!frontend/dist/
+!frontend/dist/**
 frontend/dist-ssr/
-node_modules/
-dist/
-dist-ssr/
+/node_modules/
+/dist/
+/dist-ssr/
 *.local
 
 # Environment files
