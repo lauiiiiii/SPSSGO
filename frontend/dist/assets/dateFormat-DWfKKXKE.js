@@ -1,0 +1,1 @@
+function e(e){if(!e)return``;let t=new Date(typeof e==`number`?e*1e3:e);return`${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)} ${String(t.getHours()).padStart(2,`0`)}:${String(t.getMinutes()).padStart(2,`0`)}`}export{e as t};
