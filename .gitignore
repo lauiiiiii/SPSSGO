@@ -35,9 +35,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Local dev scripts, not pushed to public repo
+# Local files, not pushed to public repo
 1-打包前端.bat
 3-开发模式启动.bat
+AGENTS.md
 
 # Frontend source lives in private spssgo_frontend repo.
 # Only the built dist/ is kept here for production serving.
