@@ -74,7 +74,48 @@ MySQL 当前主要承载：
 - `s3` 模式面向 MinIO / AWS S3 / 阿里云 OSS S3 兼容接口 / 腾讯 COS S3 兼容接口
 
 
-## 3. 当前已实现功能
+## 技术亮点
+
+### 分析方法自动注册机制
+
+新增分析方法只需在 `backend/analysis/methods/` 下放一个 `.py` 文件，定义 `METHOD_KEY`、`METHOD_META` 和 `run()`，无需改任何注册中心代码。通过 `pkgutil.iter_modules()` 自动发现、`importlib` 动态加载，上线新方法零配置。
+
+### 三引擎降级策略
+
+分析执行走三级降级：
+1. **模板引擎优先**——AI 生成 JSON 任务配置，模板引擎直接调度 `METHOD_REGISTRY` 的内置函数执行
+2. **R 增强**——信度、EFA、CFA、SEM 等高级方法走独立 R 引擎（`backend/r_runner.py`）
+3. **AI 代码兜底**——模板走不通时，AI 生成可执行 Python 代码，失败后带错误反馈重试，最多 3 次
+
+### 统一图表协议
+
+所有分析方法输出标准化图表协议，三种通用类型覆盖全场景：
+
+| chartType | 用途 | 关键字段 |
+|---|---|---|
+| `category_distribution` | 分类/选项分布 | `labels` / `counts` / `percents` / `variable` |
+| `crosstab_distribution` | 交叉列联 | `groupVariable` / `xVariable` / `matrix` |
+| `metric_comparison` | 指标对比 | `metric` / `labels` / `values` |
+
+前端公共组件 `AnalysisChartItem` 统一渲染，支持柱状图、条形图、饼图、环形图、折线图、雷达图、悬浮提示、保存导出。新方法只需吐协议数据，不重复造图表轮子。
+
+### Celery 六队列分派
+
+异步任务按类型路由到独立队列，互不阻塞：
+
+| 队列 | 职责 |
+|---|---|
+| `ingest` | 文件上传与解析 |
+| `process` | 数据处理 |
+| `analysis` | 分析方法执行 |
+| `ai` | AI 规划与解读 |
+| `report` | 报告生成 |
+| `sandbox` | 自定义代码沙箱执行 |
+
+`ingest` / `process` / `analysis` 共用 `worker-analysis`，`ai` / `report` / `sandbox` 各有独立 worker，通过 `--queues` 参数隔离，可独立扩缩容。
+
+
+## 3. 已上线功能清单
 
 ### 3.1 账号与权限
 
@@ -170,6 +211,29 @@ MySQL 当前主要承载：
 - 会话管理
 - 系统设置查看
 - 存储用量统计
+
+
+## Docker 一键部署
+
+项目已完整容器化，支持 `docker compose up -d` 一行命令拉起全套服务：
+
+```powershell
+docker compose up -d
+```
+
+Compose 编排包含以下服务：
+
+| 服务 | 职责 |
+|---|---|
+| `app` | FastAPI 后端 + 前端静态文件 |
+| `db` | MySQL 8.4 |
+| `redis` | Celery 消息队列 + 缓存 |
+| `worker-analysis` | ingest / process / analysis 队列消费 |
+| `worker-report` | report 队列消费 |
+| `worker-ai` | ai 队列消费 |
+| `worker-sandbox` | sandbox 队列消费 |
+
+Docker 镜像内置 `Rscript`、`jsonlite`、`lavaan`，无需宿主机额外安装 R。部署后浏览器打开 `http://localhost:8000` 即可使用，是可运行原型的直接证据。
 
 
 ## 4. 当前配置项

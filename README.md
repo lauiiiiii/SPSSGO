@@ -94,12 +94,7 @@ SPSSGO/
 │   ├── analysis/     80+ 分析方法
 │   ├── processing/   数据处理
 │   └── r_scripts/    R 增强脚本
-├── frontend/         前端（Vue 3 + Vite）
-│   └── src/
-│       ├── views/        页面
-│       ├── components/   业务组件
-│       ├── composables/  组合式逻辑
-│       └── entries/      多入口
+├── frontend/dist/   前端构建产物（源码在私有仓库 spssgo_frontend）
 ├── alembic/          数据库迁移
 ├── tests/            测试用例
 ├── docs/             文档
@@ -130,4 +125,4 @@ SPSSGO/
 
 ## License
 
-AGPL-3.0
+MIT
