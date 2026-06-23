@@ -41,7 +41,7 @@ frontend/*
 !frontend/dist/
 !frontend/dist/**
 frontend/dist-ssr/
-/node_modules/
+node_modules/
 /dist/
 /dist-ssr/
 *.local
