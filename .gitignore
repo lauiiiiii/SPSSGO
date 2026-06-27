@@ -37,7 +37,6 @@ lerna-debug.log*
 
 # Local files, not pushed to public repo
 1-打包前端.bat
-3-开发模式启动.bat
 AGENTS.md
 
 # Frontend source lives in private spssgo_frontend repo.
