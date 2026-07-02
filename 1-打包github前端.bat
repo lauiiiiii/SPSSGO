@@ -29,7 +29,7 @@ echo.
 
 set "TARGET=%~dp0..\SPSSGO\frontend\dist"
 if exist "%TARGET%" rmdir /s /q "%TARGET%"
-xcopy /E /I /Y "%~dp0dist\*" "%TARGET%"
+xcopy /E /I /Y "dist\*" "%TARGET%"
 
 echo.
 echo [OK] Done. Backend can now serve the latest frontend build.
